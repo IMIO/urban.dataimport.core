@@ -39,10 +39,17 @@ setup(
     zip_safe=False,
     install_requires=[
         'setuptools',
+        'pandas',
+        'SQLAlchemy',
+        'mysqlclient',
     ],
     extras_require={
         'test': [
         ],
     },
-    entry_points=""""""
+    entry_points={
+        'console_scripts': [
+            'ton_script = urban.dataimport.core.script.acropole:main',
+        ],
+    },
 )
