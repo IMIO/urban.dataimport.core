@@ -1,0 +1,6 @@
+[report]
+include =
+    src/urban/*
+omit =
+    */test*
+    */upgrades/*
