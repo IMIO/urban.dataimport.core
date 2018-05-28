@@ -2,6 +2,7 @@
 
 from sqlalchemy import create_engine
 from urban.dataimport.core import utils
+from urban.dataimport.core.db import LazyDB
 
 import argparse
 import configparser
@@ -16,26 +17,25 @@ class ImportAcropole:
         config.read(config_file)
         self.config = config
         engine = create_engine('mysql://{user}:{password}@{host}:{port}'.format(**config._sections['database']))
-        self.connection = engine.connect()
+        connection = engine.connect()
+        self.db = LazyDB(connection, config['database']['schema'])
 
     def execute(self):
-        resoverall = self.connection.execute("""
-        SELECT *
-        FROM `{schema}`.wrkdossier AS DOSSIER
-        LEFT JOIN `{schema}`.k2 AS K2
-               ON DOSSIER.WRKDOSSIER_ID = K2.K_ID1
-        """.format(
-            **self.config._sections['database']))
-
-        df = pd.DataFrame(resoverall.fetchall())
-        df.columns = resoverall.keys()
+        merged = pd.merge(
+            self.db.k2,
+            self.db.wrkdossier,
+            left_on='K_ID1',
+            right_on='WRKDOSSIER_ID',
+            how='left',
+            left_index=True,
+        )
 
 
 def main():
     """ """
-
     parser = argparse.ArgumentParser(description='Import data from Acropole Database')
     parser.add_argument('config_file', type=str, help='path to the config')
+    parser.add_argument('--limit', type=int, help='number of records')
     args = parser.parse_args()
 
     ImportAcropole(args.config_file).execute()
