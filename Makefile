@@ -7,7 +7,7 @@ all: run
 
 .PHONY: bootstrap
 bootstrap:
-	virtualenv-2.7 .
+	virtualenv -p python3 .
 	./bin/python bootstrap.py
 
 .PHONY: buildout
@@ -18,7 +18,7 @@ buildout:
 .PHONY: run
 run:
 	if ! test -f bin/ton_script;then make buildout;fi
-	bin/ton_script
+	bin/ton_script acropole_example.cfg
 
 .PHONY: cleanall
 cleanall:
