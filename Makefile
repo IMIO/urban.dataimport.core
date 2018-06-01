@@ -17,10 +17,10 @@ buildout:
 
 .PHONY: run
 run:
-	if ! test -f bin/ton_script;then make buildout;fi
-	bin/ton_script acropole_example.cfg
+	if ! test -f bin/acropole_script;then make buildout;fi
+	bin/acropole_script acropole_example.cfg
 
 .PHONY: cleanall
 cleanall:
-	rm -fr bin/instance1 develop-eggs downloads eggs parts .installed.cfg
+	rm -fr bin develop-eggs downloads eggs parts .installed.cfg
 
