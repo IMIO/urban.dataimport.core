@@ -49,7 +49,8 @@ setup(
     },
     entry_points={
         'console_scripts': [
-            'ton_script = urban.dataimport.core.script.acropole:main',
+            'acropole_script = urban.dataimport.core.script.acropole:main',
+            'urbaweb_script = urban.dataimport.core.script.urbaweb:main',
         ],
     },
 )
