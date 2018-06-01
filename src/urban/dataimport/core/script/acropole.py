@@ -29,6 +29,7 @@ class ImportAcropole:
             how='left',
             left_index=True,
         )
+        return merged
 
 
 def main():
