@@ -81,14 +81,18 @@ class ImportAcropole:
         for key, values in self.events_types.items():
             events_etape = self.db.dossier_evenement_vue[
                 (self.db.dossier_evenement_vue.ETAPE_TETAPEID.isin(values['etape_ids'])) &
-                (self.db.dossier_evenement_vue.WRKDOSSIER_ID == licence.WRKDOSSIER_ID)]
+                (self.db.dossier_evenement_vue.WRKDOSSIER_ID == licence.WRKDOSSIER_ID) &
+                (self.db.dossier_evenement_vue.K2KND_ID == -207)]
 
             events_param = self.db.dossier_param_vue[
                 (self.db.dossier_param_vue.PARAM_TPARAMID.isin(values['param_ids'])) &
-                (self.db.dossier_param_vue.WRKDOSSIER_ID == licence.WRKDOSSIER_ID)]
+                (self.db.dossier_param_vue.WRKDOSSIER_ID == licence.WRKDOSSIER_ID) &
+                (self.db.dossier_evenement_vue.K2KND_ID == -208)]
 
             method = getattr(self, 'get_{0}_event'.format(key))
-            event_list.extend(method(events_etape, events_param))
+            result_list = method(events_etape, events_param)
+            if result_list:
+                event_list.extend(result_list)
 
         return event_list
 
@@ -102,9 +106,9 @@ class ImportAcropole:
 
     def get_decision_event(self, events_etape, events_param):
         events_dict = []
-        if len(events_etape.shape[0]) > 1:
+        if events_etape.shape[0] > 1:
             raise ValueError('Too many decision events')
-        elif len(events_etape.shape[0]) == 1:
+        elif events_etape.shape[0] == 1:
             event = events_etape.head(1)
             event_dict = get_event_dict()
             event_dict['eventDate'] = event.ETAPE_DATEDEPART
@@ -178,7 +182,8 @@ class ImportAcropole:
                                        ETAPE_TETAPEID,
                                        ETAPE_DATEDEPART,
                                        ETAPE_DATEBUTOIR,
-                                       ETAPE_DELAI
+                                       ETAPE_DELAI,
+                                       MAIN_JOIN.K2KND_ID
                                 FROM
                                     wrkdossier AS DOSSIER
                                 INNER JOIN k2 AS MAIN_JOIN
@@ -191,8 +196,10 @@ class ImportAcropole:
                             """
                                 SELECT DOSSIER.WRKDOSSIER_ID, DOSSIER.DOSSIER_NUMERO,
                                        WRKPARAM_ID,
+                                       PARAM_TPARAMID,
                                        PARAM_NOMFUSION,
-                                       PARAM_VALUE
+                                       PARAM_VALUE,
+                                       MAIN_JOIN.K2KND_ID
                                 FROM
                                     wrkdossier AS DOSSIER
                                 INNER JOIN k2 AS MAIN_JOIN
