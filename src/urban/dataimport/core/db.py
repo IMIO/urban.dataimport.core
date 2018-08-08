@@ -16,7 +16,7 @@ class LazyDB:
             return self.__getattribute__(name)
         except AttributeError:
             cache_fname = self._cache_fname(name)
-            if os.path.exists(cache_fname) and self.ignore_cache == False:
+            if os.path.exists(cache_fname) and self.ignore_cache is False:
                 df = pd.read_pickle(cache_fname)
             else:
                 result = self.connection.execute(self._query(name))
@@ -46,5 +46,5 @@ class LazyDB:
             schema=self.__dict__['db_schema'],
             name=view_name,
             query=view_query,
-                    )
+        )
         self.connection.execute(query)
