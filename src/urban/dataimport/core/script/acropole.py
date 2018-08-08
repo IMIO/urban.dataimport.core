@@ -13,7 +13,7 @@ from urban.dataimport.core.json import get_licence_dict
 
 class ImportAcropole:
 
-    def __init__(self, config_file, limit=None, licence_id=None):
+    def __init__(self, config_file, limit=None, licence_id=None, ignore_cache=False):
         config = configparser.ConfigParser()
         config_file = utils.format_path(config_file)
         config.read(config_file)
@@ -22,7 +22,11 @@ class ImportAcropole:
         self.licence_id = licence_id
         engine = create_engine('mysql://{user}:{password}@{host}:{port}'.format(**config._sections['database']))
         connection = engine.connect()
-        self.db = LazyDB(connection, config['database']['schema'])
+        self.db = LazyDB(
+            connection,
+            config['database']['schema'],
+            ignore_cache=ignore_cache,
+        )
         self.create_views()
 
     def execute(self):
@@ -120,10 +124,13 @@ def main():
     parser.add_argument('config_file', type=str, help='path to the config')
     parser.add_argument('--limit', type=int, help='number of records')
     parser.add_argument('--licence_id', type=str, help='reference of a licence')
+    parser.add_argument('--ignore_cache', type=bool, nargs='?',
+                        const=True, default=False, help='ignore local cache')
     args = parser.parse_args()
 
     ImportAcropole(
         args.config_file,
         limit=args.limit,
         licence_id=args.licence_id,
+        ignore_cache=args.ignore_cache,
     ).execute()

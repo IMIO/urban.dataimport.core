@@ -6,16 +6,17 @@ import pandas as pd
 
 class LazyDB:
 
-    def __init__(self, connection, db_schema):
+    def __init__(self, connection, db_schema, ignore_cache=False):
         self.connection = connection
         self.db_schema = db_schema
+        self.ignore_cache = ignore_cache
 
     def __getattr__(self, name):
         try:
             return self.__getattribute__(name)
         except AttributeError:
             cache_fname = self._cache_fname(name)
-            if os.path.exists(cache_fname):
+            if os.path.exists(cache_fname) and self.ignore_cache == False:
                 df = pd.read_pickle(cache_fname)
             else:
                 result = self.connection.execute(self._query(name))
