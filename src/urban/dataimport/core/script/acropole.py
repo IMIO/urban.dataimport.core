@@ -13,11 +13,12 @@ from urban.dataimport.core.json import get_licence_dict
 
 class ImportAcropole:
 
-    def __init__(self, config_file):
+    def __init__(self, config_file, limit=None):
         config = configparser.ConfigParser()
         config_file = utils.format_path(config_file)
         config.read(config_file)
         self.config = config
+        self.limit = limit
         engine = create_engine('mysql://{user}:{password}@{host}:{port}'.format(**config._sections['database']))
         connection = engine.connect()
         self.db = LazyDB(connection, config['database']['schema'])
@@ -39,7 +40,10 @@ class ImportAcropole:
         # )
         # return merged
         data = []
-        for licence in self.db.wrkdossier:
+        folders = self.db.wrkdossier
+        if self.limit:
+            folders = self.db.wrkdossier.head(self.limit)
+        for id, licence in folders.iterrows():
             licence_dict = get_licence_dict()
             licence_dict['reference'] = licence.DOSSIER_NUMERO
             data.append(licence_dict)
@@ -114,4 +118,4 @@ def main():
     parser.add_argument('--limit', type=int, help='number of records')
     args = parser.parse_args()
 
-    ImportAcropole(args.config_file).execute()
+    ImportAcropole(args.config_file, limit=args.limit).execute()
