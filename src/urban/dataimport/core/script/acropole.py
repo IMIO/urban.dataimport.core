@@ -13,12 +13,13 @@ from urban.dataimport.core.json import get_licence_dict
 
 class ImportAcropole:
 
-    def __init__(self, config_file, limit=None):
+    def __init__(self, config_file, limit=None, licence_id=None):
         config = configparser.ConfigParser()
         config_file = utils.format_path(config_file)
         config.read(config_file)
         self.config = config
         self.limit = limit
+        self.licence_id = licence_id
         engine = create_engine('mysql://{user}:{password}@{host}:{port}'.format(**config._sections['database']))
         connection = engine.connect()
         self.db = LazyDB(connection, config['database']['schema'])
@@ -42,7 +43,9 @@ class ImportAcropole:
         data = []
         folders = self.db.wrkdossier
         if self.limit:
-            folders = self.db.wrkdossier.head(self.limit)
+            folders = folders.head(self.limit)
+        if self.licence_id:
+            folders = folders[folders.DOSSIER_NUMERO == self.licence_id]
         for id, licence in folders.iterrows():
             licence_dict = get_licence_dict()
             licence_dict['reference'] = licence.DOSSIER_NUMERO
@@ -116,6 +119,11 @@ def main():
     parser = argparse.ArgumentParser(description='Import data from Acropole Database')
     parser.add_argument('config_file', type=str, help='path to the config')
     parser.add_argument('--limit', type=int, help='number of records')
+    parser.add_argument('--licence_id', type=str, help='reference of a licence')
     args = parser.parse_args()
 
-    ImportAcropole(args.config_file, limit=args.limit).execute()
+    ImportAcropole(
+        args.config_file,
+        limit=args.limit,
+        licence_id=args.licence_id,
+    ).execute()
