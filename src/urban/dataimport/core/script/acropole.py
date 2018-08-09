@@ -14,8 +14,14 @@ from urban.dataimport.core.json import get_licence_dict, get_applicant_dict, get
 class ImportAcropole:
 
     events_types = {
-        'recepisse': {'etape_ids': (-65091, -55774, -48189, -46732, -42670, -33521), 'param_ids': ()},
-        'decision': {'etape_ids': (-43439, -33545, -63967, -55736, -38452, -49801), 'param_ids': ()},
+        'recepisse': {
+            'etape_ids': (-65091, -55774, -48189, -46732, -42670, -33521),
+            'param_ids': (),
+        },
+        'decision': {
+            'etape_ids': (-43439, -33545, -63967, -55736, -38452, -49801),
+            'param_ids': (-35039, -79378, -78845, -78319, -49413, -62984),
+        },
     }
 
     def __init__(self, config_file, limit=None, licence_id=None, ignore_cache=False):
@@ -87,7 +93,8 @@ class ImportAcropole:
             events_param = self.db.dossier_param_vue[
                 (self.db.dossier_param_vue.PARAM_TPARAMID.isin(values['param_ids'])) &
                 (self.db.dossier_param_vue.WRKDOSSIER_ID == licence.WRKDOSSIER_ID) &
-                (self.db.dossier_evenement_vue.K2KND_ID == -208)]
+                (self.db.dossier_param_vue.K2KND_ID == -208) &
+                (self.db.dossier_param_vue.PARAM_VALUE.notnull())]
 
             method = getattr(self, 'get_{0}_event'.format(key))
             result_list = method(events_etape, events_param)
@@ -100,6 +107,7 @@ class ImportAcropole:
         events_dict = []
         for id, event in events_etape.iterrows():
             event_dict = get_event_dict()
+            event_dict['type'] = 'recepisse'
             event_dict['eventDate'] = event.ETAPE_DATEDEPART
             events_dict.append(event_dict)
         return events_dict
@@ -109,10 +117,16 @@ class ImportAcropole:
         if events_etape.shape[0] > 1:
             raise ValueError('Too many decision events')
         elif events_etape.shape[0] == 1:
-            event = events_etape.head(1)
+            event = events_etape.iloc[0]
             event_dict = get_event_dict()
+            event_dict['type'] = 'decision'
             event_dict['eventDate'] = event.ETAPE_DATEDEPART
-            return events_dict
+            if events_param.iloc[0].PARAM_VALUE == '1':
+                event_dict['decision'] = 'favorable'
+            else:
+                event_dict['decision'] = 'défavorable'
+            events_dict.append(event_dict)
+        return events_dict
 
     def create_views(self):
         self.db.create_view("dossier_enquete",
