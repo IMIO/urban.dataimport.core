@@ -5,9 +5,15 @@ from datetime import datetime
 
 def get_licence_dict():
     return {
+        'id': '',
+        'portalType': '',
         'reference': '',
+        'referenceDGATLP': '',
         'subject': '',
-        'applicants': []
+        'completionState': '',
+        'workLocations': '',
+        'applicants': [],
+        'parcels': []
     }
 
 
@@ -15,6 +21,18 @@ def get_applicant_dict():
     return {
         'lastname': '',
         'firstname': ''
+    }
+
+
+def get_parcel_dict():
+    return {
+        'complete_name': '',
+        'division': '',
+        'section': '',
+        'radical': '',
+        'bis': '',
+        'exposant': '',
+        'puissance': ''
     }
 
 
