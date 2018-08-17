@@ -8,7 +8,8 @@ import argparse
 import configparser
 import json
 
-from urban.dataimport.core.json import get_licence_dict, get_applicant_dict, get_event_dict, DateTimeEncoder
+from urban.dataimport.core.json import get_licence_dict, get_applicant_dict, get_event_dict, DateTimeEncoder, \
+    get_parcel_dict
 
 
 class ImportAcropole:
@@ -22,6 +23,67 @@ class ImportAcropole:
             'etape_ids': (-43439, -33545, -63967, -55736, -38452, -49801),
             'param_ids': (-35039, -79378, -78845, -78319, -49413, -62984),
         },
+    }
+
+    portal_type_mapping = {
+        -67348: 'EnvClassTwo',
+        -62737: 'ParcelOutLicence',
+        -53925: 'UniqueLicence',
+        -49306: 'Article127',
+        -46623: 'EnvClassThree',
+        -42575: 'BuildLicence',
+        -37624: 'EnvClassTwo',
+        -36624: '',  # infractions, not yet implemented
+        -34766: 'NotaryLetter',
+        -32669: 'BuildLicence',  # ?
+        -15200: 'Declaration',
+        -14179: 'Division',
+    }
+
+    state_mapping = {
+        -58: 'refuse',  # irrecevable (validé par chatelet)
+        -49: 'accept',  # -49 = octroyé
+        -46: 'refuse',  # -46 = annulé par le FD
+        -30: 'accept',  # recevable (validé par chatelet)
+        -27: 'accept',  # recevable avec condition (validé par chatelet)
+        -26: 'accept',  # -26 = octroyé
+        -20: 'refuse',  # refus, ministre sur recours (validé par chatelet)
+        -19: 'retire',  # -19 = périmé
+        -17: 'refuse',  # refus (FT) (validé par chatelet)
+        -15: 'accept',  # accepté (FT) (validé par chatelet)
+        -14: 'accept',  # -14 = octroyé
+        -12: 'accept',  # -12 = octroyé (validé par Fl)
+        -11: 'retire',  # -11 = retiré
+        -10: 'retire',  # -10 = retiré (validé par Fl)
+        -8: 'refuse',   # irrecevable (validé par chatelet)
+        -7: 'accept',   # recevable (validé par chatelet)
+        -6: 'accept',  # -6 = octroyé (validé par Fl)
+        -5: 'refuse',  # -5 = refusé
+        -4: 'retire',  # -4 = suspendu
+        -3: 'accept',  # -3 = octroyé
+        -2: 'retire',  # -2 = abandonné
+        -1: '',  # -1 = en cours
+        0: 'refuse',  # -1 = refusé
+        1: 'accept',  # 1 = octroyé
+    }
+
+    title_types = {
+        -1000: 'mister',
+        21607: 'misters',
+        -1001: 'madam',
+        171280: 'ladies',
+        -1002: 'miss',
+        -1003: 'madam_and_mister',
+        676263: 'madam_and_mister',
+        850199: 'madam_and_mister',
+        89801: 'master',
+    }
+
+    division_mapping = {
+        '01': '52012',
+        '02': '52013',
+        '03': '52502',
+        '04': '52007',
     }
 
     def __init__(self, config_file, limit=None, licence_id=None, ignore_cache=False):
@@ -44,15 +106,6 @@ class ImportAcropole:
 
         # utiliser json
         # schema pour valider le dossier (methode dans json.py)
-        # merged = pd.merge(
-        #     self.db.k2,
-        #     self.db.wrkdossier,
-        #     left_on='K_ID1',
-        #     right_on='WRKDOSSIER_ID',
-        #     how='left',
-        #     left_index=True,
-        # )
-        # return merged
         data = []
         folders = self.db.wrkdossier
         if self.limit:
@@ -61,12 +114,25 @@ class ImportAcropole:
             folders = folders[folders.DOSSIER_NUMERO == self.licence_id]
         for id, licence in folders.iterrows():
             licence_dict = get_licence_dict()
+            licence_dict['id'] = licence.WRKDOSSIER_ID
+            licence_dict['portalType'] = self.get_portal_type(licence)
+            if not licence_dict['portalType']:
+                continue
             licence_dict['reference'] = licence.DOSSIER_NUMERO
+            licence_dict['referenceDGATLP'] = licence.DOSSIER_REFURB
+            licence_dict['completionState'] = self.state_mapping.get(licence.DOSSIER_OCTROI, '')
             licence_dict['applicants'] = self.get_applicants(licence)
+            licence_dict['parcels'] = self.get_parcels(licence)
             licence_dict['events'] = self.get_events(licence)
             data.append(licence_dict)
 
         print(json.dumps(data, cls=DateTimeEncoder))
+
+    def get_portal_type(self, licence):
+        portal_type = self.portal_type_mapping.get(licence.DOSSIER_TDOSSIERID, None)
+        if portal_type == 'UrbanCertificateOne' and licence.DOSSIER_TYPEIDENT == 'CU2':
+            portal_type = 'UrbanCertificateTwo'
+        return portal_type
 
     def get_applicants(self, licence):
         applicant_list = []
@@ -75,11 +141,23 @@ class ImportAcropole:
             (self.db.dossier_personne_vue.K2KND_ID == -204)]
         for id, applicant in applicants.iterrows():
             applicant_dict = get_applicant_dict()
+            applicant_dict['personTitle'] = self.title_types.get(applicant.CPSN_TYPE, None)
             applicant_dict['lastname'] = applicant.CPSN_NOM
             applicant_dict['firstname'] = applicant.CPSN_PRENOM
             applicant_list.append(applicant_dict)
 
         return applicant_list
+
+    def get_parcels(self, licence):
+        parcels_list = []
+        parcels = self.db.dossier_parcelles_vue[
+            (self.db.dossier_parcelles_vue.WRKDOSSIER_ID == licence.WRKDOSSIER_ID)]
+        for id, parcels in parcels.iterrows():
+            parcels_dict = get_parcel_dict()
+            parcels_dict['complete_name'] = parcels.CAD_NOM
+            parcels_list.append(parcels_dict)
+
+        return parcels_list
 
     def get_events(self, licence):
         event_list = []
@@ -186,6 +264,16 @@ class ImportAcropole:
                                 ON MAIN_JOIN_BIS.K_ID2 = PERSONNE.CPSN_ID
                                 INNER JOIN cloc AS ADRESSE_PERSONNE
                                 ON MAIN_JOIN_BIS.K_ID1 = ADRESSE_PERSONNE.CLOC_ID;
+                            """
+                            )
+        self.db.create_view("dossier_parcelles_vue",
+                            """
+                                SELECT DOSSIER.WRKDOSSIER_ID, DOSSIER.DOSSIER_NUMERO,
+                                       CADASTRE.CAD_NOM
+                                FROM
+                                    wrkdossier AS DOSSIER
+                                INNER JOIN urbcadastre AS CADASTRE
+                                ON CADASTRE.CAD_DOSSIER_ID = DOSSIER.WRKDOSSIER_ID;
                             """
                             )
         self.db.create_view("dossier_evenement_vue",
