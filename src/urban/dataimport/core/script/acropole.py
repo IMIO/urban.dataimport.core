@@ -190,7 +190,6 @@ class ImportAcropole:
                 (self.db.dossier_param_vue.WRKDOSSIER_ID == licence.WRKDOSSIER_ID) &
                 (self.db.dossier_param_vue.K2KND_ID == -208) &
                 (self.db.dossier_param_vue.PARAM_VALUE.notnull())]
-
             method = getattr(self, 'get_{0}_event'.format(key))
             result_list = method(events_etape, events_param)
             if result_list:
@@ -216,10 +215,11 @@ class ImportAcropole:
             event_dict = get_event_dict()
             event_dict['type'] = 'decision'
             event_dict['eventDate'] = event.ETAPE_DATEDEPART
-            if events_param.iloc[0].PARAM_VALUE == '1':
-                event_dict['decision'] = 'favorable'
-            else:
-                event_dict['decision'] = 'défavorable'
+            if events_param.shape[0] == 1:
+                if events_param.iloc[0].PARAM_VALUE == '1':
+                    event_dict['decision'] = 'favorable'
+                else:
+                    event_dict['decision'] = 'défavorable'
             events_dict.append(event_dict)
         return events_dict
 
