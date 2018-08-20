@@ -8,8 +8,8 @@ import argparse
 import configparser
 import json
 
-from urban.dataimport.core.json import get_licence_dict, get_applicant_dict, get_event_dict, DateTimeEncoder, \
-    get_parcel_dict
+from urban.dataimport.core.json import DateTimeEncoder, get_applicant_dict, get_event_dict, get_licence_dict, \
+    get_parcel_dict, get_work_locations_dict
 
 
 class ImportAcropole:
@@ -121,6 +121,7 @@ class ImportAcropole:
             licence_dict['reference'] = licence.DOSSIER_NUMERO
             licence_dict['referenceDGATLP'] = licence.DOSSIER_REFURB
             licence_dict['completionState'] = self.state_mapping.get(licence.DOSSIER_OCTROI, '')
+            licence_dict['workLocations'] = self.get_work_locations(licence)
             licence_dict['applicants'] = self.get_applicants(licence)
             licence_dict['parcels'] = self.get_parcels(licence)
             licence_dict['events'] = self.get_events(licence)
@@ -133,6 +134,22 @@ class ImportAcropole:
         if portal_type == 'UrbanCertificateOne' and licence.DOSSIER_TYPEIDENT == 'CU2':
             portal_type = 'UrbanCertificateTwo'
         return portal_type
+
+    def get_work_locations(self, licence):
+        work_locations_list = []
+
+        work_locations = self.db.dossier_adresse_vue[
+            (self.db.dossier_adresse_vue.WRKDOSSIER_ID == licence.WRKDOSSIER_ID)]
+
+        for id, work_location in work_locations.iterrows():
+            work_locations_dict = get_work_locations_dict()
+            work_locations_dict['address'] = work_location.ADR_ADRESSE
+            work_locations_dict['number'] = work_location.ADR_NUM
+            work_locations_dict['postalcode'] = work_location.ADR_ZIP
+            work_locations_dict['locality'] = work_location.ADR_LOCALITE
+            work_locations_list.append(work_locations_dict)
+
+        return work_locations_list
 
     def get_applicants(self, licence):
         applicant_list = []
@@ -266,6 +283,7 @@ class ImportAcropole:
                                 ON MAIN_JOIN_BIS.K_ID1 = ADRESSE_PERSONNE.CLOC_ID;
                             """
                             )
+
         self.db.create_view("dossier_parcelles_vue",
                             """
                                 SELECT DOSSIER.WRKDOSSIER_ID, DOSSIER.DOSSIER_NUMERO,
@@ -274,6 +292,21 @@ class ImportAcropole:
                                     wrkdossier AS DOSSIER
                                 INNER JOIN urbcadastre AS CADASTRE
                                 ON CADASTRE.CAD_DOSSIER_ID = DOSSIER.WRKDOSSIER_ID;
+                            """
+                            )
+        self.db.create_view("dossier_adresse_vue",
+                            """
+                                SELECT DOSSIER.WRKDOSSIER_ID, DOSSIER.DOSSIER_NUMERO,
+                                       ADR.ADR_ADRESSE,
+                                       ADR.ADR_NUM,
+                                       ADR.ADR_ZIP,
+                                       ADR.ADR_LOCALITE
+                                FROM
+                                    wrkdossier AS DOSSIER
+                                INNER JOIN k2adr AS MAIN_JOIN
+                                ON MAIN_JOIN.K_ID1 = DOSSIER.WRKDOSSIER_ID
+                                INNER JOIN adr AS ADR
+                                ON MAIN_JOIN.K_ID2 = ADR.ADR_ID;
                             """
                             )
         self.db.create_view("dossier_evenement_vue",
