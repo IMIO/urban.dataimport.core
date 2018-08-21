@@ -1,1 +1,2 @@
 - Julien Jaumotte, julien.jaumotte@imio.be
+- Martin Peeters, martin.peeters@affinitic.be
