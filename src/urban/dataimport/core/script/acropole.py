@@ -13,7 +13,6 @@ from urban.dataimport.core.json import DateTimeEncoder, get_applicant_dict, get_
 
 
 class ImportAcropole:
-
     events_types = {
         'recepisse': {
             'etape_ids': (-65091, -55774, -48189, -46732, -42670, -33521),
@@ -55,8 +54,8 @@ class ImportAcropole:
         -12: 'accept',  # -12 = octroyé (validé par Fl)
         -11: 'retire',  # -11 = retiré
         -10: 'retire',  # -10 = retiré (validé par Fl)
-        -8: 'refuse',   # irrecevable (validé par chatelet)
-        -7: 'accept',   # recevable (validé par chatelet)
+        -8: 'refuse',  # irrecevable (validé par chatelet)
+        -7: 'accept',  # recevable (validé par chatelet)
         -6: 'accept',  # -6 = octroyé (validé par Fl)
         -5: 'refuse',  # -5 = refusé
         -4: 'retire',  # -4 = suspendu
@@ -98,6 +97,14 @@ class ImportAcropole:
         self.db = LazyDB(
             connection,
             config['database']['schema'],
+            ignore_cache=ignore_cache,
+        )
+        engine_cadastral = create_engine('postgresql://{user}:{password}@{host}:{port}'.format(
+            **config._sections['cadastral_database']))
+        connection_cadastral = engine_cadastral.connect()
+        self.cadastral = LazyDB(
+            connection_cadastral,
+            config['cadastral_database']['schema'],
             ignore_cache=ignore_cache,
         )
         self.create_views()
@@ -343,6 +350,45 @@ class ImportAcropole:
                                 ON MAIN_JOIN.K_ID2 = PARAM.WRKPARAM_ID;
                             """
                             )
+        self.cadastral.create_view("vieilles_parcelles_cadastrales_vue",
+                                   """
+                                    SELECT DISTINCT prca,
+                                            prcc,
+                                            prcb1 as prc,
+                                            DA.divname,
+                                            PAS.da as division,
+                                            section,
+                                            radical,
+                                            exposant,
+                                            bis,
+                                            puissance
+                                    FROM pas AS PAS
+                                    LEFT JOIN DA on DA.da = PAS.da;
+                                   """,
+                                   without_use=True
+                                   )
+        self.cadastral.create_view("parcelles_cadastrales_vue",
+                                   """
+                                    SELECT CAPA.da as division,
+                                            divname,
+                                            prc,
+                                            section,
+                                            radical,
+                                            exposant,
+                                            bis,
+                                            puissance,
+                                            pe as proprietary,
+                                            adr1 as proprietary_city,
+                                            adr2 as proprietary_street,
+                                            sl1 as location
+                                    FROM map AS MAP
+                                    LEFT JOIN capa AS CAPA
+                                    ON MAP.capakey = CAPA.capakey
+                                    LEFT JOIN da AS DA
+                                    ON CAPA.da = DA.da;
+                                   """,
+                                   without_use=True
+                                   )
 
 
 def main():
