@@ -41,9 +41,9 @@ class LazyDB:
     def __setattr__(self, key, value):
         self.__dict__[key] = value
 
-    def create_view(self, view_name, view_query):
-        query = "USE {schema}; CREATE OR REPLACE VIEW {name} AS {query}".format(
-            schema=self.__dict__['db_schema'],
+    def create_view(self, view_name, view_query, without_use=False):
+        query = "{schema} CREATE OR REPLACE VIEW {name} AS {query}".format(
+            schema=(not without_use) and ("USE " + self.__dict__['db_schema']) + ";" or "",
             name=view_name,
             query=view_query,
         )
