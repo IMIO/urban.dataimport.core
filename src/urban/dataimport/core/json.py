@@ -36,6 +36,7 @@ def get_applicant_dict():
 def get_parcel_dict():
     return {
         'complete_name': '',
+        'old_parcel': '',
         'division': '',
         'section': '',
         'radical': '',

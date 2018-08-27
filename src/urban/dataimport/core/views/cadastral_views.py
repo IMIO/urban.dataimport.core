@@ -14,8 +14,7 @@ def create_views(import_object):
                                                     puissance
                                             FROM pas AS PAS
                                             LEFT JOIN DA on DA.da = PAS.da;
-                                        """,
-                                        without_use=True
+                                        """
                                         )
     import_object.cadastral.create_view("parcelles_cadastrales_vue",
                                         """
@@ -36,6 +35,5 @@ def create_views(import_object):
                                             ON MAP.capakey = CAPA.capakey
                                             LEFT JOIN da AS DA
                                             ON CAPA.da = DA.da;
-                                        """,
-                                        without_use=True
+                                        """
                                         )

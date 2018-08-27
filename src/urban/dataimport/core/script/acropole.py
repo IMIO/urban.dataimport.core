@@ -4,7 +4,7 @@ from sqlalchemy import create_engine
 from urban.dataimport.core import utils
 from urban.dataimport.core.db import LazyDB
 from urban.dataimport.core.mapping.acropole_mapping import events_types, portal_type_mapping, \
-    state_mapping, title_types
+    state_mapping, title_types, division_mapping
 
 import argparse
 import configparser
@@ -12,6 +12,7 @@ import json
 
 from urban.dataimport.core.json import DateTimeEncoder, get_applicant_dict, get_event_dict, get_licence_dict, \
     get_parcel_dict, get_work_locations_dict
+from urban.dataimport.core.utils import parse_cadastral_reference
 from urban.dataimport.core.views.acropole_views import create_views
 
 
@@ -29,6 +30,7 @@ class ImportAcropole:
         self.db = LazyDB(
             connection,
             config['database']['schema'],
+            'mysql',
             ignore_cache=ignore_cache,
         )
         engine_cadastral = create_engine('postgresql://{user}:{password}@{host}:{port}'.format(
@@ -37,6 +39,7 @@ class ImportAcropole:
         self.cadastral = LazyDB(
             connection_cadastral,
             config['cadastral_database']['schema'],
+            'postgresql',
             ignore_cache=ignore_cache,
         )
         create_views(self)
@@ -111,6 +114,11 @@ class ImportAcropole:
         for id, parcels in parcels.iterrows():
             parcels_dict = get_parcel_dict()
             parcels_dict['complete_name'] = parcels.CAD_NOM
+            parcels_args = parse_cadastral_reference(parcels.CAD_NOM)
+            if parcels_args:
+                division = division_mapping.get(parcels_args[0], None)
+                print(parcels_args, division)
+
             parcels_list.append(parcels_dict)
 
         return parcels_list
