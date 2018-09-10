@@ -6,10 +6,9 @@ import pandas as pd
 
 class LazyDB:
 
-    def __init__(self, connection, db_schema, sgbd, ignore_cache=False):
+    def __init__(self, connection, db_schema, ignore_cache=False):
         self.connection = connection
         self.db_schema = db_schema
-        self.sgdb = sgbd
         self.ignore_cache = ignore_cache
 
     def __getattr__(self, name):
@@ -28,7 +27,7 @@ class LazyDB:
             return df
 
     def _query(self, name):
-        if self.sgdb != 'postgresql':
+        if not ('postgresql' in str(self.connection.engine)):
             return 'SELECT * FROM `{schema}`.{name}'.format(
                 schema=self.__dict__['db_schema'],
                 name=name,
@@ -49,7 +48,7 @@ class LazyDB:
 
     def create_view(self, view_name, view_query):
         query = "{schema} CREATE OR REPLACE VIEW {name} AS {query}".format(
-            schema=(not self.sgdb == 'postgresql') and ("USE " + self.__dict__['db_schema']) + ";" or "",
+            schema=(not ('postgresql' in str(self.connection.engine))) and ("USE " + self.__dict__['db_schema']) + ";" or "",
             name=view_name,
             query=view_query,
         )
