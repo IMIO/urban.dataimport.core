@@ -7,8 +7,9 @@ all: run
 
 .PHONY: bootstrap
 bootstrap:
-	virtualenv -p python3 .
-	./bin/python bootstrap.py
+	virtualenv -p python3.6 .
+	bin/pip install -r requirements.txt
+	./bin/python3.6 bootstrap.py
 
 .PHONY: buildout
 buildout:
@@ -22,5 +23,5 @@ run:
 
 .PHONY: cleanall
 cleanall:
-	rm -fr bin develop-eggs downloads eggs parts .installed.cfg
+	rm -fr bin develop-eggs downloads eggs parts .installed.cfg share
 
