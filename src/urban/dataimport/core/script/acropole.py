@@ -9,16 +9,21 @@ from urban.dataimport.core.mapping.acropole_mapping import events_types, portal_
 import argparse
 import configparser
 import json
+import time
 
 from urban.dataimport.core.json import DateTimeEncoder, get_applicant_dict, get_event_dict, get_licence_dict, \
     get_parcel_dict, get_work_locations_dict
-from urban.dataimport.core.utils import parse_cadastral_reference
+from urban.dataimport.core.utils import parse_cadastral_reference, benchmark_decorator
 from urban.dataimport.core.views.acropole_views import create_views
 
 
 class ImportAcropole:
 
-    def __init__(self, config_file, limit=None, licence_id=None, ignore_cache=False):
+    def __init__(self, config_file, limit=None, licence_id=None, ignore_cache=False, benchmarking=False):
+        self.start_time = time.time()
+        self.benchmarking = benchmarking
+        if self.benchmarking:
+            self._benchmark = {}
         config = configparser.ConfigParser()
         config_file = utils.format_path(config_file)
         config.read(config_file)
@@ -30,7 +35,6 @@ class ImportAcropole:
         self.db = LazyDB(
             connection,
             config['database']['schema'],
-            'mysql',
             ignore_cache=ignore_cache,
         )
         engine_cadastral = create_engine('postgresql://{user}:{password}@{host}:{port}'.format(
@@ -39,7 +43,6 @@ class ImportAcropole:
         self.cadastral = LazyDB(
             connection_cadastral,
             config['cadastral_database']['schema'],
-            'postgresql',
             ignore_cache=ignore_cache,
         )
         create_views(self)
@@ -69,14 +72,19 @@ class ImportAcropole:
             licence_dict['events'] = self.get_events(licence)
             data.append(licence_dict)
 
-        print(json.dumps(data, cls=DateTimeEncoder))
+        print(json.dumps(data, indent=4, sort_keys=True, cls=DateTimeEncoder))
+        print("--- Total Duration --- %s seconds ---" % (time.time() - self.start_time))
+        if self.benchmarking:
+            print(self._benchmark)
 
+    @benchmark_decorator
     def get_portal_type(self, licence):
         portal_type = portal_type_mapping.get(licence.DOSSIER_TDOSSIERID, None)
         if portal_type == 'UrbanCertificateOne' and licence.DOSSIER_TYPEIDENT == 'CU2':
             portal_type = 'UrbanCertificateTwo'
         return portal_type
 
+    @benchmark_decorator
     def get_work_locations(self, licence):
         work_locations_list = []
 
@@ -93,6 +101,7 @@ class ImportAcropole:
 
         return work_locations_list
 
+    @benchmark_decorator
     def get_applicants(self, licence):
         applicant_list = []
         applicants = self.db.dossier_personne_vue[
@@ -107,6 +116,7 @@ class ImportAcropole:
 
         return applicant_list
 
+    @benchmark_decorator
     def get_parcels(self, licence):
         parcels_list = []
         parcels = self.db.dossier_parcelles_vue[
@@ -117,12 +127,56 @@ class ImportAcropole:
             parcels_args = parse_cadastral_reference(parcels.CAD_NOM)
             if parcels_args:
                 division = division_mapping.get(parcels_args[0], None)
-                print(parcels_args, division)
+
+            cadastral_parcels = self.cadastral.parcelles_cadastrales_vue[
+                (self.cadastral.parcelles_cadastrales_vue.division.astype('str') == division) &
+                (self.cadastral.parcelles_cadastrales_vue.section.astype('str') == parcels_args[1]) &
+                (self.cadastral.parcelles_cadastrales_vue.radical.astype('str') == parcels_args[2]) &
+                (self.cadastral.parcelles_cadastrales_vue.bis.astype('str') == (parcels_args[3] and parcels_args[3] or '0')) &
+                (self.cadastral.parcelles_cadastrales_vue.exposant.astype('str') == parcels_args[4]) &
+                (self.cadastral.parcelles_cadastrales_vue.puissance.astype('str') == parcels_args[5])
+            ]
+
+            result_count = cadastral_parcels.shape[0]
+            if result_count == 1:
+                parcels_dict['old_parcel'] = 'False'
+                parcels_dict['division'] = str(cadastral_parcels.iloc[0]['division'])
+                parcels_dict['section'] = cadastral_parcels.iloc[0]['section']
+                parcels_dict['radical'] = str(cadastral_parcels.iloc[0]['radical'])
+                parcels_dict['bis'] = str(cadastral_parcels.iloc[0]['bis'])
+                parcels_dict['exposant'] = cadastral_parcels.iloc[0]['exposant']
+                parcels_dict['puissance'] = str(cadastral_parcels.iloc[0]['puissance'])
+            elif result_count > 1:
+                raise ValueError('Too many parcels results')
+            else:
+                # Looking for old parcels
+                old_cadastral_parcels = self.cadastral.vieilles_parcelles_cadastrales_vue[
+                    (self.cadastral.vieilles_parcelles_cadastrales_vue.division.astype('str') == division) &
+                    (self.cadastral.vieilles_parcelles_cadastrales_vue.section.astype('str') == parcels_args[1]) &
+                    (self.cadastral.vieilles_parcelles_cadastrales_vue.radical.astype('str') == parcels_args[2]) &
+                    (self.cadastral.vieilles_parcelles_cadastrales_vue.bis.astype('str') == (parcels_args[3] and parcels_args[3] or '0')) &
+                    (self.cadastral.vieilles_parcelles_cadastrales_vue.exposant.astype('str') == parcels_args[4]) &
+                    (self.cadastral.vieilles_parcelles_cadastrales_vue.puissance.astype('str') == parcels_args[5])
+                    ]
+                old_result_count = old_cadastral_parcels.shape[0]
+                if old_result_count == 1:
+                    parcels_dict['old_parcel'] = 'True'
+                    parcels_dict['division'] = old_cadastral_parcels.iloc[0]['division']
+                    parcels_dict['section'] = old_cadastral_parcels.iloc[0]['section']
+                    parcels_dict['radical'] = str(old_cadastral_parcels.iloc[0]['radical'])
+                    parcels_dict['bis'] = str(old_cadastral_parcels.iloc[0]['bis'])
+                    parcels_dict['exposant'] = old_cadastral_parcels.iloc[0]['exposant']
+                    parcels_dict['puissance'] = str(old_cadastral_parcels.iloc[0]['puissance'])
+                elif old_result_count > 1:
+                    raise ValueError('Too many old parcels results')
+                else:
+                    pass
 
             parcels_list.append(parcels_dict)
 
         return parcels_list
 
+    @benchmark_decorator
     def get_events(self, licence):
         event_list = []
 
@@ -179,6 +233,8 @@ def main():
     parser.add_argument('--licence_id', type=str, help='reference of a licence')
     parser.add_argument('--ignore_cache', type=bool, nargs='?',
                         const=True, default=False, help='ignore local cache')
+    parser.add_argument('--benchmarking', type=bool, nargs='?',
+                        const=True, default=False, help='add benchmark infos')
     args = parser.parse_args()
 
     ImportAcropole(
@@ -186,4 +242,5 @@ def main():
         limit=args.limit,
         licence_id=args.licence_id,
         ignore_cache=args.ignore_cache,
+        benchmarking=args.benchmarking,
     ).execute()
