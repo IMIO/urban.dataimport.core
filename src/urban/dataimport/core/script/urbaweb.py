@@ -6,6 +6,8 @@ from urban.dataimport.core.csv import LoadUrbawebCSV
 import argparse
 import configparser
 
+from urban.dataimport.core.views.urbaweb_views import create_views
+
 
 class ImportUrbaweb:
 
@@ -14,7 +16,8 @@ class ImportUrbaweb:
         config_file = utils.format_path(config_file)
         config.read(config_file)
         self.config = config
-        self.csv = LoadUrbawebCSV(**self.config._sections['csv'])
+        self.db = LoadUrbawebCSV(**self.config._sections['csv'])
+        create_views(self)
 
     def execute(self):
         return self.csv
