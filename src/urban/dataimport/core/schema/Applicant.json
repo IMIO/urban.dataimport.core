@@ -1,0 +1,12 @@
+{
+  "description": "Appllicant description",
+  "type": "object",
+  "properties": {
+    "lastname": {
+      "type": "string"
+    },
+    "firstname": {
+      "type": "string"
+    }
+  }
+}
