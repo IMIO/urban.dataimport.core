@@ -43,6 +43,7 @@ setup(
         'SQLAlchemy',
         'mysqlclient',
         'psycopg2',
+        'jsonschema',
     ],
     extras_require={
         'test': [
