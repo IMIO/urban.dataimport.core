@@ -1,0 +1,24 @@
+{
+  "description": "Event description",
+  "type": "object",
+  "properties": {
+    "type": {
+      "type": "string"
+    },
+    "date": {
+      "type": "string"
+    },
+    "investigationStart": {
+      "type": "string"
+    },
+    "investigationEnd": {
+      "type": "string"
+    },
+    "investigationReasons": {
+      "type": "string"
+    },
+    "decision": {
+      "type": "string"
+    }
+  }
+}

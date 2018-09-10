@@ -13,7 +13,8 @@ def get_licence_dict():
         'completionState': '',
         'workLocations': [],
         'applicants': [],
-        'parcels': []
+        'parcels': [],
+        'events': [],
     }
 
 

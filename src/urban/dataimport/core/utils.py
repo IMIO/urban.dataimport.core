@@ -1,8 +1,11 @@
 # -*- coding: utf-8 -*-
-
+import json
 import os
 import re
 import time
+
+import jsonschema
+from jsonschema import validate
 
 
 def format_path(path):
@@ -37,3 +40,14 @@ def benchmark_decorator(method):
         return returned_value
 
     return replacement
+
+
+class BaseImport:
+
+    @benchmark_decorator
+    def validate_schema(self, data, type):
+        base_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'schema')
+        schema = json.load(open(os.path.join(base_path, "{0}.json".format(type))))
+        resolver = jsonschema.RefResolver('file://%s/' % base_path, None)
+        for licence in data:
+            validate(licence, schema, resolver=resolver)

@@ -13,11 +13,11 @@ import time
 
 from urban.dataimport.core.json import DateTimeEncoder, get_applicant_dict, get_event_dict, get_licence_dict, \
     get_parcel_dict, get_work_locations_dict
-from urban.dataimport.core.utils import parse_cadastral_reference, benchmark_decorator
+from urban.dataimport.core.utils import parse_cadastral_reference, benchmark_decorator, BaseImport
 from urban.dataimport.core.views.acropole_views import create_views
 
 
-class ImportAcropole:
+class ImportAcropole(BaseImport):
 
     def __init__(self, config_file, limit=None, licence_id=None, ignore_cache=False, benchmarking=False):
         self.start_time = time.time()
@@ -59,12 +59,12 @@ class ImportAcropole:
             folders = folders[folders.DOSSIER_NUMERO == self.licence_id]
         for id, licence in folders.iterrows():
             licence_dict = get_licence_dict()
-            licence_dict['id'] = licence.WRKDOSSIER_ID
+            licence_dict['id'] = str(licence.WRKDOSSIER_ID)
             licence_dict['portalType'] = self.get_portal_type(licence)
             if not licence_dict['portalType']:
                 continue
             licence_dict['reference'] = licence.DOSSIER_NUMERO
-            licence_dict['referenceDGATLP'] = licence.DOSSIER_REFURB
+            licence_dict['referenceDGATLP'] = licence.DOSSIER_REFURB and licence.DOSSIER_REFURB or ''
             licence_dict['completionState'] = state_mapping.get(licence.DOSSIER_OCTROI, '')
             licence_dict['workLocations'] = self.get_work_locations(licence)
             licence_dict['applicants'] = self.get_applicants(licence)
@@ -76,6 +76,7 @@ class ImportAcropole:
         print("--- Total Duration --- %s seconds ---" % (time.time() - self.start_time))
         if self.benchmarking:
             print(json.dumps(self._benchmark, indent=4, sort_keys=True))
+        self.validate_schema(data, 'GenericLicence')
 
     @benchmark_decorator
     def get_portal_type(self, licence):
@@ -93,7 +94,7 @@ class ImportAcropole:
 
         for id, work_location in work_locations.iterrows():
             work_locations_dict = get_work_locations_dict()
-            work_locations_dict['address'] = work_location.ADR_ADRESSE
+            work_locations_dict['street'] = work_location.ADR_ADRESSE
             work_locations_dict['number'] = work_location.ADR_NUM
             work_locations_dict['postalcode'] = work_location.ADR_ZIP
             work_locations_dict['locality'] = work_location.ADR_LOCALITE
@@ -132,7 +133,8 @@ class ImportAcropole:
                 (self.cadastral.parcelles_cadastrales_vue.division.astype('str') == division) &
                 (self.cadastral.parcelles_cadastrales_vue.section.astype('str') == parcels_args[1]) &
                 (self.cadastral.parcelles_cadastrales_vue.radical.astype('str') == parcels_args[2]) &
-                (self.cadastral.parcelles_cadastrales_vue.bis.astype('str') == (parcels_args[3] and parcels_args[3] or '0')) &
+                (self.cadastral.parcelles_cadastrales_vue.bis.astype('str') == (parcels_args[3] and
+                                                                                parcels_args[3] or '0')) &
                 (self.cadastral.parcelles_cadastrales_vue.exposant.astype('str') == parcels_args[4]) &
                 (self.cadastral.parcelles_cadastrales_vue.puissance.astype('str') == parcels_args[5])
             ]
@@ -154,7 +156,8 @@ class ImportAcropole:
                     (self.cadastral.vieilles_parcelles_cadastrales_vue.division.astype('str') == division) &
                     (self.cadastral.vieilles_parcelles_cadastrales_vue.section.astype('str') == parcels_args[1]) &
                     (self.cadastral.vieilles_parcelles_cadastrales_vue.radical.astype('str') == parcels_args[2]) &
-                    (self.cadastral.vieilles_parcelles_cadastrales_vue.bis.astype('str') == (parcels_args[3] and parcels_args[3] or '0')) &
+                    (self.cadastral.vieilles_parcelles_cadastrales_vue.bis.astype('str') == (parcels_args[3] and
+                                                                                             parcels_args[3] or '0')) &
                     (self.cadastral.vieilles_parcelles_cadastrales_vue.exposant.astype('str') == parcels_args[4]) &
                     (self.cadastral.vieilles_parcelles_cadastrales_vue.puissance.astype('str') == parcels_args[5])
                     ]
