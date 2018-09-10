@@ -75,7 +75,7 @@ class ImportAcropole:
         print(json.dumps(data, indent=4, sort_keys=True, cls=DateTimeEncoder))
         print("--- Total Duration --- %s seconds ---" % (time.time() - self.start_time))
         if self.benchmarking:
-            print(self._benchmark)
+            print(json.dumps(self._benchmark, indent=4, sort_keys=True))
 
     @benchmark_decorator
     def get_portal_type(self, licence):
