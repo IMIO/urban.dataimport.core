@@ -23,5 +23,4 @@ run:
 
 .PHONY: cleanall
 cleanall:
-	rm -fr bin develop-eggs downloads eggs parts .installed.cfg share
-
+	rm -fr bin develop-eggs downloads eggs parts .installed.cfg share lib
