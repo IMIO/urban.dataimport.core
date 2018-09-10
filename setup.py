@@ -42,6 +42,7 @@ setup(
         'pandas',
         'SQLAlchemy',
         'mysqlclient',
+        'psycopg2',
     ],
     extras_require={
         'test': [
