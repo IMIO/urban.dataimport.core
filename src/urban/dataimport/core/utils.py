@@ -2,6 +2,7 @@
 
 import os
 import re
+import time
 
 
 def format_path(path):
@@ -19,3 +20,20 @@ def parse_cadastral_reference(string):
 
     if abbreviations:
         return abbreviations.groups()
+
+
+def benchmark_decorator(method):
+    def replacement(self, *args, **kwargs):
+        if not self.benchmarking:
+            return method(self, *args, **kwargs)
+        if not self._benchmark.get(method.__name__):
+            self._benchmark[method.__name__] = {'counter': 0, 'elapsed_time': 0}
+        self._benchmark[method.__name__]['counter'] += 1
+        start_time = time.time()
+        returned_value = method(self, *args, **kwargs)
+        self._benchmark[method.__name__]['elapsed_time'] += time.time() - start_time
+        self._benchmark[method.__name__]['average_time'] = \
+            self._benchmark[method.__name__]['elapsed_time'] / self._benchmark[method.__name__]['counter']
+        return returned_value
+
+    return replacement
