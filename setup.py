@@ -53,6 +53,7 @@ setup(
         'console_scripts': [
             'acropole_script = urban.dataimport.core.script.acropole:main',
             'urbaweb_script = urban.dataimport.core.script.urbaweb:main',
+            'consolidate_script = urban.dataimport.core.script.consolidate:main',
         ],
     },
 )
