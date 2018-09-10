@@ -49,8 +49,6 @@ class ImportAcropole(BaseImport):
 
     def execute(self):
 
-        # utiliser json
-        # schema pour valider le dossier (methode dans json.py)
         data = []
         folders = self.db.wrkdossier
         if self.limit:
@@ -72,11 +70,11 @@ class ImportAcropole(BaseImport):
             licence_dict['events'] = self.get_events(licence)
             data.append(licence_dict)
 
+        self.validate_schema(data, 'GenericLicence')
         print(json.dumps(data, indent=4, sort_keys=True, cls=DateTimeEncoder))
         print("--- Total Duration --- %s seconds ---" % (time.time() - self.start_time))
         if self.benchmarking:
             print(json.dumps(self._benchmark, indent=4, sort_keys=True))
-        self.validate_schema(data, 'GenericLicence')
 
     @benchmark_decorator
     def get_portal_type(self, licence):
