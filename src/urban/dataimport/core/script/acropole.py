@@ -14,15 +14,19 @@ import time
 from urban.dataimport.core.json import DateTimeEncoder, get_applicant_dict, get_event_dict, get_licence_dict, \
     get_parcel_dict, get_work_locations_dict
 from urban.dataimport.core.utils import parse_cadastral_reference, benchmark_decorator, BaseImport
+from urban.dataimport.core.utils import StateManager
+from urban.dataimport.core.utils import StateHandler
+from urban.dataimport.core.utils import IterationError
 from urban.dataimport.core.views.acropole_views import create_views
 
 
 class ImportAcropole(BaseImport):
 
-    def __init__(self, config_file, limit=None, licence_id=None, ignore_cache=False, benchmarking=False, noop=False):
+    def __init__(self, config_file, limit=None, licence_id=None, ignore_cache=False, benchmarking=False, noop=False, iterate=False):
         self.start_time = time.time()
         self.benchmarking = benchmarking
         self.noop = noop
+        self.iterate = iterate
         if self.benchmarking:
             self._benchmark = {}
         config = configparser.ConfigParser()
@@ -49,37 +53,57 @@ class ImportAcropole(BaseImport):
         create_views(self)
 
     def execute(self):
+        self.data = []
 
-        data = []
+        error = None
+        try:
+            self.extract_data()
+        except Exception as e:
+            error = e
+
+        if self.noop:
+            print(json.dumps(self.data, indent=4, sort_keys=True, cls=DateTimeEncoder))
+        if not self.noop and error is None:
+            with open(self.config['main']['output_path'], 'w') as output_file:
+                json.dump(self.data, output_file, cls=DateTimeEncoder)
+        print("-- {0} folders extracted --".format(len(self.data)))
+        print("--- Total Duration --- %s seconds ---" % (time.time() - self.start_time))
+        if self.benchmarking:
+            print(json.dumps(self._benchmark, indent=4, sort_keys=True))
+        if error:
+            raise error
+
+    @StateManager
+    def extract_data(self):
         folders = self.db.wrkdossier
         if self.limit:
             folders = folders.head(self.limit)
         if self.licence_id:
             folders = folders[folders.DOSSIER_NUMERO == self.licence_id]
         for id, licence in folders.iterrows():
-            licence_dict = get_licence_dict()
-            licence_dict['id'] = str(licence.WRKDOSSIER_ID)
-            licence_dict['portalType'] = self.get_portal_type(licence)
-            if not licence_dict['portalType']:
-                continue
-            licence_dict['reference'] = licence.DOSSIER_NUMERO
-            licence_dict['referenceDGATLP'] = licence.DOSSIER_REFURB and licence.DOSSIER_REFURB or ''
-            licence_dict['completionState'] = state_mapping.get(licence.DOSSIER_OCTROI, '')
-            licence_dict['workLocations'] = self.get_work_locations(licence)
-            licence_dict['applicants'] = self.get_applicants(licence)
-            licence_dict['parcels'] = self.get_parcels(licence)
-            licence_dict['events'] = self.get_events(licence)
-            data.append(licence_dict)
+            self.get_licence(id, licence)
+        if self.iterate is True:
+            try:
+                self.validate_data(self.data, 'GenericLicence')
+            except:
+                raise IterationError('Schema change during iterative process')
 
-        self.validate_schema(data, 'GenericLicence')
-        if self.noop:
-            print(json.dumps(data, indent=4, sort_keys=True, cls=DateTimeEncoder))
-        else:
-            with open(self.config['main']['output_path'], 'w') as output_file:
-                json.dump(data, output_file, cls=DateTimeEncoder)
-        print("--- Total Duration --- %s seconds ---" % (time.time() - self.start_time))
-        if self.benchmarking:
-            print(json.dumps(self._benchmark, indent=4, sort_keys=True, cls=DateTimeEncoder))
+    @StateHandler('data', 'acropole_get_licence')
+    def get_licence(self, id, licence):
+        licence_dict = get_licence_dict()
+        licence_dict['id'] = str(licence.WRKDOSSIER_ID)
+        licence_dict['portalType'] = self.get_portal_type(licence)
+        if not licence_dict['portalType']:
+            return
+        licence_dict['reference'] = licence.DOSSIER_NUMERO
+        licence_dict['referenceDGATLP'] = licence.DOSSIER_REFURB and licence.DOSSIER_REFURB or ''
+        licence_dict['completionState'] = state_mapping.get(licence.DOSSIER_OCTROI, '')
+        licence_dict['workLocations'] = self.get_work_locations(licence)
+        licence_dict['applicants'] = self.get_applicants(licence)
+        licence_dict['parcels'] = self.get_parcels(licence)
+        licence_dict['events'] = self.get_events(licence)
+        self.validate_schema(licence_dict, 'GenericLicence')
+        return licence_dict
 
     @benchmark_decorator
     def get_portal_type(self, licence):
@@ -243,6 +267,8 @@ def main():
                         const=True, default=False, help='add benchmark infos')
     parser.add_argument('--noop', type=bool, nargs='?',
                         const=True, default=False, help='only print result')
+    parser.add_argument('--iterate', type=bool, nargs='?',
+                        const=True, default=False, help='Use a special cache to iterate')
     args = parser.parse_args()
 
     ImportAcropole(
@@ -252,4 +278,5 @@ def main():
         ignore_cache=args.ignore_cache,
         benchmarking=args.benchmarking,
         noop=args.noop,
+        iterate=args.iterate,
     ).execute()
