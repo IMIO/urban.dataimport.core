@@ -44,6 +44,7 @@ setup(
         'mysqlclient',
         'psycopg2',
         'jsonschema',
+        'strict-rfc3339',
     ],
     extras_require={
         'test': [
