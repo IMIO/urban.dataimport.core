@@ -14,9 +14,10 @@ from urban.dataimport.core.utils import BaseImport
 
 class ImportConsolidate(BaseImport):
 
-    def __init__(self, config_file, limit=None, licence_id=None, ignore_cache=False, benchmarking=False):
+    def __init__(self, config_file, limit=None, licence_id=None, ignore_cache=False, benchmarking=False, noop=False):
         self.start_time = time.time()
         self.benchmarking = benchmarking
+        self.noop = noop
         if self.benchmarking:
             self._benchmark = {}
         config = configparser.ConfigParser()
@@ -29,13 +30,14 @@ class ImportConsolidate(BaseImport):
 
     def execute(self):
 
-        data = []
+        with open(self.config['main']['input_path'], 'r') as input_file:
+            data = json.load(input_file)
 
-        self.validate_schema(data, 'GenericLicence')
+        self.validate_schema(data, 'GenericLicence_Consolidate')
         print(json.dumps(data, indent=4, sort_keys=True, cls=DateTimeEncoder))
         print("--- Total Duration --- %s seconds ---" % (time.time() - self.start_time))
         if self.benchmarking:
-            print(json.dumps(self._benchmark, indent=4, sort_keys=True))
+            print(json.dumps(self._benchmark, indent=4, sort_keys=True, cls=DateTimeEncoder))
 
 
 def main():
@@ -48,6 +50,8 @@ def main():
                         const=True, default=False, help='ignore local cache')
     parser.add_argument('--benchmarking', type=bool, nargs='?',
                         const=True, default=False, help='add benchmark infos')
+    parser.add_argument('--noop', type=bool, nargs='?',
+                        const=True, default=False, help='only print result')
     args = parser.parse_args()
 
     ImportConsolidate(
@@ -56,4 +60,5 @@ def main():
         licence_id=args.licence_id,
         ignore_cache=args.ignore_cache,
         benchmarking=args.benchmarking,
+        noop=args.noop,
     ).execute()
