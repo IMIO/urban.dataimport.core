@@ -1,0 +1,55 @@
+{
+  "description": "A representation of a buidlicence",
+  "type": "object",
+  "required": [ "id", "reference", "portalType" ],
+  "properties": {
+    "id": {
+      "description": "unique id",
+      "type": "string"
+    },
+    "portalType": {
+      "type": "string"
+    },
+    "reference": {
+      "type": "string"
+    },
+    "referenceDGATLP": {
+      "type": ["string", "null"]
+    },
+    "subject": {
+      "type": ["string", "null"]
+    },
+    "completionState": {
+      "type": ["string", "null"]
+    },
+    "workLocations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["street"],
+          "properties": {
+          "street": {
+            "type": "string"
+          },
+          "number": {
+            "type": ["string", "null"]
+          },
+          "postalcode": {
+            "type": "string"
+          },
+          "locality": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "applicants": {
+      "type": "array",
+      "items": {"$ref": "Applicant.json"}
+    },
+    "events": {
+      "type": "array",
+      "items": {"$ref": "Event_Consolidate.json"}
+    }
+  }
+}
