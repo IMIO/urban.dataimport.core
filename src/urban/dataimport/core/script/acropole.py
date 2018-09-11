@@ -19,9 +19,10 @@ from urban.dataimport.core.views.acropole_views import create_views
 
 class ImportAcropole(BaseImport):
 
-    def __init__(self, config_file, limit=None, licence_id=None, ignore_cache=False, benchmarking=False):
+    def __init__(self, config_file, limit=None, licence_id=None, ignore_cache=False, benchmarking=False, noop=False):
         self.start_time = time.time()
         self.benchmarking = benchmarking
+        self.noop = noop
         if self.benchmarking:
             self._benchmark = {}
         config = configparser.ConfigParser()
@@ -71,7 +72,11 @@ class ImportAcropole(BaseImport):
             data.append(licence_dict)
 
         self.validate_schema(data, 'GenericLicence')
-        print(json.dumps(data, indent=4, sort_keys=True, cls=DateTimeEncoder))
+        if self.noop:
+            print(json.dumps(data, indent=4, sort_keys=True, cls=DateTimeEncoder))
+        else:
+            with open(self.config['main']['output_path'], 'w') as output_file:
+                json.dump(data, output_file)
         print("--- Total Duration --- %s seconds ---" % (time.time() - self.start_time))
         if self.benchmarking:
             print(json.dumps(self._benchmark, indent=4, sort_keys=True))
@@ -236,6 +241,8 @@ def main():
                         const=True, default=False, help='ignore local cache')
     parser.add_argument('--benchmarking', type=bool, nargs='?',
                         const=True, default=False, help='add benchmark infos')
+    parser.add_argument('--noop', type=bool, nargs='?',
+                        const=True, default=False, help='only print result')
     args = parser.parse_args()
 
     ImportAcropole(
@@ -244,4 +251,5 @@ def main():
         licence_id=args.licence_id,
         ignore_cache=args.ignore_cache,
         benchmarking=args.benchmarking,
+        noop=args.noop,
     ).execute()
