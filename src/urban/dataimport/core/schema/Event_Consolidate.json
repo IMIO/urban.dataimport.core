@@ -6,13 +6,16 @@
       "type": "string"
     },
     "date": {
-      "type": "date"
+          "type": "string",
+          "format": "date-time"
     },
     "investigationStart": {
-      "type": "date"
+          "type": "string",
+          "format": "date-time"
     },
     "investigationEnd": {
-      "type": "date"
+          "type": "string",
+          "format": "date-time"
     },
     "investigationReasons": {
       "type": "string"
