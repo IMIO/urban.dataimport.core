@@ -1,0 +1,27 @@
+{
+  "description": "Applicant description",
+  "type": "object",
+  "required": [ "lastname"],
+  "properties": {
+    "title": {
+      "type": "string",
+      "enum" : [
+          "mister",
+          "misters",
+          "madam",
+          "ladies",
+          "miss",
+          "madam_and_mister",
+          "madam_and_mister",
+          "master",
+          ""
+      ]
+    },
+    "lastname": {
+      "type": "string"
+    },
+    "firstname": {
+      "type": ["string", "null"]
+    }
+  }
+}

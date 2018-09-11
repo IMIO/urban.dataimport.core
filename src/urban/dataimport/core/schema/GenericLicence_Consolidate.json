@@ -8,7 +8,19 @@
       "type": "string"
     },
     "portalType": {
-      "type": "string"
+      "type": "string",
+      "enum" : [
+                "BuildLicence",
+                "ParcelOutLicence",
+                "Article127",
+                "Declaration",
+                "Division",
+                "NotaryLetter",
+                "EnvClassOne",
+                "EnvClassTwo",
+                "EnvClassThree",
+                "UniqueLicence"
+      ]
     },
     "reference": {
       "type": "string"
@@ -20,7 +32,13 @@
       "type": ["string", "null"]
     },
     "completionState": {
-      "type": ["string", "null"]
+      "type": "string",
+      "enum" : [
+          "accept",
+          "refuse",
+          "retire",
+          ""
+      ]
     },
     "workLocations": {
       "type": "array",
@@ -45,7 +63,7 @@
     },
     "applicants": {
       "type": "array",
-      "items": {"$ref": "Applicant.json"}
+      "items": {"$ref": "Applicant_Consolidate.json"}
     },
     "events": {
       "type": "array",
