@@ -33,7 +33,7 @@ class ImportConsolidate(BaseImport):
         with open(self.config['main']['input_path'], 'r') as input_file:
             data = json.load(input_file)
 
-        self.validate_schema(data, 'GenericLicence_Consolidate')
+        self.validate_data(data, 'GenericLicence_Consolidate')
         if self.noop:
             print(json.dumps(data, indent=4, sort_keys=True, cls=DateTimeEncoder))
         else:
