@@ -48,11 +48,16 @@ class IterationError(Exception):
     pass
 
 
-def StateManager(method):
-    def replacement(self, *args, **kwargs):
+class StateManager:
+
+    def __init__(self, method):
+        self.method = method
+        self.decorator = self.__class__
+
+    def __call__(self, *args, **kwargs):
         error = None
         try:
-            result = method(self, *args, **kwargs)
+            result = self.method(self.instance, *args, **kwargs)
         except IterationError as e:
             error = e
         if getattr(self, '_state_files', None):
@@ -62,7 +67,11 @@ def StateManager(method):
         if error:
             raise error
         return result
-    return replacement
+
+    def __get__(self, instance, cls):
+        self.cls = cls
+        self.instance = instance
+        return self.__call__
 
 
 class StateHandler:
