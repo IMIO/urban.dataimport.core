@@ -85,7 +85,7 @@ class ImportAcropole(BaseImport):
         if self.iterate is True:
             try:
                 self.validate_data(self.data, 'GenericLicence')
-            except:
+            except Exception:
                 raise IterationError('Schema change during iterative process')
 
     @StateHandler('data', 'acropole_get_licence')
