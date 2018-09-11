@@ -1,11 +1,13 @@
 # -*- coding: utf-8 -*-
+
+from jsonschema import validate
+from urban.dataimport.core.json import DateTimeEncoder
+
 import json
+import jsonschema
 import os
 import re
 import time
-
-import jsonschema
-from jsonschema import validate
 
 
 def format_path(path):
@@ -84,7 +86,9 @@ class StateHandler:
                 return
             result = method(self, *args, **kwargs)
             state_file = dc.get_state_file(self)
-            state_file.write('{0}\n'.format(json.dumps(result)))
+            state_file.write('{0}\n'.format(
+                json.dumps(result, cls=DateTimeEncoder)
+            ))
             dc.iteration += 1
             data.append(result)
         return replacement
