@@ -32,6 +32,10 @@ class ImportConsolidate(BaseImport):
 
         with open(self.config['main']['input_path'], 'r') as input_file:
             data = json.load(input_file)
+        self.validate_data(data, 'GenericLicence')
+
+        for licence in data:
+            self.consolidate_licence(licence)
 
         self.validate_data(data, 'GenericLicence_Consolidate')
         if self.noop:
@@ -42,6 +46,9 @@ class ImportConsolidate(BaseImport):
         print("--- Total Duration --- %s seconds ---" % (time.time() - self.start_time))
         if self.benchmarking:
             print(json.dumps(self._benchmark, indent=4, sort_keys=True, cls=DateTimeEncoder))
+
+    def consolidate_licence(self, licence):
+        print(licence)
 
 
 def main():
