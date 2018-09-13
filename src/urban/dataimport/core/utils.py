@@ -60,8 +60,8 @@ class StateManager:
             result = self.method(self.instance, *args, **kwargs)
         except IterationError as e:
             error = e
-        if getattr(self, '_state_files', None):
-            for fname, f in self._state_files.items():
+        if getattr(self.instance, '_state_files', None):
+            for fname, f in self.instance._state_files.items():
                 f.close()
                 os.remove(fname)
         if error:
