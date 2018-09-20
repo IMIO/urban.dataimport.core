@@ -5,7 +5,7 @@
     "type": {
       "type": "string"
     },
-    "date": {
+    "eventDate": {
       "type": "string"
     },
     "investigationStart": {
@@ -18,6 +18,9 @@
       "type": "string"
     },
     "decision": {
+      "type": "string"
+    },
+    "decisionDate": {
       "type": "string"
     }
   }
