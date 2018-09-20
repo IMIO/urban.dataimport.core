@@ -138,8 +138,15 @@ class ImportAcropole(BaseImport):
         for id, applicant in applicants.iterrows():
             applicant_dict = get_applicant_dict()
             applicant_dict['personTitle'] = title_types.get(applicant.CPSN_TYPE, None)
-            applicant_dict['lastname'] = applicant.CPSN_NOM
-            applicant_dict['firstname'] = applicant.CPSN_PRENOM
+            applicant_dict['name1'] = applicant.CPSN_NOM
+            applicant_dict['name2'] = applicant.CPSN_PRENOM
+            applicant_dict['email'] = applicant.CPSN_EMAIL
+            applicant_dict['phone'] = applicant.CPSN_TEL1
+            applicant_dict['gsm'] = applicant.CPSN_GSM
+            applicant_dict['fax'] = applicant.CPSN_FAX
+            applicant_dict['street'] = applicant.CLOC_ADRESSE
+            applicant_dict['zipcode'] = applicant.CLOC_ZIP
+            applicant_dict['city'] = applicant.CLOC_LOCALITE
             applicant_list.append(applicant_dict)
 
         return applicant_list
@@ -158,11 +165,11 @@ class ImportAcropole(BaseImport):
 
             cadastral_parcels = self.cadastral.parcelles_cadastrales_vue[
                 (self.cadastral.parcelles_cadastrales_vue.division.astype('str') == division) &
-                (self.cadastral.parcelles_cadastrales_vue.section.astype('str') == parcels_args[1]) &
+                (self.cadastral.parcelles_cadastrales_vue.section == parcels_args[1]) &
                 (self.cadastral.parcelles_cadastrales_vue.radical.astype('str') == parcels_args[2]) &
                 (self.cadastral.parcelles_cadastrales_vue.bis.astype('str') == (parcels_args[3] and
                                                                                 parcels_args[3] or '0')) &
-                (self.cadastral.parcelles_cadastrales_vue.exposant.astype('str') == parcels_args[4]) &
+                (self.cadastral.parcelles_cadastrales_vue.exposant == parcels_args[4]) &
                 (self.cadastral.parcelles_cadastrales_vue.puissance.astype('str') == parcels_args[5])
             ]
 
@@ -181,11 +188,11 @@ class ImportAcropole(BaseImport):
                 # Looking for old parcels
                 old_cadastral_parcels = self.cadastral.vieilles_parcelles_cadastrales_vue[
                     (self.cadastral.vieilles_parcelles_cadastrales_vue.division.astype('str') == division) &
-                    (self.cadastral.vieilles_parcelles_cadastrales_vue.section.astype('str') == parcels_args[1]) &
+                    (self.cadastral.vieilles_parcelles_cadastrales_vue.section == parcels_args[1]) &
                     (self.cadastral.vieilles_parcelles_cadastrales_vue.radical.astype('str') == parcels_args[2]) &
                     (self.cadastral.vieilles_parcelles_cadastrales_vue.bis.astype('str') == (parcels_args[3] and
                                                                                              parcels_args[3] or '0')) &
-                    (self.cadastral.vieilles_parcelles_cadastrales_vue.exposant.astype('str') == parcels_args[4]) &
+                    (self.cadastral.vieilles_parcelles_cadastrales_vue.exposant == parcels_args[4]) &
                     (self.cadastral.vieilles_parcelles_cadastrales_vue.puissance.astype('str') == parcels_args[5])
                     ]
                 old_result_count = old_cadastral_parcels.shape[0]
@@ -215,12 +222,13 @@ class ImportAcropole(BaseImport):
                 (self.db.dossier_evenement_vue.ETAPE_TETAPEID.isin(values['etape_ids'])) &
                 (self.db.dossier_evenement_vue.WRKDOSSIER_ID == licence.WRKDOSSIER_ID) &
                 (self.db.dossier_evenement_vue.K2KND_ID == -207)]
-
-            events_param = self.db.dossier_param_vue[
-                (self.db.dossier_param_vue.PARAM_TPARAMID.isin(values['param_ids'])) &
-                (self.db.dossier_param_vue.WRKDOSSIER_ID == licence.WRKDOSSIER_ID) &
-                (self.db.dossier_param_vue.K2KND_ID == -208) &
-                (self.db.dossier_param_vue.PARAM_VALUE.notnull())]
+            events_param = None
+            if values['param_ids']:
+                events_param = self.db.dossier_param_vue[
+                    (self.db.dossier_param_vue.PARAM_TPARAMID.isin(values['param_ids'])) &
+                    (self.db.dossier_param_vue.WRKDOSSIER_ID == licence.WRKDOSSIER_ID) &
+                    (self.db.dossier_param_vue.K2KND_ID == -208) &
+                    (self.db.dossier_param_vue.PARAM_VALUE.notnull())]
             method = getattr(self, 'get_{0}_event'.format(key))
             result_list = method(events_etape, events_param)
             if result_list:
@@ -233,7 +241,43 @@ class ImportAcropole(BaseImport):
         for id, event in events_etape.iterrows():
             event_dict = get_event_dict()
             event_dict['type'] = 'recepisse'
-            event_dict['eventDate'] = event.ETAPE_DATEDEPART
+            event_dict['eventDate'] = str(event.ETAPE_DATEDEPART)
+            events_dict.append(event_dict)
+        return events_dict
+
+    def get_completefolder_event(self, events_etape, events_param):
+        events_dict = []
+        for id, event in events_etape.iterrows():
+            event_dict = get_event_dict()
+            event_dict['type'] = 'completefolder'
+            event_dict['eventDate'] = str(event.ETAPE_DATEDEPART)
+            events_dict.append(event_dict)
+        return events_dict
+
+    def get_incompletefolder_event(self, events_etape, events_param):
+        events_dict = []
+        for id, event in events_etape.iterrows():
+            event_dict = get_event_dict()
+            event_dict['type'] = 'incompletefolder'
+            event_dict['eventDate'] = str(event.ETAPE_DATEDEPART)
+            events_dict.append(event_dict)
+        return events_dict
+
+    def get_sendtofd_event(self, events_etape, events_param):
+        events_dict = []
+        for id, event in events_etape.iterrows():
+            event_dict = get_event_dict()
+            event_dict['type'] = 'sendtofd'
+            event_dict['eventDate'] = str(event.ETAPE_DATEDEPART)
+            events_dict.append(event_dict)
+        return events_dict
+
+    def get_sendtoapplicant_event(self, events_etape, events_param):
+        events_dict = []
+        for id, event in events_etape.iterrows():
+            event_dict = get_event_dict()
+            event_dict['type'] = 'sendtoapplicant'
+            event_dict['eventDate'] = str(event.ETAPE_DATEDEPART)
             events_dict.append(event_dict)
         return events_dict
 
@@ -245,7 +289,8 @@ class ImportAcropole(BaseImport):
             event = events_etape.iloc[0]
             event_dict = get_event_dict()
             event_dict['type'] = 'decision'
-            event_dict['eventDate'] = event.ETAPE_DATEDEPART
+            event_dict['eventDate'] = str(event.DOSSIER_DATEDELIV)
+            event_dict['decisionDate'] = str(event.ETAPE_DATEDEPART)
             if events_param.shape[0] == 1:
                 if events_param.iloc[0].PARAM_VALUE == '1':
                     event_dict['decision'] = 'favorable'
