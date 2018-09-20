@@ -21,16 +21,24 @@ def get_licence_dict():
 def get_work_locations_dict():
     return {
         'number': '',
-        'address': '',
+        'street': '',
         'postalcode': '',
-        'locality': ''
+        'locality': '',
     }
 
 
 def get_applicant_dict():
     return {
-        'lastname': '',
-        'firstname': ''
+        'personTitle': '',
+        'name1': '',
+        'name2': '',
+        'email': '',
+        'phone': '',
+        'gsm': '',
+        'fax': '',
+        'street': '',
+        'zipcode': '',
+        'city': '',
     }
 
 
@@ -43,17 +51,18 @@ def get_parcel_dict():
         'radical': '',
         'bis': '',
         'exposant': '',
-        'puissance': ''
+        'puissance': '',
     }
 
 
 def get_event_dict():
     return {
         'type': '',
-        'date': '',
+        'eventDate': '',
         'investigationStart': '',
         'investigationEnd': '',
         'investigationReasons': '',
+        'decisionDate': '',
         'decision': '',
     }
 
