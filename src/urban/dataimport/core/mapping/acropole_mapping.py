@@ -4,6 +4,22 @@ events_types = {
             'etape_ids': (-65091, -55774, -48189, -46732, -42670, -33521),
             'param_ids': (),
         },
+        'completefolder': {
+            'etape_ids': (-42831, -63928, -66924, -33526),
+            'param_ids': (),
+        },
+        'incompletefolder': {
+            'etape_ids': (-33547, -42845),
+            'param_ids': (),
+        },
+        'sendtofd': {
+            'etape_ids': (-43482, -63977, -33553),
+            'param_ids': (),
+        },
+        'sendtoapplicant': {
+            'etape_ids': (-63981, -33551, -43468),
+            'param_ids': (),
+        },
         'decision': {
             'etape_ids': (-43439, -33545, -63967, -55736, -38452, -49801),
             'param_ids': (-35039, -79378, -78845, -78319, -49413, -62984),
