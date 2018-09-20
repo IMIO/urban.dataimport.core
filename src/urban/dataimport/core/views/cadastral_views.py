@@ -16,6 +16,14 @@ def create_views(import_object):
                                             LEFT JOIN DA on DA.da = PAS.da;
                                         """
                                         )
+    import_object.db.vieilles_parcelles_cadastrales_vue.set_index([
+        'division',
+        'section',
+        'radical',
+        'bis',
+        'exposant',
+        'puissance'
+    ])
     import_object.cadastral.create_view("parcelles_cadastrales_vue",
                                         """
                                             SELECT CAPA.da as division,
@@ -37,3 +45,11 @@ def create_views(import_object):
                                             ON CAPA.da = DA.da;
                                         """
                                         )
+    import_object.db.parcelles_cadastrales_vue.set_index([
+        'division',
+        'section',
+        'radical',
+        'bis',
+        'exposant',
+        'puissance'
+    ])
