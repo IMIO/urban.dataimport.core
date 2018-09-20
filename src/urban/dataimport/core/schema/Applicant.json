@@ -1,12 +1,12 @@
 {
   "description": "Applicant description",
   "type": "object",
-  "required": [ "lastname"],
+  "required": [ "name1"],
   "properties": {
-    "lastname": {
+    "name1": {
       "type": "string"
     },
-    "firstname": {
+    "name2": {
       "type": ["string", "null"]
     }
   }
