@@ -18,7 +18,6 @@ def create_views(import_acropole):
                                     WHERE PARAM.PARAM_IDENT in ('EnqDatDeb', 'EnqDatFin', 'EnqObjet')
                                    """
                                    )
-
     import_acropole.db.create_view("dossier_personne_vue",
                                    """
                                         SELECT DOSSIER.WRKDOSSIER_ID, DOSSIER.DOSSIER_NUMERO,
@@ -58,7 +57,6 @@ def create_views(import_acropole):
                                         ON MAIN_JOIN_BIS.K_ID1 = ADRESSE_PERSONNE.CLOC_ID;
                                    """
                                    )
-
     import_acropole.db.create_view("dossier_parcelles_vue",
                                    """
                                         SELECT DOSSIER.WRKDOSSIER_ID, DOSSIER.DOSSIER_NUMERO,
@@ -86,7 +84,7 @@ def create_views(import_acropole):
                                    )
     import_acropole.db.create_view("dossier_evenement_vue",
                                    """
-                                    SELECT DOSSIER.WRKDOSSIER_ID, DOSSIER.DOSSIER_NUMERO,
+                                    SELECT DOSSIER.WRKDOSSIER_ID, DOSSIER.DOSSIER_NUMERO, DOSSIER_DATEDELIV,
                                            WRKETAPE_ID,
                                            ETAPE_NOMFR,
                                            ETAPE_TETAPEID,
@@ -102,6 +100,12 @@ def create_views(import_acropole):
                                     ON MAIN_JOIN.K_ID2 = ETAPE.WRKETAPE_ID;
                                    """
                                    )
+    import_acropole.db.dossier_evenement_vue.set_index([
+        'WRKDOSSIER_ID',
+        'WRKETAPE_ID',
+        'K2KND_ID',
+        'ETAPE_TETAPEID'
+        ])
     import_acropole.db.create_view("dossier_param_vue",
                                    """
                                         SELECT DOSSIER.WRKDOSSIER_ID, DOSSIER.DOSSIER_NUMERO,
