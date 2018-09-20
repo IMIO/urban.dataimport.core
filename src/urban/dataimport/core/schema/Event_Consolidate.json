@@ -1,11 +1,12 @@
 {
   "description": "Event description",
   "type": "object",
+  "required": ["eventDate"],
   "properties": {
     "type": {
       "type": "string"
     },
-    "date": {
+    "eventDate": {
           "type": "string",
           "format": "date-time"
     },
@@ -22,6 +23,10 @@
     },
     "decision": {
       "type": "string"
+    },
+    "decisionDate": {
+      "type": "string",
+      "format": "date-time"
     }
   }
 }
