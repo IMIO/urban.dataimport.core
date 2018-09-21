@@ -1,5 +1,4 @@
-def create_views(import_object):
-
+def create_cadastral_views(import_object):
     import_object.cadastral.create_view("vieilles_parcelles_cadastrales_vue",
                                         """
                                             SELECT DISTINCT prca,
@@ -16,7 +15,7 @@ def create_views(import_object):
                                             LEFT JOIN DA on DA.da = PAS.da;
                                         """
                                         )
-    import_object.db.vieilles_parcelles_cadastrales_vue.set_index([
+    import_object.cadastral.vieilles_parcelles_cadastrales_vue.set_index([
         'division',
         'section',
         'radical',
@@ -45,7 +44,7 @@ def create_views(import_object):
                                             ON CAPA.da = DA.da;
                                         """
                                         )
-    import_object.db.parcelles_cadastrales_vue.set_index([
+    import_object.cadastral.parcelles_cadastrales_vue.set_index([
         'division',
         'section',
         'radical',
