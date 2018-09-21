@@ -62,7 +62,7 @@ class ImportAcropole(BaseImport):
         )
         create_views(self)
         create_cadastral_views(self)
-        create_bestaddress_views(self)
+        create_bestaddress_views(self, config['main']['locality'])
 
     def execute(self):
         self.data = []
