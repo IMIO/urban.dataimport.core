@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import re
 
 from sqlalchemy import create_engine
 from urban.dataimport.core import utils
@@ -104,6 +105,7 @@ class ImportAcropole(BaseImport):
 
     @StateHandler('data', 'acropole_get_licence')
     def get_licence(self, id, licence):
+        self.licence_description = []
         licence_dict = get_licence_dict()
         licence_dict['id'] = str(licence.WRKDOSSIER_ID)
         licence_dict['portalType'] = self.get_portal_type(licence)
@@ -116,6 +118,7 @@ class ImportAcropole(BaseImport):
         licence_dict['applicants'] = self.get_applicants(licence)
         licence_dict['parcels'] = self.get_parcels(licence)
         licence_dict['events'] = self.get_events(licence)
+        licence_dict['description'] = self.licence_description  # description must be the last licence set
         self.validate_schema(licence_dict, 'GenericLicence')
         return licence_dict
 
@@ -135,10 +138,49 @@ class ImportAcropole(BaseImport):
 
         for id, work_location in work_locations.iterrows():
             work_locations_dict = get_work_locations_dict()
-            work_locations_dict['street'] = work_location.ADR_ADRESSE
-            work_locations_dict['number'] = work_location.ADR_NUM
-            work_locations_dict['postalcode'] = work_location.ADR_ZIP
-            work_locations_dict['locality'] = work_location.ADR_LOCALITE
+
+            if work_location.ADR_ADRESSE:
+                # remove parentheses and its content
+                acropole_street = re.sub(r'\([^)]*\)', '', work_location.ADR_ADRESSE).strip()
+
+                bestaddress_streets = self.bestaddress.bestaddress_vue[
+                    (self.bestaddress.bestaddress_vue.street == acropole_street)
+                ]
+                if bestaddress_streets.shape[0] == 0:
+                    # second chance without street number
+                    acropole_street_without_digits = ''.join([letter for letter in acropole_street if not letter.isdigit()]).strip()
+                    bestaddress_streets = self.bestaddress.bestaddress_vue[
+                        (self.bestaddress.bestaddress_vue.street == acropole_street_without_digits)
+                    ]
+                    if bestaddress_streets.shape[0] == 0:
+                        # last chance : try to remove last char, for example : 1a or 36C
+                        acropole_street_without_last_char = acropole_street_without_digits.strip()[:-1]
+                        bestaddress_streets = self.bestaddress.bestaddress_vue[
+                            (self.bestaddress.bestaddress_vue.street == acropole_street_without_last_char.strip())
+                        ]
+                        if bestaddress_streets.shape[0] == 0:
+                            self.licence_description.append({'object': "Pas de résultat pour cette rue",
+                                                             'street': work_location.ADR_ADRESSE,
+                                                             'number': work_location.ADR_NUM,
+                                                             'zipcode': work_location.ADR_ZIP,
+                                                             'entity': work_location.ADR_LOCALITE
+                                                             })
+                            pass
+
+                result_count = bestaddress_streets.shape[0]
+                if result_count == 1:
+                    work_locations_dict['street'] = bestaddress_streets.iloc[0]['street']
+                    work_locations_dict['number'] = str(work_location.ADR_NUM)
+                    work_locations_dict['zipcode'] = bestaddress_streets.iloc[0]['zip']
+                    work_locations_dict['entity'] = bestaddress_streets.iloc[0]['entity']
+                elif result_count > 1:
+                    self.licence_description.append({'object': "Plus d'un seul résultat pour cette rue",
+                                                     'street': work_location.ADR_ADRESSE,
+                                                     'number': work_location.ADR_NUM,
+                                                     'zipcode': work_location.ADR_ZIP,
+                                                     'entity': work_location.ADR_LOCALITE
+                                                     })
+
             work_locations_list.append(work_locations_dict)
 
         return work_locations_list

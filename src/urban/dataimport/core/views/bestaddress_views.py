@@ -1,7 +1,7 @@
 def create_bestaddress_views(import_object, locality):
     import_object.bestaddress.create_view("bestaddress_vue",
                                           """
-                                            SELECT id, street, entity, commune
+                                            SELECT id, street, zip, entity, commune
                                             FROM public.addresses WHERE commune = '{0}';
                                           """.format(locality)
                                           )

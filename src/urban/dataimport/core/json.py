@@ -11,6 +11,7 @@ def get_licence_dict():
         'referenceDGATLP': '',
         'subject': '',
         'completionState': '',
+        'description': '',
         'workLocations': [],
         'applicants': [],
         'parcels': [],
@@ -22,8 +23,6 @@ def get_work_locations_dict():
     return {
         'number': '',
         'street': '',
-        'postalcode': '',
-        'locality': '',
     }
 
 
