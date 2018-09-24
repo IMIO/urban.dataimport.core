@@ -8,6 +8,8 @@ import jsonschema
 import os
 import re
 import time
+import polib
+import pandas as pd
 
 
 def format_path(path):
@@ -25,6 +27,40 @@ def parse_cadastral_reference(string):
 
     if abbreviations:
         return abbreviations.groups()
+
+
+def export_to_customer_json(import_object):
+    json_data = json.dumps(import_object.data)
+    path = import_object.config['main']['output_customer_path']
+    licence_type_split = bool(import_object.config['main']['licence_type_split'])
+    if not licence_type_split:
+        translate_and_write(json_data, "{0}.{1}".format(path, "json"))
+    else:
+        licence_types = ["BuildLicence",
+                         "ParcelOutLicence",
+                         "EnvClassOne",
+                         "EnvClassTwo",
+                         "EnvClassThree",
+                         "Article127",
+                         "UniqueLicence",
+                         "NotaryLetter",
+                         "Declaration",
+                         "Division"
+                         ]
+        licences = pd.DataFrame(import_object.data)
+        for licence_type in licence_types:
+            filtered_licences = licences[licences.portalType == licence_type]
+            json_data = filtered_licences.to_json(orient='records')
+            if json_data != '[]':
+                translate_and_write(json_data, "{0}_{1}.{2}".format(path, licence_type, "json"))
+
+
+def translate_and_write(json_data, path):
+    po = polib.pofile('customer_ouput_fr.po', encoding='utf-8')
+    for entry in po:
+        json_data = re.sub(r"\b{0}\b".format(entry.msgid), entry.msgstr, json_data)
+    with open(path, 'w') as output_file:
+        json.dump(json.loads(json_data), output_file, cls=DateTimeEncoder)
 
 
 def benchmark_decorator(method):
