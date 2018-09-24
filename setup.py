@@ -45,6 +45,7 @@ setup(
         'psycopg2',
         'jsonschema',
         'strict-rfc3339',
+        'polib',
     ],
     extras_require={
         'test': [
