@@ -14,7 +14,8 @@ import time
 
 from urban.dataimport.core.json import DateTimeEncoder, get_applicant_dict, get_event_dict, get_licence_dict, \
     get_parcel_dict, get_work_locations_dict
-from urban.dataimport.core.utils import parse_cadastral_reference, benchmark_decorator, BaseImport
+from urban.dataimport.core.utils import parse_cadastral_reference, benchmark_decorator, BaseImport,\
+    export_to_customer_json
 from urban.dataimport.core.utils import StateManager
 from urban.dataimport.core.utils import StateHandler
 from urban.dataimport.core.utils import IterationError
@@ -77,8 +78,9 @@ class ImportAcropole(BaseImport):
         if self.noop:
             print(json.dumps(self.data, indent=4, sort_keys=True, cls=DateTimeEncoder))
         if not self.noop and error is None:
-            with open(self.config['main']['output_path'], 'w') as output_file:
+            with open("{0}.{1}".format(self.config['main']['output_path'], "json"), 'w') as output_file:
                 json.dump(self.data, output_file, cls=DateTimeEncoder)
+            export_to_customer_json(self)
         print("-- {0} folders extracted --".format(len(self.data)))
         print("--- Total Duration --- %s seconds ---" % (time.time() - self.start_time))
         if self.benchmarking:
