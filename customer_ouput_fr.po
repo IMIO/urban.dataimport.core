@@ -15,10 +15,155 @@ msgstr ""
 msgid "BuildLicence"
 msgstr "Permis d'urbanisme"
 
-#. Default: "reference"
-msgid "reference"
-msgstr "référence"
+#. Default: "EnvClassOne"
+msgid "EnvClassOne"
+msgstr "Permis d'environnement de classe 1"
+
+#. Default: "EnvClassTwo"
+msgid "EnvClassTwo"
+msgstr "Permis d'environnement de classe 2"
+
+#. Default: "EnvClassThree"
+msgid "EnvClassThree"
+msgstr "Déclaration environnementale"
+
+#. Default: "UniqueLicence"
+msgid "UniqueLicence"
+msgstr "Permis unique"
+
+#. Default: "NotaryLetter"
+msgid "NotaryLetter"
+msgstr "Lettre de notaire"
+
+#. Default: "Declaration"
+msgid "Declaration"
+msgstr "Déclaration"
 
 #. Default: "workLocations"
 msgid "workLocations"
 msgstr "adresse des travaux"
+
+#. Default: "applicants"
+msgid "applicants"
+msgstr "demandeurs"
+
+#. Default: "personTitle"
+msgid "personTitle"
+msgstr "civilité"
+
+#. Default: "completionState"
+msgid "completionState"
+msgstr "état de complétion"
+
+#. Default: "events"
+msgid "events"
+msgstr "événements"
+
+#. Default: "parcels"
+msgid "parcels"
+msgstr "parcelles"
+
+#. Default: "portalType"
+msgid "portalType"
+msgstr "type de procédure"
+
+#. Default: "referenceDGATLP"
+msgid "referenceDGATLP"
+msgstr "référence DGATLP"
+
+#. Default: "licenceSubject"
+msgid "licenceSubject"
+msgstr "objet"
+
+#. Default: "name1"
+msgid "name1"
+msgstr "nom"
+
+#. Default: "name2"
+msgid "name2"
+msgstr "prénom"
+
+#. Default: "phone"
+msgid "phone"
+msgstr "téléphone"
+
+#. Default: "gsm"
+msgid "gsm"
+msgstr "mobile"
+
+#. Default: "street"
+msgid "street"
+msgstr "rue"
+
+#. Default: "zipcode"
+msgid "zipcode"
+msgstr "code postal"
+
+#. Default: "city"
+msgid "city"
+msgstr "localité"
+
+#. Default: "complete_name"
+msgid "complete_name"
+msgstr "parcelle originelle"
+
+#. Default: "old_parcel"
+msgid "old_parcel"
+msgstr "vieille parcelle"
+
+#. Default: "entity"
+msgid "entity"
+msgstr "entité"
+
+#. Default: "number"
+msgid "number"
+msgstr "numéro"
+
+#. Default: "entity"
+msgid "entity"
+msgstr "entité"
+
+#. Default: "False"
+msgid "False"
+msgstr "Non"
+
+#. Default: "mister"
+msgid "mister"
+msgstr "Monsieur"
+
+#. Default: "misters"
+msgid "misters"
+msgstr "Messieurs"
+
+#. Default: "madam"
+msgid "madam"
+msgstr "Madame"
+
+#. Default: "ladies"
+msgid "ladies"
+msgstr "Mesdemoiselles"
+
+#. Default: "miss"
+msgid "miss"
+msgstr "Mademoiselle"
+
+#. Default: "madam_and_mister"
+msgid "madam_and_mister"
+msgstr "Madame et Monsieur"
+
+#. Default: "master"
+msgid "master"
+msgstr "Maître"
+
+#. Default: "accept"
+msgid "accept"
+msgstr "Octroyé/Accepté/Recevable"
+
+#. Default: "refuse"
+msgid "refuse"
+msgstr "Annulé/Refusé/Irrecevable"
+
+#. Default: "retire"
+msgid "retire"
+msgstr "Périmé/Retiré/Suspendu"
+
