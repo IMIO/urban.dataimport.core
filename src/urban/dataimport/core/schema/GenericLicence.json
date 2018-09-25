@@ -16,7 +16,7 @@
     "referenceDGATLP": {
       "type": ["string", "null"]
     },
-    "subject": {
+    "licenceSubject": {
       "type": ["string", "null"]
     },
     "completionState": {

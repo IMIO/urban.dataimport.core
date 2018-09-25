@@ -9,7 +9,7 @@ def get_licence_dict():
         'portalType': '',
         'reference': '',
         'referenceDGATLP': '',
-        'subject': '',
+        'licenceSubject': '',
         'completionState': '',
         'description': '',
         'workLocations': [],
