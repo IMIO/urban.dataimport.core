@@ -10,6 +10,7 @@ import os
 import re
 import time
 import polib
+from random import shuffle
 import pandas as pd
 
 
@@ -51,12 +52,18 @@ def export_to_customer_json(import_object):
                          ]
 
         licences = pd.DataFrame(import_object.data)
+        output_customer_licence_type_count = import_object.config['main']['output_customer_licence_type_count']
+        random_selection = import_object.config['main']['output_customer_licence_type_random_selection']
         for licence_type in licence_types:
             filtered_licences = licences[licences.portalType == licence_type]
             json_data = filtered_licences.to_json(orient='records')
-            output_customer_licence_type_count = import_object.config['main']['output_customer_licence_type_count']
             if output_customer_licence_type_count.isdigit():
-                split_string = json.loads(json_data)[:int(output_customer_licence_type_count)]
+                if random_selection:
+                    licence_list = json.loads(json_data)
+                    shuffle(licence_list)
+                    split_string = licence_list[:int(output_customer_licence_type_count)]
+                else:
+                    split_string = json.loads(json_data)[:int(output_customer_licence_type_count)]
                 json_data = json.dumps(split_string)
             if json_data != '[]':
                 translate_and_write(json_data, "{0}_{1}_{2}.{3}".format(path, licence_type, creation_date, "json"))
