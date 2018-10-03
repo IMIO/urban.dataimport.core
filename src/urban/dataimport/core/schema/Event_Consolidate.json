@@ -22,7 +22,13 @@
       "type": "string"
     },
     "decision": {
-      "type": "string"
+      "type": "string",
+      "enum" : [
+          "accept",
+          "refuse",
+          "retire",
+          ""
+      ]
     },
     "decisionDate": {
       "type": "string",

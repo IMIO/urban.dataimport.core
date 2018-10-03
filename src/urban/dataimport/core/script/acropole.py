@@ -5,7 +5,8 @@ from sqlalchemy import create_engine
 from urban.dataimport.core import utils
 from urban.dataimport.core.db import LazyDB
 from urban.dataimport.core.mapping.acropole_mapping import events_types, portal_type_mapping, \
-    state_mapping, title_types, division_mapping
+    state_mapping, title_types, division_mapping, main_state_id_mapping, refused_main_label_mapping, \
+    accepted_main_label_mapping, custom_state_label_mapping
 
 import argparse
 import configparser
@@ -39,6 +40,7 @@ class ImportAcropole(BaseImport):
         self.config = config
         self.limit = limit
         self.licence_id = licence_id
+        self.search_old_parcels = config['main']['search_old_parcels']
         engine = create_engine('mysql://{user}:{password}@{host}:{port}'.format(**config._sections['database']))
         connection = engine.connect()
         self.db = LazyDB(
@@ -110,12 +112,13 @@ class ImportAcropole(BaseImport):
         self.licence_description = []
         licence_dict = get_licence_dict()
         licence_dict['id'] = str(licence.WRKDOSSIER_ID)
-        licence_dict['portalType'] = self.get_portal_type(licence)
+        licence_dict['portalType'] = self.get_portal_type(licence)  # licence type must be the first licence set
         if not licence_dict['portalType']:
             return
+        # licence completionState must be the second licence set
+        licence_dict['completionState'] = state_mapping.get(licence.DOSSIER_OCTROI)
         licence_dict['reference'] = licence.DOSSIER_NUMERO
         licence_dict['referenceDGATLP'] = licence.DOSSIER_REFURB and licence.DOSSIER_REFURB or ''
-        licence_dict['completionState'] = state_mapping.get(licence.DOSSIER_OCTROI, '')
         licence_dict['workLocations'] = self.get_work_locations(licence)
         licence_dict['applicants'] = self.get_applicants(licence)
         licence_dict['parcels'] = self.get_parcels(licence)
@@ -244,29 +247,30 @@ class ImportAcropole(BaseImport):
                 elif result_count > 1:
                     raise ValueError('Too many parcels results')
                 else:
-                    # Looking for old parcels
-                    old_cadastral_parcels = self.cadastral.vieilles_parcelles_cadastrales_vue[
-                        (self.cadastral.vieilles_parcelles_cadastrales_vue.division.astype('str') == division) &
-                        (self.cadastral.vieilles_parcelles_cadastrales_vue.section == parcels_args[1]) &
-                        (self.cadastral.vieilles_parcelles_cadastrales_vue.radical.astype('str') == parcels_args[2]) &
-                        (self.cadastral.vieilles_parcelles_cadastrales_vue.bis.astype('str') == (parcels_args[3] and
-                                                                                                 parcels_args[3] or '0')) &
-                        (self.cadastral.vieilles_parcelles_cadastrales_vue.exposant == parcels_args[4]) &
-                        (self.cadastral.vieilles_parcelles_cadastrales_vue.puissance.astype('str') == parcels_args[5])
-                        ]
-                    old_result_count = old_cadastral_parcels.shape[0]
-                    if old_result_count == 1:
-                        parcels_dict['old_parcel'] = 'True'
-                        parcels_dict['division'] = old_cadastral_parcels.iloc[0]['division']
-                        parcels_dict['section'] = old_cadastral_parcels.iloc[0]['section']
-                        parcels_dict['radical'] = str(old_cadastral_parcels.iloc[0]['radical'])
-                        parcels_dict['bis'] = str(old_cadastral_parcels.iloc[0]['bis'])
-                        parcels_dict['exposant'] = old_cadastral_parcels.iloc[0]['exposant']
-                        parcels_dict['puissance'] = str(old_cadastral_parcels.iloc[0]['puissance'])
-                    elif old_result_count > 1:
-                        raise ValueError('Too many old parcels results')
-                    else:
-                        pass
+                    if self.search_old_parcels:
+                        # Looking for old parcels
+                        old_cadastral_parcels = self.cadastral.vieilles_parcelles_cadastrales_vue[
+                            (self.cadastral.vieilles_parcelles_cadastrales_vue.division.astype('str') == division) &
+                            (self.cadastral.vieilles_parcelles_cadastrales_vue.section == parcels_args[1]) &
+                            (self.cadastral.vieilles_parcelles_cadastrales_vue.radical.astype('str') == parcels_args[2]) &
+                            (self.cadastral.vieilles_parcelles_cadastrales_vue.bis.astype('str') == (parcels_args[3] and
+                                                                                                     parcels_args[3] or '0')) &
+                            (self.cadastral.vieilles_parcelles_cadastrales_vue.exposant == parcels_args[4]) &
+                            (self.cadastral.vieilles_parcelles_cadastrales_vue.puissance.astype('str') == parcels_args[5])
+                            ]
+                        old_result_count = old_cadastral_parcels.shape[0]
+                        if old_result_count == 1:
+                            parcels_dict['old_parcel'] = 'True'
+                            parcels_dict['division'] = old_cadastral_parcels.iloc[0]['division']
+                            parcels_dict['section'] = old_cadastral_parcels.iloc[0]['section']
+                            parcels_dict['radical'] = str(old_cadastral_parcels.iloc[0]['radical'])
+                            parcels_dict['bis'] = str(old_cadastral_parcels.iloc[0]['bis'])
+                            parcels_dict['exposant'] = old_cadastral_parcels.iloc[0]['exposant']
+                            parcels_dict['puissance'] = str(old_cadastral_parcels.iloc[0]['puissance'])
+                        elif old_result_count > 1:
+                            raise ValueError('Too many old parcels results')
+                        else:
+                            pass
 
             parcels_list.append(parcels_dict)
 
@@ -350,11 +354,20 @@ class ImportAcropole(BaseImport):
             event_dict['type'] = 'decision'
             event_dict['eventDate'] = str(event.DOSSIER_DATEDELIV)
             event_dict['decisionDate'] = str(event.ETAPE_DATEDEPART)
-            if events_param.shape[0] == 1:
-                if events_param.iloc[0].PARAM_VALUE == '1':
-                    event_dict['decision'] = 'favorable'
-                else:
-                    event_dict['decision'] = 'défavorable'
+            state = int(event.DOSSIER_OCTROI)
+            decision_label = "NON CONNU"
+            if state in main_state_id_mapping:
+                portal_type = self.get_portal_type(event)
+                if state == 0:  # refusé
+                    decision_label = refused_main_label_mapping.get(portal_type)
+                elif state == 1:  # accepté
+                    decision_label = accepted_main_label_mapping.get(portal_type)
+                self.licence_description.append({'Intitulé de décision': decision_label})
+            else:
+                decision_label = custom_state_label_mapping.get(str(state))
+                self.licence_description.append({'Intitulé de décision': decision_label})
+            event_dict['decision_label'] = decision_label
+            event_dict['decision'] = state_mapping.get(event.DOSSIER_OCTROI)
             events_dict.append(event_dict)
         return events_dict
 
@@ -382,5 +395,5 @@ def main():
         ignore_cache=args.ignore_cache,
         benchmarking=args.benchmarking,
         noop=args.noop,
-        iterate=args.iterate,
+        iterate=args.iterate
     ).execute()

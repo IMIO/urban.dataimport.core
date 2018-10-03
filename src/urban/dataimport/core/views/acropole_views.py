@@ -85,6 +85,8 @@ def create_views(import_acropole):
     import_acropole.db.create_view("dossier_evenement_vue",
                                    """
                                     SELECT DOSSIER.WRKDOSSIER_ID, DOSSIER.DOSSIER_NUMERO, DOSSIER_DATEDELIV,
+                                           DOSSIER_OCTROI,
+                                           DOSSIER_TDOSSIERID,
                                            WRKETAPE_ID,
                                            ETAPE_NOMFR,
                                            ETAPE_TETAPEID,

@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import datetime
 
 from jsonschema import validate
 from urban.dataimport.core.json import DateTimeEncoder
@@ -33,6 +34,7 @@ def export_to_customer_json(import_object):
     json_data = json.dumps(import_object.data)
     path = import_object.config['main']['output_customer_path']
     licence_type_split = bool(import_object.config['main']['licence_type_split'])
+    creation_date = datetime.datetime.now().strftime("%Y%m%d")
     if not licence_type_split:
         translate_and_write(json_data, "{0}.{1}".format(path, "json"))
     else:
@@ -47,12 +49,13 @@ def export_to_customer_json(import_object):
                          "Declaration",
                          "Division"
                          ]
+
         licences = pd.DataFrame(import_object.data)
         for licence_type in licence_types:
             filtered_licences = licences[licences.portalType == licence_type]
             json_data = filtered_licences.to_json(orient='records')
             if json_data != '[]':
-                translate_and_write(json_data, "{0}_{1}.{2}".format(path, licence_type, "json"))
+                translate_and_write(json_data, "{0}_{1}_{2}.{3}".format(path, licence_type, creation_date, "json"))
 
 
 def translate_and_write(json_data, path):

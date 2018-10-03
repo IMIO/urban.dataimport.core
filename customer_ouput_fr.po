@@ -67,6 +67,10 @@ msgstr "parcelles"
 msgid "portalType"
 msgstr "type de procédure"
 
+#. Default: "reference"
+msgid "reference"
+msgstr "référence"
+
 #. Default: "referenceDGATLP"
 msgid "referenceDGATLP"
 msgstr "référence DGATLP"
@@ -166,4 +170,44 @@ msgstr "Annulé/Refusé/Irrecevable"
 #. Default: "retire"
 msgid "retire"
 msgstr "Périmé/Retiré/Suspendu"
+
+#. Default: "investigationStart"
+msgid "investigationStart"
+msgstr "début d'enquête"
+
+#. Default: "investigationEnd"
+msgid "investigationEnd"
+msgstr "fin d'enquête"
+
+#. Default: "decision"
+msgid "decision"
+msgstr "décision"
+
+#. Default: "decision_label"
+msgid "decision_label"
+msgstr "Intitulé de décision"
+
+#. Default: "eventDate"
+msgid "eventDate"
+msgstr "date de l'événement"
+
+#. Default: "sendtoapplicant"
+msgid "sendtoapplicant"
+msgstr "envoyé au demandeur"
+
+#. Default: "sendtofd"
+msgid "sendtofd"
+msgstr "envoyé au Fonctionnaire Délégué"
+
+#. Default: "incompletefolder"
+msgid "incompletefolder"
+msgstr "dossier incomplet"
+
+#. Default: "completefolder"
+msgid "completefolder"
+msgstr "dossier complet"
+
+#. Default: "recepisse"
+msgid "recepisse"
+msgstr "récépissé"
 
