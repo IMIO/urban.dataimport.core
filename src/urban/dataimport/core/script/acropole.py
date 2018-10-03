@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import re
 
+from progress.bar import FillingSquaresBar
 from sqlalchemy import create_engine
 from urban.dataimport.core import utils
 from urban.dataimport.core.db import LazyDB
@@ -98,9 +99,11 @@ class ImportAcropole(BaseImport):
         if self.licence_id:
             folders = folders[folders.DOSSIER_NUMERO == self.licence_id]
 
+        bar = FillingSquaresBar('Processing licences', max=folders.shape[0])
         for id, licence in folders.iterrows():
             self.get_licence(id, licence)
-
+            bar.next()
+        bar.finish()
         if self.iterate is True:
             try:
                 self.validate_data(self.data, 'GenericLicence')

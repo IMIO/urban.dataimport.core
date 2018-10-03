@@ -46,6 +46,7 @@ setup(
         'jsonschema',
         'strict-rfc3339',
         'polib',
+        'progress',
     ],
     extras_require={
         'test': [

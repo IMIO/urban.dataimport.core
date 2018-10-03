@@ -2,6 +2,8 @@
 import datetime
 
 from jsonschema import validate
+from progress.spinner import Spinner
+from random import shuffle
 from urban.dataimport.core.json import DateTimeEncoder
 
 import json
@@ -10,7 +12,7 @@ import os
 import re
 import time
 import polib
-from random import shuffle
+
 import pandas as pd
 
 
@@ -39,6 +41,7 @@ def export_to_customer_json(import_object):
     if not output_customer_licence_type_split:
         translate_and_write(json_data, "{0}.{1}".format(path, "json"))
     else:
+        spinner = Spinner('Generates customer output file(s) ')
         licence_types = ["BuildLicence",
                          "ParcelOutLicence",
                          "EnvClassOne",
@@ -67,6 +70,7 @@ def export_to_customer_json(import_object):
                 json_data = json.dumps(split_string)
             if json_data != '[]':
                 translate_and_write(json_data, "{0}_{1}_{2}.{3}".format(path, licence_type, creation_date, "json"))
+            spinner.next()
 
 
 def translate_and_write(json_data, path):
