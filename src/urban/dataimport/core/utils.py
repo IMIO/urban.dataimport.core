@@ -2,6 +2,7 @@
 import datetime
 
 from jsonschema import validate
+from progress.bar import FillingSquaresBar
 from random import shuffle
 from urban.dataimport.core.json import DateTimeEncoder
 
@@ -184,10 +185,12 @@ class BaseImport:
 
     @benchmark_decorator
     def validate_data(self, data, type):
+        bar = FillingSquaresBar('Validating licences with : {}'.format(type), max=len(data))
         for licence in data:
             self.validate_schema(licence, type)
+            bar.next()
+        bar.finish()
 
-    @benchmark_decorator
     def validate_schema(self, data, type):
         if not hasattr(self, '_validation_schema'):
             base_path = os.path.join(
