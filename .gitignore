@@ -26,6 +26,5 @@ lib/
 locality_raw.json
 pip-selfcheck.json
 share/
-urban/
+/urban/
 venv/
-
