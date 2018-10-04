@@ -20,4 +20,12 @@ htmlcov/
 output.xml
 *.swp
 /.idea/
+final_output.json
+include/
+lib/
+locality_raw.json
+pip-selfcheck.json
+share/
+urban/
+venv/
 
