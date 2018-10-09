@@ -38,6 +38,7 @@ def get_applicant_dict():
         'street': '',
         'zipcode': '',
         'city': '',
+        'country': '',
     }
 
 

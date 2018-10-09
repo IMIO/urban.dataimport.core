@@ -48,7 +48,9 @@ class ImportConsolidate(BaseImport):
             print(json.dumps(self._benchmark, indent=4, sort_keys=True, cls=DateTimeEncoder))
 
     def consolidate_licence(self, licence):
-        print(licence)
+        print('')
+        #  add some treatments here if needed
+        # print(licence)
 
 
 def main():
