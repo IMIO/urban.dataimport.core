@@ -120,12 +120,12 @@ class ImportAcropole(BaseImport):
             return
         # licence completionState must be the second licence set
         licence_dict['completionState'] = state_mapping.get(licence.DOSSIER_OCTROI)
-        licence_dict['reference'] = licence.DOSSIER_NUMERO
-        licence_dict['referenceDGATLP'] = licence.DOSSIER_REFURB and licence.DOSSIER_REFURB or ''
-        licence_dict['licenceSubject'] = self.get_subject_licence(licence)
         licence_dict['investigationStart'] = self.get_inquiry_values(licence, 'investigationStart')
         licence_dict['investigationEnd'] = self.get_inquiry_values(licence, 'investigationEnd')
         licence_dict['investigationReasons'] = self.get_inquiry_values(licence, 'investigationReasons')
+        licence_dict['reference'] = licence.DOSSIER_NUMERO
+        licence_dict['referenceDGATLP'] = licence.DOSSIER_REFURB and licence.DOSSIER_REFURB or ''
+        licence_dict['licenceSubject'] = self.get_subject_licence(licence)
         licence_dict['workLocations'] = self.get_work_locations(licence)
         licence_dict['applicants'] = self.get_applicants(licence)
         licence_dict['parcels'] = self.get_parcels(licence)
@@ -149,24 +149,25 @@ class ImportAcropole(BaseImport):
 
     @benchmark_decorator
     def get_inquiry_values(self, licence, field):
+        inquiry = self.db.dossier_enquete
         if field == 'investigationReasons':
-            inquiry_value = self.db.dossier_enquete[
-                (self.db.dossier_enquete.WRKDOSSIER_ID == licence.WRKDOSSIER_ID) &
-                (self.db.dossier_enquete.PARAM_IDENT == 'EnqObjet')
+            inquiry_value = inquiry[
+                (inquiry.WRKDOSSIER_ID == licence.WRKDOSSIER_ID) &
+                (inquiry.PARAM_IDENT == 'EnqObjet')
             ]
             if inquiry_value.REMARQ_LIB.shape[0] == 1:
                 return inquiry_value.iloc[0]['REMARQ_LIB']
-        if field == 'investigationStart':
-            inquiry_value = self.db.dossier_enquete[
-                (self.db.dossier_enquete.WRKDOSSIER_ID == licence.WRKDOSSIER_ID) &
-                (self.db.dossier_enquete.PARAM_IDENT == 'EnqDatDeb')
+        elif field == 'investigationStart':
+            inquiry_value = inquiry[
+                (inquiry.WRKDOSSIER_ID == licence.WRKDOSSIER_ID) &
+                (inquiry.PARAM_IDENT == 'EnqDatDeb')
             ]
             if inquiry_value.PARAM_VALUE.shape[0] == 1:
                 return inquiry_value.iloc[0]['PARAM_VALUE']
-        if field == 'investigationEnd':
-            inquiry_value = self.db.dossier_enquete[
-                (self.db.dossier_enquete.WRKDOSSIER_ID == licence.WRKDOSSIER_ID) &
-                (self.db.dossier_enquete.PARAM_IDENT == 'EnqDatFin')
+        elif field == 'investigationEnd':
+            inquiry_value = inquiry[
+                (inquiry.WRKDOSSIER_ID == licence.WRKDOSSIER_ID) &
+                (inquiry.PARAM_IDENT == 'EnqDatFin')
             ]
             if inquiry_value.PARAM_VALUE.shape[0] == 1:
                 return inquiry_value.iloc[0]['PARAM_VALUE']
@@ -324,12 +325,11 @@ class ImportAcropole(BaseImport):
     @benchmark_decorator
     def get_events(self, licence):
         event_list = []
-
+        events = self.db.dossier_evenement_vue
         for key, values in events_types.items():
-            events_etape = self.db.dossier_evenement_vue[
-                (self.db.dossier_evenement_vue.ETAPE_TETAPEID.isin(values['etape_ids'])) &
-                (self.db.dossier_evenement_vue.WRKDOSSIER_ID == licence.WRKDOSSIER_ID) &
-                (self.db.dossier_evenement_vue.K2KND_ID == -207)]
+            events_etape = events[
+                (events.ETAPE_TETAPEID.isin(values['etape_ids'])) &
+                (events.WRKDOSSIER_ID == licence.WRKDOSSIER_ID)]
             events_param = None
             method = getattr(self, 'get_{0}_event'.format(key))
             result_list = method(licence, events_etape, events_param)
@@ -343,7 +343,7 @@ class ImportAcropole(BaseImport):
         for id, event in events_etape.iterrows():
             event_dict = get_event_dict()
             event_dict['type'] = 'recepisse'
-            event_dict['eventDate'] = str(event.ETAPE_DATEDEPART)
+            event_dict['eventDate'] = event.ETAPE_DATEDEPART
             events_dict.append(event_dict)
         return events_dict
 
@@ -352,7 +352,7 @@ class ImportAcropole(BaseImport):
         for id, event in events_etape.iterrows():
             event_dict = get_event_dict()
             event_dict['type'] = 'completefolder'
-            event_dict['eventDate'] = str(event.ETAPE_DATEDEPART)
+            event_dict['eventDate'] = event.ETAPE_DATEDEPART
             events_dict.append(event_dict)
         return events_dict
 
@@ -361,7 +361,7 @@ class ImportAcropole(BaseImport):
         for id, event in events_etape.iterrows():
             event_dict = get_event_dict()
             event_dict['type'] = 'incompletefolder'
-            event_dict['eventDate'] = str(event.ETAPE_DATEDEPART)
+            event_dict['eventDate'] = event.ETAPE_DATEDEPART
             events_dict.append(event_dict)
         return events_dict
 
@@ -370,7 +370,7 @@ class ImportAcropole(BaseImport):
         for id, event in events_etape.iterrows():
             event_dict = get_event_dict()
             event_dict['type'] = 'sendtofd'
-            event_dict['eventDate'] = str(event.ETAPE_DATEDEPART)
+            event_dict['eventDate'] = event.ETAPE_DATEDEPART
             events_dict.append(event_dict)
         return events_dict
 
@@ -379,7 +379,7 @@ class ImportAcropole(BaseImport):
         for id, event in events_etape.iterrows():
             event_dict = get_event_dict()
             event_dict['type'] = 'sendtoapplicant'
-            event_dict['eventDate'] = str(event.ETAPE_DATEDEPART)
+            event_dict['eventDate'] = event.ETAPE_DATEDEPART
             events_dict.append(event_dict)
         return events_dict
 
@@ -409,10 +409,10 @@ class ImportAcropole(BaseImport):
                 raise ValueError('Too many decision events')
             elif events_etape.shape[0] == 1:
                 event = events_etape.iloc[0]
-                event_dict['decisionDate'] = str(event.ETAPE_DATEDEPART)
+                event_dict['decisionDate'] = event.ETAPE_DATEDEPART
                 # if eventDate don't exist, decisionDate is used
                 if not event_dict['eventDate'] or event_dict['eventDate'] == 'NaT':
-                    event_dict['decisionDate'] = str(event.ETAPE_DATEDEPART)
+                    event_dict['decisionDate'] = event.ETAPE_DATEDEPART
         events_dict.append(event_dict)
         return events_dict
 

@@ -84,30 +84,25 @@ def create_views(import_acropole):
                                    )
     import_acropole.db.create_view("dossier_evenement_vue",
                                    """
-                                    SELECT DOSSIER.WRKDOSSIER_ID, DOSSIER.DOSSIER_NUMERO, DOSSIER_DATEDELIV,
+                                    SELECT DOSSIER.WRKDOSSIER_ID,
+                                           DOSSIER.DOSSIER_NUMERO,
+                                           DOSSIER_DATEDELIV,
                                            DOSSIER_OCTROI,
                                            DOSSIER_TDOSSIERID,
                                            WRKETAPE_ID,
                                            ETAPE_NOMFR,
                                            ETAPE_TETAPEID,
-                                           ETAPE_DATEDEPART,
-                                           ETAPE_DATEBUTOIR,
-                                           ETAPE_DELAI,
+                                           CONVERT(ETAPE_DATEDEPART,CHAR CHARACTER SET utf8) AS ETAPE_DATEDEPART,
                                            MAIN_JOIN.K2KND_ID
                                     FROM
                                         wrkdossier AS DOSSIER
                                     INNER JOIN k2 AS MAIN_JOIN
                                     ON MAIN_JOIN.K_ID1 = DOSSIER.WRKDOSSIER_ID
                                     INNER JOIN wrketape AS ETAPE
-                                    ON MAIN_JOIN.K_ID2 = ETAPE.WRKETAPE_ID;
+                                    ON MAIN_JOIN.K_ID2 = ETAPE.WRKETAPE_ID
+                                    WHERE K2KND_ID = -207;
                                    """
                                    )
-    import_acropole.db.dossier_evenement_vue.set_index([
-        'WRKDOSSIER_ID',
-        'WRKETAPE_ID',
-        'K2KND_ID',
-        'ETAPE_TETAPEID'
-        ])
     import_acropole.db.create_view("dossier_param_vue",
                                    """
                                         SELECT DOSSIER.WRKDOSSIER_ID, DOSSIER.DOSSIER_NUMERO,
