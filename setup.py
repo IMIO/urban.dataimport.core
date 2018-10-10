@@ -47,6 +47,7 @@ setup(
         'strict-rfc3339',
         'polib',
         'progress',
+        'requests',
     ],
     extras_require={
         'test': [
@@ -57,6 +58,7 @@ setup(
             'acropole_script = urban.dataimport.core.script.acropole:main',
             'urbaweb_script = urban.dataimport.core.script.urbaweb:main',
             'consolidate_script = urban.dataimport.core.script.consolidate:main',
+            'import_to_plone_script = urban.dataimport.core.script.import_to_plone:main',
         ],
     },
 )
