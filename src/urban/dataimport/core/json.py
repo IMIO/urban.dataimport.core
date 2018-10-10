@@ -59,9 +59,6 @@ def get_event_dict():
     return {
         'type': '',
         'eventDate': '',
-        'investigationStart': '',
-        'investigationEnd': '',
-        'investigationReasons': '',
         'decisionDate': '',
         'decision': '',
     }

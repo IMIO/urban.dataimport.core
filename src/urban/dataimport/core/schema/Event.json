@@ -8,15 +8,6 @@
     "eventDate": {
       "type": "string"
     },
-    "investigationStart": {
-      "type": "string"
-    },
-    "investigationEnd": {
-      "type": "string"
-    },
-    "investigationReasons": {
-      "type": ["string", "null"]
-    },
     "decision": {
       "type": "string"
     },

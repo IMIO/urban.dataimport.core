@@ -10,17 +10,6 @@
           "type": "string",
           "format": "date-time"
     },
-    "investigationStart": {
-          "type": "string",
-          "format": "date-time"
-    },
-    "investigationEnd": {
-          "type": "string",
-          "format": "date-time"
-    },
-    "investigationReasons": {
-      "type": "string"
-    },
     "decision": {
       "type": "string",
       "enum" : [
