@@ -5,7 +5,7 @@ def create_views(import_acropole):
                                            DOSSIER.DOSSIER_NUMERO,
                                            PARAM.PARAM_IDENT,
                                            PARAM.PARAM_VALUE,
-                                            PARAM.PARAM_NOMFUSION,
+                                           PARAM.PARAM_NOMFUSION,
                                            REMARQUE.REMARQ_LIB
                                     FROM
                                         wrkdossier AS DOSSIER
@@ -122,5 +122,15 @@ def create_views(import_acropole):
                                         ON MAIN_JOIN.K_ID1 = DOSSIER.WRKDOSSIER_ID
                                         INNER JOIN wrkparam AS PARAM
                                         ON MAIN_JOIN.K_ID2 = PARAM.WRKPARAM_ID;
+                                   """
+                                   )
+    import_acropole.db.create_view("dossier_infos_vue",
+                                   """
+                                        SELECT DOSSIER.WRKDOSSIER_ID, DOSSIER.DOSSIER_NUMERO,
+                                               INFOS.OBJET_KEY
+                                        FROM
+                                            wrkdossier AS DOSSIER
+                                        INNER JOIN finddoss_index AS INFOS
+                                        ON INFOS.ID = DOSSIER.WRKDOSSIER_ID;
                                    """
                                    )

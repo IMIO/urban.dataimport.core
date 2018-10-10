@@ -21,7 +21,16 @@ events_types = {
             'param_ids': (),
         },
         'decision': {
-            'etape_ids': (-43439, -33545, -63967, -55736, -38452, -49801),
+            'etape_ids': (-43439,
+                          -33545,
+                          -63967,  # Permis urbanisation délivrance permis: date de décision
+                          -55736,
+                          -38452,
+                          -49801,  # Article127 délivrance permis: date de décision
+                          -15243,  # Déclaration rapport du collège: date de décision
+                          -35865,  # Annexe49 pour les NL/CU: date de décision
+                          -14296   # Division rapport du service: date de décision
+                          ),
             'param_ids': (-35039, -79378, -78845, -78319, -49413, -62984),
         },
 }

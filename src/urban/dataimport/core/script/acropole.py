@@ -122,6 +122,10 @@ class ImportAcropole(BaseImport):
         licence_dict['completionState'] = state_mapping.get(licence.DOSSIER_OCTROI)
         licence_dict['reference'] = licence.DOSSIER_NUMERO
         licence_dict['referenceDGATLP'] = licence.DOSSIER_REFURB and licence.DOSSIER_REFURB or ''
+        licence_dict['licenceSubject'] = self.get_subject_licence(licence)
+        licence_dict['investigationStart'] = self.get_inquiry_values(licence, 'investigationStart')
+        licence_dict['investigationEnd'] = self.get_inquiry_values(licence, 'investigationEnd')
+        licence_dict['investigationReasons'] = self.get_inquiry_values(licence, 'investigationReasons')
         licence_dict['workLocations'] = self.get_work_locations(licence)
         licence_dict['applicants'] = self.get_applicants(licence)
         licence_dict['parcels'] = self.get_parcels(licence)
@@ -136,6 +140,36 @@ class ImportAcropole(BaseImport):
         if portal_type == 'UrbanCertificateOne' and licence.DOSSIER_TYPEIDENT == 'CU2':
             portal_type = 'UrbanCertificateTwo'
         return portal_type
+
+    @benchmark_decorator
+    def get_subject_licence(self, licence):
+        subject_licence = self.db.dossier_infos_vue[
+            (self.db.dossier_infos_vue.WRKDOSSIER_ID == licence.WRKDOSSIER_ID)]
+        return subject_licence.iloc[0]['OBJET_KEY']
+
+    @benchmark_decorator
+    def get_inquiry_values(self, licence, field):
+        if field == 'investigationReasons':
+            inquiry_value = self.db.dossier_enquete[
+                (self.db.dossier_enquete.WRKDOSSIER_ID == licence.WRKDOSSIER_ID) &
+                (self.db.dossier_enquete.PARAM_IDENT == 'EnqObjet')
+            ]
+            if inquiry_value.REMARQ_LIB.shape[0] == 1:
+                return inquiry_value.iloc[0]['REMARQ_LIB']
+        if field == 'investigationStart':
+            inquiry_value = self.db.dossier_enquete[
+                (self.db.dossier_enquete.WRKDOSSIER_ID == licence.WRKDOSSIER_ID) &
+                (self.db.dossier_enquete.PARAM_IDENT == 'EnqDatDeb')
+            ]
+            if inquiry_value.PARAM_VALUE.shape[0] == 1:
+                return inquiry_value.iloc[0]['PARAM_VALUE']
+        if field == 'investigationEnd':
+            inquiry_value = self.db.dossier_enquete[
+                (self.db.dossier_enquete.WRKDOSSIER_ID == licence.WRKDOSSIER_ID) &
+                (self.db.dossier_enquete.PARAM_IDENT == 'EnqDatFin')
+            ]
+            if inquiry_value.PARAM_VALUE.shape[0] == 1:
+                return inquiry_value.iloc[0]['PARAM_VALUE']
 
     @benchmark_decorator
     def get_work_locations(self, licence):
@@ -289,20 +323,14 @@ class ImportAcropole(BaseImport):
                 (self.db.dossier_evenement_vue.WRKDOSSIER_ID == licence.WRKDOSSIER_ID) &
                 (self.db.dossier_evenement_vue.K2KND_ID == -207)]
             events_param = None
-            if values['param_ids']:
-                events_param = self.db.dossier_param_vue[
-                    (self.db.dossier_param_vue.PARAM_TPARAMID.isin(values['param_ids'])) &
-                    (self.db.dossier_param_vue.WRKDOSSIER_ID == licence.WRKDOSSIER_ID) &
-                    (self.db.dossier_param_vue.K2KND_ID == -208) &
-                    (self.db.dossier_param_vue.PARAM_VALUE.notnull())]
             method = getattr(self, 'get_{0}_event'.format(key))
-            result_list = method(events_etape, events_param)
+            result_list = method(licence, events_etape, events_param)
             if result_list:
                 event_list.extend(result_list)
 
         return event_list
 
-    def get_recepisse_event(self, events_etape, events_param):
+    def get_recepisse_event(self, licence, events_etape, events_param):
         events_dict = []
         for id, event in events_etape.iterrows():
             event_dict = get_event_dict()
@@ -311,7 +339,7 @@ class ImportAcropole(BaseImport):
             events_dict.append(event_dict)
         return events_dict
 
-    def get_completefolder_event(self, events_etape, events_param):
+    def get_completefolder_event(self, licence, events_etape, events_param):
         events_dict = []
         for id, event in events_etape.iterrows():
             event_dict = get_event_dict()
@@ -320,7 +348,7 @@ class ImportAcropole(BaseImport):
             events_dict.append(event_dict)
         return events_dict
 
-    def get_incompletefolder_event(self, events_etape, events_param):
+    def get_incompletefolder_event(self, licence, events_etape, events_param):
         events_dict = []
         for id, event in events_etape.iterrows():
             event_dict = get_event_dict()
@@ -329,7 +357,7 @@ class ImportAcropole(BaseImport):
             events_dict.append(event_dict)
         return events_dict
 
-    def get_sendtofd_event(self, events_etape, events_param):
+    def get_sendtofd_event(self, licence, events_etape, events_param):
         events_dict = []
         for id, event in events_etape.iterrows():
             event_dict = get_event_dict()
@@ -338,7 +366,7 @@ class ImportAcropole(BaseImport):
             events_dict.append(event_dict)
         return events_dict
 
-    def get_sendtoapplicant_event(self, events_etape, events_param):
+    def get_sendtoapplicant_event(self, licence, events_etape, events_param):
         events_dict = []
         for id, event in events_etape.iterrows():
             event_dict = get_event_dict()
@@ -347,20 +375,18 @@ class ImportAcropole(BaseImport):
             events_dict.append(event_dict)
         return events_dict
 
-    def get_decision_event(self, events_etape, events_param):
+    def get_decision_event(self, licence, events_etape, events_param):
         events_dict = []
-        if events_etape.shape[0] > 1:
-            raise ValueError('Too many decision events')
-        elif events_etape.shape[0] == 1:
-            event = events_etape.iloc[0]
-            event_dict = get_event_dict()
-            event_dict['type'] = 'decision'
-            event_dict['eventDate'] = str(event.DOSSIER_DATEDELIV)
-            event_dict['decisionDate'] = str(event.ETAPE_DATEDEPART)
-            state = int(event.DOSSIER_OCTROI)
+        event_dict = get_event_dict()
+        event_dict['type'] = 'decision'
+        event_dict['eventDate'] = str(licence.DOSSIER_DATEDELIV)
+        if str(licence.DOSSIER_OCTROI) == 'nan':
+            self.licence_description.append({'Intitulé de décision': 'indéterminé / NaN'})
+        else:
+            state = int(licence.DOSSIER_OCTROI)
             decision_label = "NON CONNU"
             if state in main_state_id_mapping:
-                portal_type = self.get_portal_type(event)
+                portal_type = self.get_portal_type(licence)
                 if state == 0:  # refusé
                     decision_label = refused_main_label_mapping.get(portal_type)
                 elif state == 1:  # accepté
@@ -370,8 +396,16 @@ class ImportAcropole(BaseImport):
                 decision_label = custom_state_label_mapping.get(str(state))
                 self.licence_description.append({'Intitulé de décision': decision_label})
             event_dict['decision_label'] = decision_label
-            event_dict['decision'] = state_mapping.get(event.DOSSIER_OCTROI)
-            events_dict.append(event_dict)
+            event_dict['decision'] = state_mapping.get(licence.DOSSIER_OCTROI)
+            if events_etape.shape[0] > 1:
+                raise ValueError('Too many decision events')
+            elif events_etape.shape[0] == 1:
+                event = events_etape.iloc[0]
+                event_dict['decisionDate'] = str(event.ETAPE_DATEDEPART)
+                # if eventDate don't exist, decisionDate is used
+                if not event_dict['eventDate'] or event_dict['eventDate'] == 'NaT':
+                    event_dict['decisionDate'] = str(event.ETAPE_DATEDEPART)
+        events_dict.append(event_dict)
         return events_dict
 
 
