@@ -259,41 +259,46 @@ class ImportAcropole(BaseImport):
             parcels_dict['complete_name'] = parcels.CAD_NOM
             parcels_args = parse_cadastral_reference(parcels.CAD_NOM)
             if parcels_args[0] and parcels_args[1] and parcels_args[2]:
-
                 division = division_mapping.get(parcels_args[0], None)
-
-                cadastral_parcels = self.cadastral.parcelles_cadastrales_vue[
-                    (self.cadastral.parcelles_cadastrales_vue.division.astype('str') == division) &
-                    (self.cadastral.parcelles_cadastrales_vue.section == parcels_args[1]) &
-                    (self.cadastral.parcelles_cadastrales_vue.radical.astype('str') == parcels_args[2]) &
-                    (self.cadastral.parcelles_cadastrales_vue.bis.astype('str') == (parcels_args[3] and
-                                                                                    parcels_args[3] or '0')) &
-                    (self.cadastral.parcelles_cadastrales_vue.exposant == parcels_args[4]) &
-                    (self.cadastral.parcelles_cadastrales_vue.puissance.astype('str') == parcels_args[5])
+                parcelles_cadastrales = self.cadastral.parcelles_cadastrales_vue
+                cadastral_parcels = parcelles_cadastrales[
+                    (parcelles_cadastrales.division == division) &
+                    (parcelles_cadastrales.section == parcels_args[1]) &
+                    (parcelles_cadastrales.radical == parcels_args[2]) &
+                    (parcelles_cadastrales.bis == (parcels_args[3] and
+                                                   parcels_args[3] or '0')) &
+                    (parcelles_cadastrales.exposant == parcels_args[4]) &
+                    (parcelles_cadastrales.puissance == (parcels_args[5] and
+                                                         parcels_args[5] or '0'))
                 ]
 
                 result_count = cadastral_parcels.shape[0]
                 if result_count == 1:
                     parcels_dict['old_parcel'] = 'False'
-                    parcels_dict['division'] = str(cadastral_parcels.iloc[0]['division'])
+                    parcels_dict['division'] = cadastral_parcels.iloc[0]['division']
                     parcels_dict['section'] = cadastral_parcels.iloc[0]['section']
-                    parcels_dict['radical'] = str(cadastral_parcels.iloc[0]['radical'])
-                    parcels_dict['bis'] = str(cadastral_parcels.iloc[0]['bis'])
+                    parcels_dict['radical'] = cadastral_parcels.iloc[0]['radical']
+                    parcels_dict['bis'] = cadastral_parcels.iloc[0]['bis']
                     parcels_dict['exposant'] = cadastral_parcels.iloc[0]['exposant']
-                    parcels_dict['puissance'] = str(cadastral_parcels.iloc[0]['puissance'])
+                    parcels_dict['puissance'] = cadastral_parcels.iloc[0]['puissance']
                 elif result_count > 1:
-                    raise ValueError('Too many parcels results')
+                    self.licence_description.append({'object': "Trop de résultats pour cette parcelle",
+                                                     'old': 'False',
+                                                     'parcel': parcels.CAD_NOM,
+                                                     })
                 else:
                     if self.search_old_parcels:
                         # Looking for old parcels
-                        old_cadastral_parcels = self.cadastral.vieilles_parcelles_cadastrales_vue[
-                            (self.cadastral.vieilles_parcelles_cadastrales_vue.division.astype('str') == division) &
-                            (self.cadastral.vieilles_parcelles_cadastrales_vue.section == parcels_args[1]) &
-                            (self.cadastral.vieilles_parcelles_cadastrales_vue.radical.astype('str') == parcels_args[2]) &
-                            (self.cadastral.vieilles_parcelles_cadastrales_vue.bis.astype('str') == (parcels_args[3] and
-                                                                                                     parcels_args[3] or '0')) &
-                            (self.cadastral.vieilles_parcelles_cadastrales_vue.exposant == parcels_args[4]) &
-                            (self.cadastral.vieilles_parcelles_cadastrales_vue.puissance.astype('str') == parcels_args[5])
+                        vieilles_parcelles_cadastrales = self.cadastral.vieilles_parcelles_cadastrales_vue
+                        old_cadastral_parcels = vieilles_parcelles_cadastrales[
+                            (vieilles_parcelles_cadastrales.division == division) &
+                            (vieilles_parcelles_cadastrales.section == parcels_args[1]) &
+                            (vieilles_parcelles_cadastrales.radical == parcels_args[2]) &
+                            (vieilles_parcelles_cadastrales.bis == (parcels_args[3] and
+                                                                    parcels_args[3] or '0')) &
+                            (vieilles_parcelles_cadastrales.exposant == parcels_args[4]) &
+                            (vieilles_parcelles_cadastrales.puissance == (parcels_args[5] and
+                                                                          parcels_args[5] or '0'))
                             ]
                         old_result_count = old_cadastral_parcels.shape[0]
                         if old_result_count == 1:
@@ -301,11 +306,14 @@ class ImportAcropole(BaseImport):
                             parcels_dict['division'] = old_cadastral_parcels.iloc[0]['division']
                             parcels_dict['section'] = old_cadastral_parcels.iloc[0]['section']
                             parcels_dict['radical'] = str(old_cadastral_parcels.iloc[0]['radical'])
-                            parcels_dict['bis'] = str(old_cadastral_parcels.iloc[0]['bis'])
+                            parcels_dict['bis'] = old_cadastral_parcels.iloc[0]['bis']
                             parcels_dict['exposant'] = old_cadastral_parcels.iloc[0]['exposant']
-                            parcels_dict['puissance'] = str(old_cadastral_parcels.iloc[0]['puissance'])
+                            parcels_dict['puissance'] = old_cadastral_parcels.iloc[0]['puissance']
                         elif old_result_count > 1:
-                            raise ValueError('Too many old parcels results')
+                            self.licence_description.append({'object': "Trop de résultats pour cette parcelle",
+                                                             'old': 'True',
+                                                             'parcel': parcels.CAD_NOM,
+                                                             })
                         else:
                             pass
 

@@ -5,12 +5,12 @@ def create_cadastral_views(import_object):
                                                     prcc,
                                                     prcb1 as prc,
                                                     DA.divname,
-                                                    PAS.da as division,
+                                                    CAST(PAS.da AS TEXT) as division,
                                                     section,
-                                                    radical,
+                                                    CAST(radical AS TEXT) as radical,
                                                     exposant,
-                                                    bis,
-                                                    puissance
+                                                    CAST(bis AS TEXT) bis,
+                                                    CAST(puissance AS TEXT) puissance
                                             FROM pas AS PAS
                                             LEFT JOIN DA on DA.da = PAS.da;
                                         """
@@ -25,14 +25,14 @@ def create_cadastral_views(import_object):
     ])
     import_object.cadastral.create_view("parcelles_cadastrales_vue",
                                         """
-                                            SELECT CAPA.da as division,
+                                            SELECT CAST(CAPA.da AS TEXT) as division,
                                                     divname,
                                                     prc,
                                                     section,
-                                                    radical,
+                                                    CAST(radical AS TEXT) as radical,
                                                     exposant,
-                                                    bis,
-                                                    puissance,
+                                                    CAST(bis AS TEXT) as bis,
+                                                    CAST(puissance AS TEXT) as puissance,
                                                     pe as proprietary,
                                                     adr1 as proprietary_city,
                                                     adr2 as proprietary_street,
