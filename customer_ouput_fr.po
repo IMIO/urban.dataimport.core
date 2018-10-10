@@ -107,6 +107,10 @@ msgstr "code postal"
 msgid "city"
 msgstr "localité"
 
+#. Default: "country"
+msgid "country"
+msgstr "pays"
+
 #. Default: "complete_name"
 msgid "complete_name"
 msgstr "parcelle originelle"
@@ -178,6 +182,10 @@ msgstr "début d'enquête"
 #. Default: "investigationEnd"
 msgid "investigationEnd"
 msgstr "fin d'enquête"
+
+#. Default: "investigationReasons"
+msgid "investigationReasons"
+msgstr "objet de l'enquête"
 
 #. Default: "decision"
 msgid "decision"
