@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 import sys
 
+from progress.bar import FillingSquaresBar
 from urban.dataimport.core import utils
-
 
 import argparse
 import configparser
@@ -60,12 +60,15 @@ class ImportToPlone(BaseImport):
 
         try:
             self.foldermanager_uid = self.search_foldermanager(self.config['plone']['foldermanager'])
+            bar = FillingSquaresBar('Importing licences', max=len(data))
             for licence in data:
                 if self.licence_type:
                     if licence['portalType'] == self.licence_type:
                         self.import_licence(licence)
                 else:
                     self.import_licence(licence)
+                bar.next()
+            bar.finish()
         except Exception as e:
             print("Erreur: {} *** Licence: {}".format(e, licence))
 
