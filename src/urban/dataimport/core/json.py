@@ -28,6 +28,7 @@ def get_work_locations_dict():
 
 def get_applicant_dict():
     return {
+        '@type': 'Applicant',
         'personTitle': '',
         'name1': '',
         'name2': '',

@@ -79,6 +79,22 @@ msgstr "référence DGATLP"
 msgid "licenceSubject"
 msgstr "objet"
 
+#. Default: "usage"
+msgid "usage"
+msgstr "Statistiques INS"
+
+#. Default: "not_applicable"
+msgid "not_applicable"
+msgstr "Pas d'application"
+
+#. Default: "not_for_habitation"
+msgid "not_for_habitation"
+msgstr "Modèle II: Bâtiment(s) destiné(s) exclusivement ou principalement à un autre usage que l'habitation"
+
+#. Default: "for_habitation"
+msgid "for_habitation"
+msgstr "Modèle I: Bâtiment(s) destiné(s) exclusivement ou principalement à l'habitation"
+
 #. Default: "name1"
 msgid "name1"
 msgstr "nom"

@@ -122,10 +122,13 @@ class ImportAcropole(BaseImport):
         licence_dict['completionState'] = state_mapping.get(licence.DOSSIER_OCTROI)
         licence_dict['investigationStart'] = self.get_inquiry_values(licence, 'investigationStart')
         licence_dict['investigationEnd'] = self.get_inquiry_values(licence, 'investigationEnd')
-        licence_dict['investigationReasons'] = self.get_inquiry_values(licence, 'investigationReasons')
+        investigation_reasons = self.get_inquiry_values(licence, 'investigationReasons')
+        if investigation_reasons:
+            licence_dict['investigationReasons'] = [investigation_reasons]
         licence_dict['reference'] = licence.DOSSIER_NUMERO
         licence_dict['referenceDGATLP'] = licence.DOSSIER_REFURB and licence.DOSSIER_REFURB or ''
         licence_dict['licenceSubject'] = self.get_subject_licence(licence)
+        licence_dict['usage'] = 'not_applicable'
         licence_dict['workLocations'] = self.get_work_locations(licence)
         licence_dict['applicants'] = self.get_applicants(licence)
         licence_dict['parcels'] = self.get_parcels(licence)
@@ -236,7 +239,7 @@ class ImportAcropole(BaseImport):
             (self.db.dossier_personne_vue.K2KND_ID == -204)]
         for id, applicant in applicants.iterrows():
             applicant_dict = get_applicant_dict()
-            applicant_dict['personTitle'] = title_types.get(applicant.CPSN_TYPE, None)
+            applicant_dict['personTitle'] = title_types.get(applicant.CPSN_TYPE, '')
             applicant_dict['name1'] = applicant.CPSN_NOM
             applicant_dict['name2'] = applicant.CPSN_PRENOM
             applicant_dict['email'] = applicant.CPSN_EMAIL

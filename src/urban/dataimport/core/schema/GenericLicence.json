@@ -22,6 +22,9 @@
     "completionState": {
       "type": ["string", "null"]
     },
+    "usage": {
+      "type": ["string", "null"]
+    },
     "workLocations": {
       "type": "array",
       "items": {

@@ -41,6 +41,15 @@
           ""
       ]
     },
+    "usage": {
+      "type": "string",
+      "enum" : [
+          "not_applicable",
+          "not_for_habitation",
+          "for_habitation",
+          ""
+      ]
+    },
     "workLocations": {
       "type": "array",
       "items": {
