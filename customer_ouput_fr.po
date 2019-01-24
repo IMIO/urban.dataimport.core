@@ -115,6 +115,10 @@ msgstr "mobile"
 msgid "street"
 msgstr "rue"
 
+#. Default: "street_ins"
+msgid "street_ins"
+msgstr "code rue INS"
+
 #. Default: "zipcode"
 msgid "zipcode"
 msgstr "code postal"
