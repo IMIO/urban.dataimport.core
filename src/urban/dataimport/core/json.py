@@ -45,8 +45,9 @@ def get_applicant_dict():
 
 def get_parcel_dict():
     return {
+        '@type': 'PortionOut',
         'complete_name': '',
-        'old_parcel': '',
+        'outdated': '',
         'division': '',
         'section': '',
         'radical': '',
@@ -58,6 +59,8 @@ def get_parcel_dict():
 
 def get_event_dict():
     return {
+        '@type': 'UrbanEvent',
+        'urbaneventtypes': '',
         'type': '',
         'eventDate': '',
         'decisionDate': '',
