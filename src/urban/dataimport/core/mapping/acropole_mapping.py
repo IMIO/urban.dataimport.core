@@ -16,10 +16,10 @@ events_types = {
             'etape_ids': (-43482, -63977, -33553),
             'param_ids': (),
         },
-        'sendtoapplicant': {
-            'etape_ids': (-63981, -33551, -43468),
-            'param_ids': (),
-        },
+        # 'sendtoapplicant': {
+        #     'etape_ids': (-63981, -33551, -43468),
+        #     'param_ids': (),
+        # },
         'decision': {
             'etape_ids': (-43439,
                           -33545,
@@ -139,6 +139,13 @@ refused_main_label_mapping = {
     'EnvClassTwo': 'Permis refusé',
     'EnvClassThree': 'Déclaration irrecevable',
     'MiscDemand': 'Refusé',
+}
+
+
+decision_vocabulary_mapping = {
+    'accept': 'favorable',
+    'refuse': 'defavorable',
+    'retire': '',
 }
 
 custom_state_label_mapping = {
