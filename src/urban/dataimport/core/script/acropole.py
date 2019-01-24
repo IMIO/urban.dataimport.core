@@ -6,7 +6,7 @@ from sqlalchemy import create_engine
 from urban.dataimport.core import utils
 from urban.dataimport.core.db import LazyDB
 from urban.dataimport.core.mapping.acropole_mapping import events_types, portal_type_mapping, \
-    state_mapping, title_types, division_mapping, main_state_id_mapping, refused_main_label_mapping, \
+    state_mapping, decision_vocabulary_mapping, title_types, division_mapping, main_state_id_mapping, refused_main_label_mapping, \
     accepted_main_label_mapping, custom_state_label_mapping
 
 import argparse
@@ -133,7 +133,11 @@ class ImportAcropole(BaseImport):
         licence_dict['applicants'] = self.get_applicants(licence)
         licence_dict['parcels'] = self.get_parcels(licence)
         licence_dict['events'] = self.get_events(licence)
-        licence_dict['description'] = self.licence_description  # description must be the last licence set
+        description = str(''.join(str(d) for d in self.licence_description))
+        licence_dict['description'] = {
+            'data': "{0}{1}{2}".format("<p>", description, "</p>"),
+            'content-type': 'text/html'
+        }  # description must be the last licence set
         self.validate_schema(licence_dict, 'GenericLicence')
         return licence_dict
 
@@ -216,6 +220,7 @@ class ImportAcropole(BaseImport):
                 result_count = bestaddress_streets.shape[0]
                 if result_count == 1:
                     work_locations_dict['street'] = bestaddress_streets.iloc[0]['street']
+                    work_locations_dict['street_ins'] = str(bestaddress_streets.iloc[0]['key'])
                     work_locations_dict['number'] = str(work_location.ADR_NUM)
                     work_locations_dict['zipcode'] = bestaddress_streets.iloc[0]['zip']
                     work_locations_dict['entity'] = bestaddress_streets.iloc[0]['entity']
@@ -278,7 +283,8 @@ class ImportAcropole(BaseImport):
 
                 result_count = cadastral_parcels.shape[0]
                 if result_count == 1:
-                    parcels_dict['old_parcel'] = 'False'
+                    parcels_dict['outdated'] = 'False'
+                    parcels_dict['is_official'] = 'True'
                     parcels_dict['division'] = cadastral_parcels.iloc[0]['division']
                     parcels_dict['section'] = cadastral_parcels.iloc[0]['section']
                     parcels_dict['radical'] = cadastral_parcels.iloc[0]['radical']
@@ -306,7 +312,8 @@ class ImportAcropole(BaseImport):
                             ]
                         old_result_count = old_cadastral_parcels.shape[0]
                         if old_result_count == 1:
-                            parcels_dict['old_parcel'] = 'True'
+                            parcels_dict['outdated'] = 'True'
+                            parcels_dict['is_official'] = 'True'
                             parcels_dict['division'] = old_cadastral_parcels.iloc[0]['division']
                             parcels_dict['section'] = old_cadastral_parcels.iloc[0]['section']
                             parcels_dict['radical'] = str(old_cadastral_parcels.iloc[0]['radical'])
@@ -319,8 +326,16 @@ class ImportAcropole(BaseImport):
                                                              'parcel': parcels.CAD_NOM,
                                                              })
                         else:
+                            self.licence_description.append({'object': "Parcelle non trouvée",
+                                                             'old': '',
+                                                             'parcel': parcels.CAD_NOM,
+                                                             })
                             pass
-
+            else:
+                self.licence_description.append({'object': "Parcelle incomplète ou non valide",
+                                                 'old': '',
+                                                 'parcel': parcels.CAD_NOM,
+                                                 })
             parcels_list.append(parcels_dict)
 
         return parcels_list
@@ -345,7 +360,9 @@ class ImportAcropole(BaseImport):
         events_dict = []
         for id, event in events_etape.iterrows():
             event_dict = get_event_dict()
+            event_dict['title'] = 'Récépissé'
             event_dict['type'] = 'recepisse'
+            event_dict['urbaneventtypes'] = 'depot-de-la-demande'
             event_dict['eventDate'] = event.ETAPE_DATEDEPART
             events_dict.append(event_dict)
         return events_dict
@@ -354,7 +371,9 @@ class ImportAcropole(BaseImport):
         events_dict = []
         for id, event in events_etape.iterrows():
             event_dict = get_event_dict()
+            event_dict['title'] = 'Dossier complet'
             event_dict['type'] = 'completefolder'
+            event_dict['urbaneventtypes'] = 'accuse-de-reception'
             event_dict['eventDate'] = event.ETAPE_DATEDEPART
             events_dict.append(event_dict)
         return events_dict
@@ -363,7 +382,9 @@ class ImportAcropole(BaseImport):
         events_dict = []
         for id, event in events_etape.iterrows():
             event_dict = get_event_dict()
+            event_dict['title'] = 'Dossier incomplet'
             event_dict['type'] = 'incompletefolder'
+            event_dict['urbaneventtypes'] = 'dossier-incomplet'
             event_dict['eventDate'] = event.ETAPE_DATEDEPART
             events_dict.append(event_dict)
         return events_dict
@@ -372,7 +393,9 @@ class ImportAcropole(BaseImport):
         events_dict = []
         for id, event in events_etape.iterrows():
             event_dict = get_event_dict()
+            event_dict['title'] = 'Envoyé au FD'
             event_dict['type'] = 'sendtofd'
+            event_dict['urbaneventtypes'] = 'transmis-1er-dossier-rw'
             event_dict['eventDate'] = event.ETAPE_DATEDEPART
             events_dict.append(event_dict)
         return events_dict
@@ -381,6 +404,7 @@ class ImportAcropole(BaseImport):
         events_dict = []
         for id, event in events_etape.iterrows():
             event_dict = get_event_dict()
+            event_dict['title'] = 'Envoyé au demandeur'
             event_dict['type'] = 'sendtoapplicant'
             event_dict['eventDate'] = event.ETAPE_DATEDEPART
             events_dict.append(event_dict)
@@ -389,7 +413,8 @@ class ImportAcropole(BaseImport):
     def get_decision_event(self, licence, events_etape, events_param):
         events_dict = []
         event_dict = get_event_dict()
-        event_dict['type'] = 'decision'
+        event_dict['title'] = 'Décision'
+        event_dict['type'] = 'delivrance-du-permis-octroi-ou-refus'
         event_dict['eventDate'] = str(licence.DOSSIER_DATEDELIV)
         if str(licence.DOSSIER_OCTROI) == 'nan':
             self.licence_description.append({'Intitulé de décision': 'indéterminé / NaN'})
@@ -407,7 +432,8 @@ class ImportAcropole(BaseImport):
                 decision_label = custom_state_label_mapping.get(str(state))
                 self.licence_description.append({'Intitulé de décision': decision_label})
             event_dict['decision_label'] = decision_label
-            event_dict['decision'] = state_mapping.get(licence.DOSSIER_OCTROI)
+            if decision_vocabulary_mapping.get(state_mapping.get(licence.DOSSIER_OCTROI)):
+                event_dict['decision'] = decision_vocabulary_mapping.get(state_mapping.get(licence.DOSSIER_OCTROI))
             if events_etape.shape[0] > 1:
                 raise ValueError('Too many decision events')
             elif events_etape.shape[0] == 1:
