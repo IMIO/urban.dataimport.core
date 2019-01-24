@@ -75,7 +75,7 @@ def translate_and_write(json_data, path):
     po = polib.pofile('customer_ouput_fr.po', encoding='utf-8')
     for entry in po:
         json_data = re.sub(r"\b{0}\b".format(entry.msgid), entry.msgstr, json_data)
-    with open(path, 'w') as output_file:
+    with open(path, 'w', encoding='utf8') as output_file:
         json.dump(json.loads(json_data), output_file, cls=DateTimeEncoder)
 
 
