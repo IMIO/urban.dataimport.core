@@ -25,6 +25,7 @@ LOGIN_STRING = '{"login": "%s", "password": "%s"}'
 class ImportToPlone(BaseImport):
 
     def __init__(self, config_file, limit=None, licence_id=None, licence_type=None, benchmarking=False, noop=False, exit_on_error=False):
+        self._log = []
         self.start_time = time.time()
         self.benchmarking = benchmarking
         self.noop = noop
@@ -44,12 +45,11 @@ class ImportToPlone(BaseImport):
         response = requests.post(self.plone_site + '/@login',
                                  headers=DEFAULT_HEADER,
                                  data=LOGIN_STRING % (config._sections['plone']['user'],
-                                                                             config._sections['plone']['password']))
+                                                      config._sections['plone']['password']))
         if response.status_code == RESPONSE_SUCCESS:
             self.token = response.json()['token']
             self.head = {'Accept': 'application/json', 'Content-Type': 'application/json',
                          'Authorization': 'Bearer {}'.format(self.token)}
-
         else:
             print(response.status_code)
 
@@ -66,7 +66,11 @@ class ImportToPlone(BaseImport):
                     if licence['portalType'] == self.licence_type:
                         self.import_licence(licence)
                 else:
-                    self.import_licence(licence)
+                    if self.licence_id:
+                        if self.licence_id == licence['reference']:
+                            self.import_licence(licence)
+                    else:
+                        self.import_licence(licence)
                 bar.next()
             bar.finish()
         except Exception as e:
@@ -76,6 +80,9 @@ class ImportToPlone(BaseImport):
                 sys.exit(1)
             pass
 
+        if self._log:
+            print("--- LOGS ---")
+            print(json.dumps(self._log, indent=4, sort_keys=True, cls=DateTimeEncoder))
         print("--- Total Duration --- %s seconds ---" % (time.time() - self.start_time))
         if self.benchmarking:
             print(json.dumps(self._benchmark, indent=4, sort_keys=True, cls=DateTimeEncoder))
@@ -88,9 +95,13 @@ class ImportToPlone(BaseImport):
                 licence_url = self.post_licence(licence)
                 if licence['applicants']:
                     self.post_applicants(licence_url, licence)
+                if licence['parcels']:
+                    self.post_parcels(licence_url, licence)
+                if licence['events']:
+                    self.post_events(licence_url, licence)
             # ...
         except Warning as w:
-            print("Warning: {} *** Licence: {}".format(w, licence))
+            print("\nWarning: {} *** Licence: {}".format(w, licence))
             pass
 
     @benchmark_decorator
@@ -98,11 +109,18 @@ class ImportToPlone(BaseImport):
         licence["@type"] = licence.pop("portalType")
         licence["foldermanagers"] = self.foldermanager_uid
         licence["usage"] = "not_applicable"
+        # licence["workLocations"] = [{'number': '', 'street': 'blabla'}]
         data = {key: val for key, val in licence.items() if not isinstance(val, list)}
         licence_url = self.plone_site + '/urban/buildlicences/'
         response = post_query(url=licence_url, header=self.head, data=json.dumps(data))
         if response.status_code != RESPONSE_CREATED_SUCCESS:
-            raise ValueError("Licence issue : not created :{}".format(response.content))
+            if "This reference has already been encoded" in str(response.content):
+                self._log.append({'object': "Référence déjà existante",
+                                  'reference': data['reference'],
+                                  'id': data['id'],
+                                  'licenceSubject': data['licenceSubject']
+                                  })
+            raise Warning("Licence issue : not created :{}".format(data['reference']))
         response_dict = json.loads(response.text)
         return response_dict['@id']
 
@@ -114,6 +132,32 @@ class ImportToPlone(BaseImport):
             if response.status_code != RESPONSE_CREATED_SUCCESS:
                 self.rollback_licence(licence_url, licence)
                 raise Warning("Applicant issue : {} *** not created :{}".format(applicant, response.content))
+
+    @benchmark_decorator
+    def post_parcels(self, licence_url, licence):
+        for parcel in licence['parcels']:
+            if parcel['division'] and parcel['section'] and parcel['radical']:
+                response = post_query(url=licence_url, header=self.head, data=json.dumps(parcel))
+                if response.status_code != RESPONSE_CREATED_SUCCESS:
+                    if "'field': 'division'" in str(response.content):
+                        self._log.append({'object': "Problème de division",
+                                          'division': parcel['division'],
+                                          'id': parcel['id'],
+                                          'reference': licence['reference']
+                                          })
+                    self.rollback_licence(licence_url, licence)
+                    raise Warning("Parcel issue : {} *** not created :{}".format(parcel, response.content))
+
+    @benchmark_decorator
+    def post_events(self, licence_url, licence):
+        urbanevents_folder = "{0}{1}".format(self.plone_site, "/portal_urban/buildlicence/urbaneventtypes/")
+        for event in licence['events']:
+            event['urbaneventtypes'] = "{0}{1}".format(urbanevents_folder, event['type'])
+            # data = {key: val for key, val in applicant.items() if not isinstance(val, list)}
+            response = post_query(url=licence_url, header=self.head, data=json.dumps(event))
+            if response.status_code != RESPONSE_CREATED_SUCCESS:
+                self.rollback_licence(licence_url, licence)
+                raise Warning("Event issue : {} *** not created :{}".format(event, response.content))
 
     def search_foldermanager(self, foldermanager):
         foldermanager_url = self.plone_site + '/portal_urban/foldermanagers/@search?fullobjects=1&SearchableText={}'.format(foldermanager)
