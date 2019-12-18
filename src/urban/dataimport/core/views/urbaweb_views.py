@@ -1,22 +1,711 @@
 def create_views(import_urbaweb):
-    import_urbaweb.db.create_view("permis_urbanisation_vue",
-                                   """
-                                    SELECT 'ID', 'TYPE', 'PERMIS_NUM', 'REFERENCE', 'REFERENCE_DGO3', 'RUE', 'NUMERO', 'CP', 'LOCALITE', 'DATE_DEMANDE', 'DATE_RECEPISSE', 'DATE_DEPOT', 'NAT', 'LIBNAT', 'PERMIS_REMARQUE', 'DEMANDEURS', 'PARCELLES', 'DATE ANNULATION', 'DATE_AUTORISATION', 'DOCUMENTS', 'ORGANISME_NOM', 'ORGANISME_PRENOM', 'ORGANISME_RUE', 'ORGANISME_NUMERO', 'ORGANISME_CP', 'ORGANISME_LOCALITE', 'ORGANISME_TEL', 'ORGANISME_GSM', 'ORGANISME_TYPE'
-                                    UNION ALL
-                                    SELECT PERMIS.id, PERMIS.type_permis_fk, PERMIS.numero_permis, CONCAT(PERMIS.annee_recepisse, '/', PERMIS.numero_permis) AS REFERENCE, PERMIS.reference_urbanisme, PERMIS.info_rue_d, PERMIS.numero, LOCALITE.code_postal, LOCALITE.libelle_f, PERMIS.date_demande, PERMIS.date_recepisse, PERMIS.date_depot, NATURE.libelle_f, PERMIS.libnat, REPLACE( IFNULL(PERMIS.remarque_resume, ''), '\"' , "\\" ), DEMANDEURS.CONCAT_DEMANDEUR, PARCELS.CONCAT_PARCELS, PERMIS.date_permis_annule, PURB.date_autorisation, PERMIS_DOCUMENTS.DOCUMENTS, ORG.nom, ORG.prenom, ORG.rue, ORG.numero, ORG.code_postal, ORG.localite, ORG.telephone, ORG.gsm, ORG.type_list FROM soignies_urbacsv_20171114.p_permis AS PERMIS
+    import_urbaweb.db.create_view("permis_urbanisme_vue_client",
+                                  """
+                                    SELECT PERMIS.id,
+                                           PERMIS.numero_permis AS REFERENCE,
+                                           PERMIS.reference_urbanisme AS REFERENCE_URB,
+                                           PERMIS.info_rue_d AS LOCALITE_RUE,
+                                           PERMIS.numero AS LOCALITE_NUM,
+                                           LOCALITE.code_postal AS LOCALITE_CP,
+                                           LOCALITE.libelle_f AS LOCALITE_LABEL,
+                                           PERMIS.date_demande AS DATE_DEMANDE,
+                                           PERMIS.date_recepisse AS DATE_RECEPISSE,
+                                           PERMIS.date_depot AS DATE_DEPOT,
+                                           NATURE.libelle_f AS NATURE_TITRE,
+                                           PERMIS.libnat AS NATURE_DETAILS,
+                                           PERMIS.remarque_resume AS REMARQUES,
+                                           DEMANDEURS.CONCAT_DEMANDEUR AS INFOS_DEMANDEURS,
+                                           IF(PARCELS.CONCAT_PARCELS = '1|.|0000/00#000', '', PARCELS.CONCAT_PARCELS) AS INFOS_PARCELLES,
+                                           AUTORISATION.date_autorisation_college AS AUTORISATION_DATE_AUTORISATION_COLLEGE,
+                                           AUTORISATION.date_refus_college AS AUTORISATION_DATE_REFUS_COLLEGE,
+                                           AVIS_COLLEGE.libelle_f AS AVIS_COLLEGE_LABEL,
+                                           ORG.nom AS ORG_NOM,
+                                           ORG.prenom AS ORG_PRENOM,
+                                           ORG.rue AS ORG_RUE,
+                                           ORG.numero AS ORG_NUMERO,
+                                           ORG.code_postal AS ORG_CP,
+                                           ORG.localite AS ORG_LOCALITE,
+                                           ORG.telephone AS ORG_TEL,
+                                           ORG.gsm AS ORG_MOBILE,
+                                           ORG.mail AS ORG_MAIL,
+                                           ORG.type_list AS ORG_TYPE
+                                    FROM p_permis AS PERMIS
                                     LEFT JOIN get_demandeurs AS DEMANDEURS ON DEMANDEURS.ID_PERMIS = PERMIS.id
                                     LEFT JOIN get_parcelles AS PARCELS ON PARCELS.ID_PERMIS = PERMIS.id
                                     LEFT JOIN c_localite AS LOCALITE ON PERMIS.localite_fk = LOCALITE.id
                                     LEFT JOIN c_nature AS NATURE ON PERMIS.nature_fk = NATURE.id
-                                    LEFT JOIN p_permis_lotir AS PU ON PURB.id = PERMIS.id
-                                    LEFT JOIN c_organisme AS ORG ON PURB.organisme_fk = ORG.id
+                                    LEFT JOIN p_permis_urbanisme AS PU ON PU.id = PERMIS.id
+                                    LEFT JOIN c_organisme AS ORG ON PU.organisme_fk = ORG.id
+                                    LEFT JOIN p_autorisation AS AUTORISATION ON PU.autorisation_fk = AUTORISATION.id
+                                    LEFT JOIN c_avis_college AS AVIS_COLLEGE ON AVIS_COLLEGE.id = AUTORISATION.avis_college_fk
+                                    LEFT JOIN p_recour AS RECOUR ON PU.recour_fk = RECOUR.id
+                                    LEFT JOIN c_avis_college AS AVIS_RECOUR ON AVIS_RECOUR.id = RECOUR.avis_fk
                                     LEFT JOIN get_document_infos AS PERMIS_DOCUMENTS ON PERMIS_DOCUMENTS.ID_PERMIS = PERMIS.id
-                                    WHERE PERMIS.type_permis_fk = 2
-                                    INTO OUTFILE '/tmp/PURB_1.csv'
-                                    -- INTO OUTFILE '/var/lib/mysql-files/xxx.csv' -- set user rights on this folder, remove file csv output file between general query execution
-                                    CHARACTER SET 'utf8'
-                                    FIELDS TERMINATED BY ';'
-                                    ENCLOSED BY '"'
-                                    LINES TERMINATED BY '\n';
-                                   """
+                                    WHERE PERMIS.type_permis_fk = 1;
+                                  """
+                                  )
+    import_urbaweb.db.create_view("permis_urbanisme_vue",
+                                  """
+                                    SELECT PERMIS.id,
+                                           PERMIS.type_permis_fk,
+                                           PERMIS.numero_permis AS REFERENCE,
+                                           PERMIS.reference_urbanisme AS REFERENCE_URB,
+                                           PERMIS.info_rue_d AS LOCALITE_RUE,
+                                           PERMIS.numero AS LOCALITE_NUM,
+                                           LOCALITE.code_postal AS LOCALITE_CP,
+                                           LOCALITE.libelle_f AS LOCALITE_LABEL,
+                                           PERMIS.date_demande AS DATE_DEMANDE,
+                                           PERMIS.date_recepisse AS DATE_RECEPISSE,
+                                           PERMIS.date_depot AS DATE_DEPOT,
+                                           NATURE.libelle_f AS NATURE_TITRE,
+                                           PERMIS.libnat AS NATURE_DETAILS,
+                                           PERMIS.remarque_resume AS REMARQUES,
+                                           DEMANDEURS.CONCAT_DEMANDEUR  AS INFOS_DEMANDEURS,
+                                           IF(PARCELS.CONCAT_PARCELS = '1|.|0000/00#000', '', PARCELS.CONCAT_PARCELS) AS INFOS_PARCELLES,
+                                           AUTORISATION.date_autorisation_college AS AUTORISATION_DATE_AUTORISATION_COLLEGE,
+                                           AUTORISATION.date_refus_college AS AUTORISATION_DATE_REFUS_COLLEGE,
+                                           AVIS_COLLEGE.libelle_f AS AVIS_COLLEGE_LABEL,
+                                           AUTORISATION.date_autorisation_tutelle AS AUTORISATION_DATE_AUTORISATION_TUTELLE,
+                                           AUTORISATION.date_refus_tutelle AS AUTORISATION_DATE_REFUS_TUTELLE,
+                                           RECOUR.date_arrete AS RECOUR_DATE_ARRETE,
+                                           AVIS_RECOUR.libelle_f AS RECOUR_AVIS_LABEL,
+                                           RECOUR.remarque  AS RECOUR_REMARQUE,
+                                           RECOUR.reference_rw AS RECOUR_REFERENCE,
+                                           PERMIS_DOCUMENTS.DOCUMENTS AS INFOS_DOCUMENTS,
+                                           ORG.nom AS ORG_NOM,
+                                           ORG.prenom AS ORG_PRENOM,
+                                           ORG.rue AS ORG_RUE,
+                                           ORG.numero AS ORG_NUMERO,
+                                           ORG.code_postal AS ORG_CP,
+                                           ORG.localite AS ORG_LOCALITE,
+                                           ORG.telephone AS ORG_TEL,
+                                           ORG.gsm AS ORG_MOBILE,
+                                           ORG.mail AS ORG_MAIL,
+                                           ORG.type_list AS ORG_TYPE
+                                    FROM p_permis AS PERMIS
+                                    LEFT JOIN get_demandeurs AS DEMANDEURS ON DEMANDEURS.ID_PERMIS = PERMIS.id
+                                    LEFT JOIN get_parcelles AS PARCELS ON PARCELS.ID_PERMIS = PERMIS.id
+                                    LEFT JOIN c_localite AS LOCALITE ON PERMIS.localite_fk = LOCALITE.id
+                                    LEFT JOIN c_nature AS NATURE ON PERMIS.nature_fk = NATURE.id
+                                    LEFT JOIN p_permis_urbanisme AS PU ON PU.id = PERMIS.id
+                                    LEFT JOIN c_organisme AS ORG ON PU.organisme_fk = ORG.id
+                                    LEFT JOIN p_autorisation AS AUTORISATION ON PU.autorisation_fk = AUTORISATION.id
+                                    LEFT JOIN c_avis_college AS AVIS_COLLEGE ON AVIS_COLLEGE.id = AUTORISATION.avis_college_fk
+                                    LEFT JOIN p_recour AS RECOUR ON PU.recour_fk = RECOUR.id
+                                    LEFT JOIN c_avis_college AS AVIS_RECOUR ON AVIS_RECOUR.id = RECOUR.avis_fk
+                                    LEFT JOIN get_document_infos AS PERMIS_DOCUMENTS ON PERMIS_DOCUMENTS.ID_PERMIS = PERMIS.id
+                                    WHERE PERMIS.type_permis_fk = 1;
+                                  """
+                                  )
+    import_urbaweb.db.create_view("permis_urbanisation_vue",
+                                  """
+                                    SELECT PERMIS.id,
+                                           PERMIS.type_permis_fk,
+                                           PERMIS.numero_permis AS REFERENCE,
+                                           PERMIS.reference_urbanisme AS REFERENCE_URB,
+                                           PERMIS.info_rue_d AS LOCALITE_RUE,
+                                           PERMIS.numero AS LOCALITE_NUM,
+                                           LOCALITE.code_postal AS LOCALITE_CP,
+                                           LOCALITE.libelle_f AS LOCALITE_LABEL,
+                                           PERMIS.date_demande AS DATE_DEMANDE,
+                                           PERMIS.date_recepisse AS DATE_RECEPISSE,
+                                           PERMIS.date_depot AS DATE_DEPOT,
+                                           NATURE.libelle_f AS NATURE_TITRE,
+                                           PERMIS.libnat AS NATURE_DETAILS,
+                                           PERMIS.remarque_resume AS REMARQUES,
+                                           DEMANDEURS.CONCAT_DEMANDEUR  AS INFOS_DEMANDEURS,
+                                           IF(PARCELS.CONCAT_PARCELS = '1|.|0000/00#000', '', PARCELS.CONCAT_PARCELS) AS INFOS_PARCELLES,
+                                           AUTORISATION.date_autorisation_college AS AUTORISATION_DATE_AUTORISATION_COLLEGE,
+                                           AUTORISATION.date_refus_college AS AUTORISATION_DATE_REFUS_COLLEGE,
+                                           AVIS_COLLEGE.libelle_f AS AVIS_COLLEGE_LABEL,
+                                           AUTORISATION.date_autorisation_tutelle AS AUTORISATION_DATE_AUTORISATION_TUTELLE,
+                                           AUTORISATION.date_refus_tutelle AS AUTORISATION_DATE_REFUS_TUTELLE,
+                                           RECOUR.date_arrete AS RECOUR_DATE_ARRETE,
+                                           AVIS_RECOUR.libelle_f AS RECOUR_AVIS_LABEL,
+                                           RECOUR.remarque  AS RECOUR_REMARQUE,
+                                           RECOUR.reference_rw AS RECOUR_REFERENCE,
+                                           PERMIS_DOCUMENTS.DOCUMENTS AS INFOS_DOCUMENTS,
+                                           ORG.nom AS ORG_NOM,
+                                           ORG.prenom AS ORG_PRENOM,
+                                           ORG.rue AS ORG_RUE,
+                                           ORG.numero AS ORG_NUMERO,
+                                           ORG.code_postal AS ORG_CP,
+                                           ORG.localite AS ORG_LOCALITE,
+                                           ORG.telephone AS ORG_TEL,
+                                           ORG.gsm AS ORG_MOBILE,
+                                           ORG.mail AS ORG_MAIL,
+                                           ORG.type_list AS ORG_TYPE
+                                    FROM p_permis AS PERMIS
+                                    LEFT JOIN get_demandeurs AS DEMANDEURS ON DEMANDEURS.ID_PERMIS = PERMIS.id
+                                    LEFT JOIN get_parcelles AS PARCELS ON PARCELS.ID_PERMIS = PERMIS.id
+                                    LEFT JOIN c_localite AS LOCALITE ON PERMIS.localite_fk = LOCALITE.id
+                                    LEFT JOIN c_nature AS NATURE ON PERMIS.nature_fk = NATURE.id
+                                    LEFT JOIN p_permis_lotir AS PURB ON PURB.id = PERMIS.id
+                                    LEFT JOIN c_organisme AS ORG ON PURB.organisme_fk = ORG.id
+                                    LEFT JOIN p_autorisation AS AUTORISATION ON PURB.autorisation_fk = AUTORISATION.id
+                                    LEFT JOIN c_avis_college AS AVIS_COLLEGE ON AVIS_COLLEGE.id = AUTORISATION.avis_college_fk
+                                    LEFT JOIN p_recour AS RECOUR ON PURB.recour_fk = RECOUR.id
+                                    LEFT JOIN c_avis_college AS AVIS_RECOUR ON AVIS_RECOUR.id = RECOUR.avis_fk
+                                    LEFT JOIN get_document_infos AS PERMIS_DOCUMENTS ON PERMIS_DOCUMENTS.ID_PERMIS = PERMIS.id
+                                    WHERE PERMIS.type_permis_fk = 2;
+                                  """
+                                  )
+
+    import_urbaweb.db.create_view("permis_urbanisation_vue_client",
+                                  """
+                                    SELECT PERMIS.id,
+                                           PERMIS.numero_permis AS REFERENCE,
+                                           PERMIS.reference_urbanisme AS REFERENCE_URB,
+                                           PERMIS.info_rue_d AS LOCALITE_RUE,
+                                           PERMIS.numero AS LOCALITE_NUM,
+                                           LOCALITE.code_postal AS LOCALITE_CP,
+                                           LOCALITE.libelle_f AS LOCALITE_LABEL,
+                                           PERMIS.date_demande AS DATE_DEMANDE,
+                                           PERMIS.date_recepisse AS DATE_RECEPISSE,
+                                           PERMIS.date_depot AS DATE_DEPOT,
+                                           NATURE.libelle_f AS NATURE_TITRE,
+                                           PERMIS.libnat AS NATURE_DETAILS,
+                                           PERMIS.remarque_resume AS REMARQUES,
+                                           DEMANDEURS.CONCAT_DEMANDEUR  AS INFOS_DEMANDEURS,
+                                           IF(PARCELS.CONCAT_PARCELS = '1|.|0000/00#000', '', PARCELS.CONCAT_PARCELS) AS INFOS_PARCELLES,
+                                           AUTORISATION.date_autorisation_college AS AUTORISATION_DATE_AUTORISATION_COLLEGE,
+                                           AUTORISATION.date_refus_college AS AUTORISATION_DATE_REFUS_COLLEGE,
+                                           AVIS_COLLEGE.libelle_f AS AVIS_COLLEGE_LABEL,
+                                           AUTORISATION.date_autorisation_tutelle AS AUTORISATION_DATE_AUTORISATION_TUTELLE,
+                                           AUTORISATION.date_refus_tutelle AS AUTORISATION_DATE_REFUS_TUTELLE,
+                                           ORG.nom AS ORG_NOM,
+                                           ORG.prenom AS ORG_PRENOM,
+                                           ORG.rue AS ORG_RUE,
+                                           ORG.numero AS ORG_NUMERO,
+                                           ORG.code_postal AS ORG_CP,
+                                           ORG.localite AS ORG_LOCALITE,
+                                           ORG.telephone AS ORG_TEL,
+                                           ORG.gsm AS ORG_MOBILE,
+                                           ORG.mail AS ORG_MAIL,
+                                           ORG.type_list AS ORG_TYPE
+                                    FROM p_permis AS PERMIS
+                                    LEFT JOIN get_demandeurs AS DEMANDEURS ON DEMANDEURS.ID_PERMIS = PERMIS.id
+                                    LEFT JOIN get_parcelles AS PARCELS ON PARCELS.ID_PERMIS = PERMIS.id
+                                    LEFT JOIN c_localite AS LOCALITE ON PERMIS.localite_fk = LOCALITE.id
+                                    LEFT JOIN c_nature AS NATURE ON PERMIS.nature_fk = NATURE.id
+                                    LEFT JOIN p_permis_lotir AS PURB ON PURB.id = PERMIS.id
+                                    LEFT JOIN c_organisme AS ORG ON PURB.organisme_fk = ORG.id
+                                    LEFT JOIN p_autorisation AS AUTORISATION ON PURB.autorisation_fk = AUTORISATION.id
+                                    LEFT JOIN c_avis_college AS AVIS_COLLEGE ON AVIS_COLLEGE.id = AUTORISATION.avis_college_fk
+                                    LEFT JOIN p_recour AS RECOUR ON PURB.recour_fk = RECOUR.id
+                                    LEFT JOIN c_avis_college AS AVIS_RECOUR ON AVIS_RECOUR.id = RECOUR.avis_fk
+                                    LEFT JOIN get_document_infos AS PERMIS_DOCUMENTS ON PERMIS_DOCUMENTS.ID_PERMIS = PERMIS.id
+                                    WHERE PERMIS.type_permis_fk = 2;
+                                  """
+                                  )
+
+    import_urbaweb.db.create_view("permis_env_classe3_vue_client",
+                                  """
+                                    SELECT PERMIS.id,
+                                    PERMIS.numero_permis AS REFERENCE,
+                                    PERMIS.reference_urbanisme  AS REFERENCE_URB,
+                                    PERMIS.info_rue_d AS LOCALITE_RUE,
+                                    PERMIS.numero  AS LOCALITE_NUM,
+                                    LOCALITE.code_postal AS LOCALITE_CP,
+                                    LOCALITE.libelle_f AS LOCALITE_LABEL,
+                                    PERMIS.date_demande AS DATE_DEMANDE,
+                                    PERMIS.date_recepisse AS DATE_RECEPISSE,
+                                    PERMIS.date_depot AS DATE_DEPOT,
+                                    NATURE.libelle_f AS NATURE_TITRE,
+                                    PERMIS.libnat AS NATURE_DETAILS,
+                                    IFNULL(PERMIS.remarque_resume, '') AS REMARQUES,
+                                    DEMANDEURS.CONCAT_DEMANDEUR AS INFOS_DEMANDEURS,
+                                    IF(PARCELS.CONCAT_PARCELS = '1|.|0000/00#000', '', PARCELS.CONCAT_PARCELS) AS INFOS_PARCELS,
+                                    PE3_DECISION.date_autorisation_college AS DATE_AUTORISATION_COLLEGE,
+                                    PE3_DECISION.date_autorisation_tutelle AS DATE_AUTORISATION_TUTELLE,
+                                    PE3_DECISION.date_refus_college AS DATE_REFUS_COLLEGE,
+                                    RUBRICS.CONCAT_RUBRICS_CODE AS INFOS_RUBRIQUES
+                                    FROM p_permis AS PERMIS
+                                    LEFT JOIN get_demandeurs AS DEMANDEURS ON DEMANDEURS.ID_PERMIS = PERMIS.id
+                                    LEFT JOIN get_parcelles AS PARCELS ON PARCELS.ID_PERMIS = PERMIS.id
+                                    LEFT JOIN c_localite AS LOCALITE ON PERMIS.localite_fk = LOCALITE.id
+                                    LEFT JOIN c_nature AS NATURE ON PERMIS.nature_fk = NATURE.id
+                                    LEFT JOIN p_permis_environnement_classe3 AS PE3 ON PE3.id = PERMIS.id
+                                    LEFT JOIN p_decision_environnement_classe3 AS PE3_DECISION ON PE3.decision_environnement_fk = PE3_DECISION.id
+                                    LEFT JOIN get_rubrics_cl3 AS RUBRICS ON RUBRICS.ID_PERMIS = PERMIS.id
+                                    LEFT JOIN get_document_infos AS PERMIS_DOCUMENTS ON PERMIS_DOCUMENTS.ID_PERMIS = PERMIS.id
+                                    WHERE PERMIS.type_permis_fk = 17;
+                                  """
+                                  )
+
+    import_urbaweb.db.create_view("permis_env_classe3_vue",
+                                  """
+                                    SELECT PERMIS.id,
+                                    PERMIS.type_permis_fk,
+                                    PERMIS.numero_permis AS REFERENCE,
+                                    PERMIS.reference_urbanisme  AS REFERENCE_URB,
+                                    PERMIS.info_rue_d AS LOCALITE_RUE,
+                                    PERMIS.numero  AS LOCALITE_NUM,
+                                    LOCALITE.code_postal AS LOCALITE_CP,
+                                    LOCALITE.libelle_f AS LOCALITE_LABEL,
+                                    PERMIS.date_demande AS DATE_DEMANDE,
+                                    PERMIS.date_recepisse AS DATE_RECEPISSE,
+                                    PERMIS.date_depot AS DATE_DEPOT,
+                                    NATURE.libelle_f AS NATURE_TITRE,
+                                    PERMIS.libnat AS NATURE_DETAILS,
+                                    IFNULL(PERMIS.remarque_resume, '') AS REMARQUES,
+                                    DEMANDEURS.CONCAT_DEMANDEUR AS INFOS_DEMANDEURS,
+                                    IF(PARCELS.CONCAT_PARCELS = '1|.|0000/00#000', '', PARCELS.CONCAT_PARCELS) AS INFOS_PARCELS,
+                                    PE3_DECISION.date_autorisation_college AS DATE_AUTORISATION_COLLEGE,
+                                    PE3_DECISION.date_autorisation_tutelle AS DATE_AUTORISATION_TUTELLE,
+                                    PE3_DECISION.date_refus_college AS DATE_REFUS_COLLEGE,
+                                    RUBRICS.CONCAT_RUBRICS_CODE AS INFOS_RUBRIQUES,
+                                    PERMIS_DOCUMENTS.DOCUMENTS AS INFOS_DOCUMENTS
+                                    FROM p_permis AS PERMIS
+                                    LEFT JOIN get_demandeurs AS DEMANDEURS ON DEMANDEURS.ID_PERMIS = PERMIS.id
+                                    LEFT JOIN get_parcelles AS PARCELS ON PARCELS.ID_PERMIS = PERMIS.id
+                                    LEFT JOIN c_localite AS LOCALITE ON PERMIS.localite_fk = LOCALITE.id
+                                    LEFT JOIN c_nature AS NATURE ON PERMIS.nature_fk = NATURE.id
+                                    LEFT JOIN p_permis_environnement_classe3 AS PE3 ON PE3.id = PERMIS.id
+                                    LEFT JOIN p_decision_environnement_classe3 AS PE3_DECISION ON PE3.decision_environnement_fk = PE3_DECISION.id
+                                    LEFT JOIN get_rubrics_cl3 AS RUBRICS ON RUBRICS.ID_PERMIS = PERMIS.id
+                                    LEFT JOIN get_document_infos AS PERMIS_DOCUMENTS ON PERMIS_DOCUMENTS.ID_PERMIS = PERMIS.id
+                                    WHERE PERMIS.type_permis_fk = 17;
+                                  """
+                                  )
+
+    import_urbaweb.db.create_view("permis_unique_vue",
+                                  """
+                                    SELECT PERMIS.id,
+                                    PERMIS.type_permis_fk,
+                                    PERMIS.numero_permis AS REFERENCE,
+                                    PERMIS.reference_urbanisme  AS REFERENCE_URB,
+                                    PERMIS.info_rue_d AS LOCALITE_RUE,
+                                    PERMIS.numero  AS LOCALITE_NUM,
+                                    LOCALITE.code_postal AS LOCALITE_CP,
+                                    LOCALITE.libelle_f AS LOCALITE_LABEL,
+                                    PERMIS.date_demande AS DATE_DEMANDE,
+                                    PERMIS.date_recepisse AS DATE_RECEPISSE,
+                                    PERMIS.date_depot AS DATE_DEPOT,
+                                    NATURE.libelle_f AS NATURE_TITRE,
+                                    PERMIS.libnat AS NATURE_DETAILS,
+                                    IFNULL(PERMIS.remarque_resume, '') AS REMARQUES,
+                                    DEMANDEURS.CONCAT_DEMANDEUR AS INFOS_DEMANDEURS,
+                                    IF(PARCELS.CONCAT_PARCELS = '1|.|0000/00#000', '', PARCELS.CONCAT_PARCELS) AS INFOS_PARCELS,
+                                    PUN_DECISION.date_autorisation_college AS DATE_AUTORISATION_COLLEGE,
+                                    PUN_DECISION.date_autorisation_tutelle AS DATE_AUTORISATION_TUTELLE,
+                                    PUN_DECISION.date_refus_college AS DATE_REFUS_COLLEGE,
+                                    RUBRICS.CONCAT_RUBRICS_CODE AS INFOS_RUBRIQUES,
+                                    PERMIS_DOCUMENTS.DOCUMENTS AS INFOS_DOCUMENTS
+                                    FROM p_permis AS PERMIS
+                                    LEFT JOIN get_demandeurs AS DEMANDEURS ON DEMANDEURS.ID_PERMIS = PERMIS.id
+                                    LEFT JOIN get_parcelles AS PARCELS ON PARCELS.ID_PERMIS = PERMIS.id
+                                    LEFT JOIN c_localite AS LOCALITE ON PERMIS.localite_fk = LOCALITE.id
+                                    LEFT JOIN c_nature AS NATURE ON PERMIS.nature_fk = NATURE.id
+                                    LEFT JOIN p_permis_unique AS PUN ON PUN.id = PERMIS.id
+                                    LEFT JOIN p_decision_unique AS PUN_DECISION ON PUN.decision_unique_fk = PUN_DECISION.id
+                                    LEFT JOIN get_rubrics_unique AS RUBRICS ON RUBRICS.ID_PERMIS = PERMIS.id
+                                    LEFT JOIN get_document_infos AS PERMIS_DOCUMENTS ON PERMIS_DOCUMENTS.ID_PERMIS = PERMIS.id
+                                    WHERE PERMIS.type_permis_fk = 10;
+                                  """
+                                  )
+
+    import_urbaweb.db.create_view("permis_unique_vue_client",
+                                  """
+                                    SELECT PERMIS.id,
+                                    PERMIS.numero_permis AS REFERENCE,
+                                    PERMIS.reference_urbanisme  AS REFERENCE_URB,
+                                    PERMIS.info_rue_d AS LOCALITE_RUE,
+                                    PERMIS.numero  AS LOCALITE_NUM,
+                                    LOCALITE.code_postal AS LOCALITE_CP,
+                                    LOCALITE.libelle_f AS LOCALITE_LABEL,
+                                    PERMIS.date_demande AS DATE_DEMANDE,
+                                    PERMIS.date_recepisse AS DATE_RECEPISSE,
+                                    PERMIS.date_depot AS DATE_DEPOT,
+                                    NATURE.libelle_f AS NATURE_TITRE,
+                                    PERMIS.libnat AS NATURE_DETAILS,
+                                    IFNULL(PERMIS.remarque_resume, '') AS REMARQUES,
+                                    DEMANDEURS.CONCAT_DEMANDEUR AS INFOS_DEMANDEURS,
+                                    IF(PARCELS.CONCAT_PARCELS = '1|.|0000/00#000', '', PARCELS.CONCAT_PARCELS) AS INFOS_PARCELS,
+                                    PUN_DECISION.date_autorisation_college AS DATE_AUTORISATION_COLLEGE,
+                                    PUN_DECISION.date_autorisation_tutelle AS DATE_AUTORISATION_TUTELLE,
+                                    PUN_DECISION.date_refus_college AS DATE_REFUS_COLLEGE,
+                                    RUBRICS.CONCAT_RUBRICS_CODE AS INFOS_RUBRIQUES
+                                    FROM p_permis AS PERMIS
+                                    LEFT JOIN get_demandeurs AS DEMANDEURS ON DEMANDEURS.ID_PERMIS = PERMIS.id
+                                    LEFT JOIN get_parcelles AS PARCELS ON PARCELS.ID_PERMIS = PERMIS.id
+                                    LEFT JOIN c_localite AS LOCALITE ON PERMIS.localite_fk = LOCALITE.id
+                                    LEFT JOIN c_nature AS NATURE ON PERMIS.nature_fk = NATURE.id
+                                    LEFT JOIN p_permis_unique AS PUN ON PUN.id = PERMIS.id
+                                    LEFT JOIN p_decision_unique AS PUN_DECISION ON PUN.decision_unique_fk = PUN_DECISION.id
+                                    LEFT JOIN get_rubrics_unique AS RUBRICS ON RUBRICS.ID_PERMIS = PERMIS.id
+                                    LEFT JOIN get_document_infos AS PERMIS_DOCUMENTS ON PERMIS_DOCUMENTS.ID_PERMIS = PERMIS.id
+                                    WHERE PERMIS.type_permis_fk = 10;
+                                  """
+                                  )
+
+    import_urbaweb.db.create_view("permis_autre_dossier_vue",
+                                  """
+                                    SELECT PERMIS.id,
+                                           PERMIS.type_permis_fk,
+                                           PERMIS.numero_permis AS REFERENCE,
+                                           PERMIS.reference_urbanisme AS REFERENCE_URB,
+                                           PERMIS.info_rue_d AS LOCALITE_RUE,
+                                           PERMIS.numero AS LOCALITE_NUM,
+                                           LOCALITE.code_postal AS LOCALITE_CP,
+                                           LOCALITE.libelle_f AS LOCALITE_LABEL,
+                                           PERMIS.date_demande AS DATE_DEMANDE,
+                                           PERMIS.date_recepisse AS DATE_RECEPISSE,
+                                           PERMIS.date_depot AS DATE_DEPOT,
+                                           NATURE.libelle_f AS NATURE_TITRE,
+                                           PERMIS.libnat AS NATURE_DETAILS,
+                                           PERMIS.remarque_resume AS REMARQUES,
+                                           DEMANDEURS.CONCAT_DEMANDEUR  AS INFOS_DEMANDEURS,
+                                           IF(PARCELS.CONCAT_PARCELS = '1|.|0000/00#000', '', PARCELS.CONCAT_PARCELS) AS INFOS_PARCELLES,
+                                           PERMIS.date_permis_annule_abandon AS DATE_PERMIS_ABANDON,
+                                           AUTORISATION.date_autorisation_college AS AUTORISATION_DATE_AUTORISATION_COLLEGE,
+                                           AUTORISATION.date_refus_college AS AUTORISATION_DATE_REFUS_COLLEGE,
+                                           AVIS_COLLEGE.libelle_f AS AVIS_COLLEGE_LABEL,
+                                           AUTORISATION.date_autorisation_tutelle AS AUTORISATION_DATE_AUTORISATION_TUTELLE,
+                                           AUTORISATION.date_refus_tutelle AS AUTORISATION_DATE_REFUS_TUTELLE,
+                                           PERMIS_DOCUMENTS.DOCUMENTS AS INFOS_DOCUMENTS,
+                                           ORG.nom AS ORG_NOM,
+                                           ORG.prenom AS ORG_PRENOM,
+                                           ORG.rue AS ORG_RUE,
+                                           ORG.numero AS ORG_NUMERO,
+                                           ORG.code_postal AS ORG_CP,
+                                           ORG.localite AS ORG_LOCALITE,
+                                           ORG.telephone AS ORG_TEL,
+                                           ORG.gsm AS ORG_MOBILE,
+                                           ORG.mail AS ORG_MAIL,
+                                           ORG.type_list AS ORG_TYPE
+                                    FROM p_permis AS PERMIS
+                                    LEFT JOIN get_demandeurs AS DEMANDEURS ON DEMANDEURS.ID_PERMIS = PERMIS.id
+                                    LEFT JOIN get_parcelles AS PARCELS ON PARCELS.ID_PERMIS = PERMIS.id
+                                    LEFT JOIN c_localite AS LOCALITE ON PERMIS.localite_fk = LOCALITE.id
+                                    LEFT JOIN c_nature AS NATURE ON PERMIS.nature_fk = NATURE.id
+                                    LEFT JOIN p_permis_autre_dossier AS PAD ON PAD.id = PERMIS.id
+                                    LEFT JOIN c_organisme AS ORG ON PAD.organisme_fk = ORG.id
+                                    LEFT JOIN p_autorisation AS AUTORISATION ON PAD.autorisation_fk = AUTORISATION.id
+                                    LEFT JOIN c_avis_college AS AVIS_COLLEGE ON AVIS_COLLEGE.id = AUTORISATION.avis_college_fk
+                                    LEFT JOIN get_document_infos AS PERMIS_DOCUMENTS ON PERMIS_DOCUMENTS.ID_PERMIS = PERMIS.id
+                                    WHERE PERMIS.type_permis_fk = 11;
+                                  """
+                                  )
+
+    import_urbaweb.db.create_view("permis_autre_dossier_vue_client",
+                                  """
+                                    SELECT PERMIS.id,
+                                           PERMIS.numero_permis AS REFERENCE,
+                                           PERMIS.reference_urbanisme AS REFERENCE_URB,
+                                           PERMIS.info_rue_d AS LOCALITE_RUE,
+                                           PERMIS.numero AS LOCALITE_NUM,
+                                           LOCALITE.code_postal AS LOCALITE_CP,
+                                           LOCALITE.libelle_f AS LOCALITE_LABEL,
+                                           PERMIS.date_demande AS DATE_DEMANDE,
+                                           PERMIS.date_recepisse AS DATE_RECEPISSE,
+                                           PERMIS.date_depot AS DATE_DEPOT,
+                                           NATURE.libelle_f AS NATURE_TITRE,
+                                           PERMIS.libnat AS NATURE_DETAILS,
+                                           PERMIS.remarque_resume AS REMARQUES,
+                                           DEMANDEURS.CONCAT_DEMANDEUR  AS INFOS_DEMANDEURS,
+                                           IF(PARCELS.CONCAT_PARCELS = '1|.|0000/00#000', '', PARCELS.CONCAT_PARCELS) AS INFOS_PARCELLES,
+                                           PERMIS.date_permis_annule_abandon AS DATE_PERMIS_ABANDON,
+                                           AUTORISATION.date_autorisation_college AS AUTORISATION_DATE_AUTORISATION_COLLEGE,
+                                           AUTORISATION.date_refus_college AS AUTORISATION_DATE_REFUS_COLLEGE,
+                                           AVIS_COLLEGE.libelle_f AS AVIS_COLLEGE_LABEL,
+                                           AUTORISATION.date_autorisation_tutelle AS AUTORISATION_DATE_AUTORISATION_TUTELLE,
+                                           AUTORISATION.date_refus_tutelle AS AUTORISATION_DATE_REFUS_TUTELLE,
+                                           ORG.nom AS ORG_NOM,
+                                           ORG.prenom AS ORG_PRENOM,
+                                           ORG.rue AS ORG_RUE,
+                                           ORG.numero AS ORG_NUMERO,
+                                           ORG.code_postal AS ORG_CP,
+                                           ORG.localite AS ORG_LOCALITE,
+                                           ORG.telephone AS ORG_TEL,
+                                           ORG.gsm AS ORG_MOBILE,
+                                           ORG.mail AS ORG_MAIL,
+                                           ORG.type_list AS ORG_TYPE
+                                    FROM p_permis AS PERMIS
+                                    LEFT JOIN get_demandeurs AS DEMANDEURS ON DEMANDEURS.ID_PERMIS = PERMIS.id
+                                    LEFT JOIN get_parcelles AS PARCELS ON PARCELS.ID_PERMIS = PERMIS.id
+                                    LEFT JOIN c_localite AS LOCALITE ON PERMIS.localite_fk = LOCALITE.id
+                                    LEFT JOIN c_nature AS NATURE ON PERMIS.nature_fk = NATURE.id
+                                    LEFT JOIN p_permis_autre_dossier AS PAD ON PAD.id = PERMIS.id
+                                    LEFT JOIN c_organisme AS ORG ON PAD.organisme_fk = ORG.id
+                                    LEFT JOIN p_autorisation AS AUTORISATION ON PAD.autorisation_fk = AUTORISATION.id
+                                    LEFT JOIN c_avis_college AS AVIS_COLLEGE ON AVIS_COLLEGE.id = AUTORISATION.avis_college_fk
+                                    LEFT JOIN get_document_infos AS PERMIS_DOCUMENTS ON PERMIS_DOCUMENTS.ID_PERMIS = PERMIS.id
+                                    WHERE PERMIS.type_permis_fk = 11;
+                                  """
+                                  )
+
+    import_urbaweb.db.create_view("permis_env_vue",
+                                  """
+                                    SELECT PERMIS.id,
+                                    PERMIS.type_permis_fk,
+                                    PERMIS.numero_permis AS REFERENCE,
+                                    PERMIS.reference_urbanisme  AS REFERENCE_URB,
+                                    (IF(PE.environnement_classe_fk != 1, environnement_classe_fk -1,environnement_classe_fk)) AS CLASSE,
+                                    PERMIS.info_rue_d AS LOCALITE_RUE,
+                                    PERMIS.numero  AS LOCALITE_NUM,
+                                    LOCALITE.code_postal AS LOCALITE_CP,
+                                    LOCALITE.libelle_f AS LOCALITE_LABEL,
+                                    PERMIS.date_demande AS DATE_DEMANDE,
+                                    PERMIS.date_recepisse AS DATE_RECEPISSE,
+                                    PERMIS.date_depot AS DATE_DEPOT,
+                                    NATURE.libelle_f AS NATURE_TITRE,
+                                    PERMIS.libnat AS NATURE_DETAILS,
+                                    IFNULL(PERMIS.remarque_resume, '') AS REMARQUES,
+                                    DEMANDEURS.CONCAT_DEMANDEUR AS INFOS_DEMANDEURS,
+                                    IF(PARCELS.CONCAT_PARCELS = '1|.|0000/00#000', '', PARCELS.CONCAT_PARCELS) AS INFOS_PARCELS,
+                                    PERMIS.date_permis_annule_abandon  AS DATE_PERMIS_ABANDON,
+                                    PE_DECISION.date_autorisation_college AS DATE_AUTORISATION_COLLEGE,
+                                    PE_DECISION.date_autorisation_tutelle AS DATE_AUTORISATION_TUTELLE,
+                                    PE_DECISION.date_refus_college AS DATE_REFUS_COLLEGE,
+                                    RUBRICS.CONCAT_RUBRICS_CODE AS INFOS_RUBRIQUES,
+                                    PERMIS_DOCUMENTS.DOCUMENTS AS INFOS_DOCUMENTS
+                                    FROM p_permis AS PERMIS
+                                    LEFT JOIN get_demandeurs AS DEMANDEURS ON DEMANDEURS.ID_PERMIS = PERMIS.id
+                                    LEFT JOIN get_parcelles AS PARCELS ON PARCELS.ID_PERMIS = PERMIS.id
+                                    LEFT JOIN c_localite AS LOCALITE ON PERMIS.localite_fk = LOCALITE.id
+                                    LEFT JOIN c_nature AS NATURE ON PERMIS.nature_fk = NATURE.id
+                                    LEFT JOIN p_permis_environnement AS PE ON PE.id = PERMIS.id
+                                    LEFT JOIN p_decision_environnement AS PE_DECISION ON PE.decision_environnement_fk = PE_DECISION.id
+                                    LEFT JOIN get_rubrics AS RUBRICS ON RUBRICS.ID_PERMIS = PERMIS.id
+                                    LEFT JOIN get_document_infos AS PERMIS_DOCUMENTS ON PERMIS_DOCUMENTS.ID_PERMIS = PERMIS.id
+                                    WHERE PERMIS.type_permis_fk = 6;
+                                  """
+                                  )
+
+    import_urbaweb.db.create_view("permis_env_vue_client",
+                                  """
+                                    SELECT PERMIS.id,
+                                    PERMIS.numero_permis AS REFERENCE,
+                                    PERMIS.reference_urbanisme  AS REFERENCE_URB,
+                                    PERMIS.info_rue_d AS LOCALITE_RUE,
+                                    PERMIS.numero  AS LOCALITE_NUM,
+                                    LOCALITE.code_postal AS LOCALITE_CP,
+                                    LOCALITE.libelle_f AS LOCALITE_LABEL,
+                                    PERMIS.date_demande AS DATE_DEMANDE,
+                                    PERMIS.date_recepisse AS DATE_RECEPISSE,
+                                    PERMIS.date_depot AS DATE_DEPOT,
+                                    NATURE.libelle_f AS NATURE_TITRE,
+                                    PERMIS.libnat AS NATURE_DETAILS,
+                                    IFNULL(PERMIS.remarque_resume, '') AS REMARQUES,
+                                    DEMANDEURS.CONCAT_DEMANDEUR AS INFOS_DEMANDEURS,
+                                    IF(PARCELS.CONCAT_PARCELS = '1|.|0000/00#000', '', PARCELS.CONCAT_PARCELS) AS INFOS_PARCELS,
+                                    PERMIS.date_permis_annule_abandon  AS DATE_PERMIS_ABANDON,
+                                    PE_DECISION.date_autorisation_college AS DATE_AUTORISATION_COLLEGE,
+                                    PE_DECISION.date_autorisation_tutelle AS DATE_AUTORISATION_TUTELLE,
+                                    PE_DECISION.date_refus_college AS DATE_REFUS_COLLEGE,
+                                    RUBRICS.CONCAT_RUBRICS_CODE AS INFOS_RUBRIQUES
+                                    FROM p_permis AS PERMIS
+                                    LEFT JOIN get_demandeurs AS DEMANDEURS ON DEMANDEURS.ID_PERMIS = PERMIS.id
+                                    LEFT JOIN get_parcelles AS PARCELS ON PARCELS.ID_PERMIS = PERMIS.id
+                                    LEFT JOIN c_localite AS LOCALITE ON PERMIS.localite_fk = LOCALITE.id
+                                    LEFT JOIN c_nature AS NATURE ON PERMIS.nature_fk = NATURE.id
+                                    LEFT JOIN p_permis_environnement AS PE ON PE.id = PERMIS.id
+                                    LEFT JOIN p_decision_environnement AS PE_DECISION ON PE.decision_environnement_fk = PE_DECISION.id
+                                    LEFT JOIN get_rubrics AS RUBRICS ON RUBRICS.ID_PERMIS = PERMIS.id
+                                    LEFT JOIN get_document_infos AS PERMIS_DOCUMENTS ON PERMIS_DOCUMENTS.ID_PERMIS = PERMIS.id
+                                    WHERE PERMIS.type_permis_fk = 6;
+                                  """
+                                  )
+
+    import_urbaweb.db.create_view("permis_urbanisme_codt_vue",
+                                  """
+                                    SELECT PERMIS.id,
+                                           PERMIS.type_permis_fk,
+                                           PERMIS.numero_permis AS REFERENCE,
+                                           PERMIS.reference_urbanisme AS REFERENCE_URB,
+                                           PERMIS.info_rue_d AS LOCALITE_RUE,
+                                           PERMIS.numero AS LOCALITE_NUM,
+                                           LOCALITE.code_postal AS LOCALITE_CP,
+                                           LOCALITE.libelle_f AS LOCALITE_LABEL,
+                                           PERMIS.date_demande AS DATE_DEMANDE,
+                                           PERMIS.date_recepisse AS DATE_RECEPISSE,
+                                           PERMIS.date_depot AS DATE_DEPOT,
+                                           NATURE.libelle_f AS NATURE_TITRE,
+                                           PERMIS.libnat AS NATURE_DETAILS,
+                                           PERMIS.remarque_resume AS REMARQUES,
+                                           DEMANDEURS.CONCAT_DEMANDEUR  AS INFOS_DEMANDEURS,
+                                           IF(PARCELS.CONCAT_PARCELS = '1|.|0000/00#000', '', PARCELS.CONCAT_PARCELS) AS INFOS_PARCELLES,
+                                           PERMIS.date_permis_annule_abandon AS DATE_PERMIS_ABANDON,
+                                           AUTORISATION.date_decision_college AS AUTORISATION_DATE_DECISION_COLLEGE,
+                                           PERMIS_DOCUMENTS.DOCUMENTS AS INFOS_DOCUMENTS,
+                                           ORG.nom AS ORG_NOM,
+                                           ORG.prenom AS ORG_PRENOM,
+                                           ORG.rue AS ORG_RUE,
+                                           ORG.numero AS ORG_NUMERO,
+                                           ORG.code_postal AS ORG_CP,
+                                           ORG.localite AS ORG_LOCALITE,
+                                           ORG.telephone AS ORG_TEL,
+                                           ORG.gsm AS ORG_MOBILE,
+                                           ORG.mail AS ORG_MAIL,
+                                           ORG.type_list AS ORG_TYPE
+                                    FROM p_permis AS PERMIS
+                                    LEFT JOIN get_demandeurs AS DEMANDEURS ON DEMANDEURS.ID_PERMIS = PERMIS.id
+                                    LEFT JOIN get_parcelles AS PARCELS ON PARCELS.ID_PERMIS = PERMIS.id
+                                    LEFT JOIN c_localite AS LOCALITE ON PERMIS.localite_fk = LOCALITE.id
+                                    LEFT JOIN c_nature AS NATURE ON PERMIS.nature_fk = NATURE.id
+                                    LEFT JOIN p_permis_urbanisme_codt AS PUCODT ON PUCODT.id = PERMIS.id
+                                    LEFT JOIN c_organisme AS ORG ON PUCODT.organisme_fk = ORG.id
+                                    LEFT JOIN p_autorisation_codt AS AUTORISATION ON PUCODT.autorisation_codt_fk = AUTORISATION.id
+                                    LEFT JOIN get_document_infos AS PERMIS_DOCUMENTS ON PERMIS_DOCUMENTS.ID_PERMIS = PERMIS.id
+                                    WHERE PERMIS.type_permis_fk = 24;
+                                  """
+                                  )
+
+    import_urbaweb.db.create_view("permis_urbanisme_codt_vue_client",
+                                  """
+                                    SELECT PERMIS.id,
+                                           PERMIS.numero_permis AS REFERENCE,
+                                           PERMIS.reference_urbanisme AS REFERENCE_URB,
+                                           PERMIS.info_rue_d AS LOCALITE_RUE,
+                                           PERMIS.numero AS LOCALITE_NUM,
+                                           LOCALITE.code_postal AS LOCALITE_CP,
+                                           LOCALITE.libelle_f AS LOCALITE_LABEL,
+                                           PERMIS.date_demande AS DATE_DEMANDE,
+                                           PERMIS.date_recepisse AS DATE_RECEPISSE,
+                                           PERMIS.date_depot AS DATE_DEPOT,
+                                           NATURE.libelle_f AS NATURE_TITRE,
+                                           PERMIS.libnat AS NATURE_DETAILS,
+                                           PERMIS.remarque_resume AS REMARQUES,
+                                           DEMANDEURS.CONCAT_DEMANDEUR  AS INFOS_DEMANDEURS,
+                                           IF(PARCELS.CONCAT_PARCELS = '1|.|0000/00#000', '', PARCELS.CONCAT_PARCELS) AS INFOS_PARCELLES,
+                                           PERMIS.date_permis_annule_abandon AS DATE_PERMIS_ABANDON,
+                                           AUTORISATION.date_decision_college AS AUTORISATION_DATE_DECISION_COLLEGE,
+                                           ORG.nom AS ORG_NOM,
+                                           ORG.prenom AS ORG_PRENOM,
+                                           ORG.rue AS ORG_RUE,
+                                           ORG.numero AS ORG_NUMERO,
+                                           ORG.code_postal AS ORG_CP,
+                                           ORG.localite AS ORG_LOCALITE,
+                                           ORG.telephone AS ORG_TEL,
+                                           ORG.gsm AS ORG_MOBILE,
+                                           ORG.mail AS ORG_MAIL,
+                                           ORG.type_list AS ORG_TYPE
+                                    FROM p_permis AS PERMIS
+                                    LEFT JOIN get_demandeurs AS DEMANDEURS ON DEMANDEURS.ID_PERMIS = PERMIS.id
+                                    LEFT JOIN get_parcelles AS PARCELS ON PARCELS.ID_PERMIS = PERMIS.id
+                                    LEFT JOIN c_localite AS LOCALITE ON PERMIS.localite_fk = LOCALITE.id
+                                    LEFT JOIN c_nature AS NATURE ON PERMIS.nature_fk = NATURE.id
+                                    LEFT JOIN p_permis_urbanisme_codt AS PUCODT ON PUCODT.id = PERMIS.id
+                                    LEFT JOIN c_organisme AS ORG ON PUCODT.organisme_fk = ORG.id
+                                    LEFT JOIN p_autorisation_codt AS AUTORISATION ON PUCODT.autorisation_codt_fk = AUTORISATION.id
+                                    LEFT JOIN get_document_infos AS PERMIS_DOCUMENTS ON PERMIS_DOCUMENTS.ID_PERMIS = PERMIS.id
+                                    WHERE PERMIS.type_permis_fk = 24;
+                                  """
+                                  )
+
+
+def create_concat_views(import_urbaweb):
+
+    import_urbaweb.db.create_view("get_demandeurs",
+                                  """
+                                      SELECT
+                                        `permis`.
+                                        `id`
+                                        AS
+                                        `ID_PERMIS`,
+                                        GROUP_CONCAT(REPLACE(CONCAT(
+                                            `demandeur`.
+                                        `civilite_fk`,
+                                        '|',
+                                        `demandeur`.
+                                        `prenom`,
+                                        '|',
+                                        `demandeur`.
+                                        `nom`,
+                                        '|',
+                                        `demandeur`.
+                                        `numero`,
+                                        '|',
+                                        `demandeur`.
+                                        `rue`,
+                                        '|',
+                                        `demandeur`.
+                                        `localite`,
+                                        '|',
+                                        `demandeur`.
+                                        `telephone`,
+                                        '|',
+                                        `demandeur`.
+                                        `gsm`,
+                                        '|',
+                                        `demandeur`.
+                                        `mail`), '#', '')
+                                        SEPARATOR
+                                        '#') AS
+                                        `CONCAT_DEMANDEUR`
+                                    FROM
+                                    (`p_permis` `permis`
+                                    LEFT JOIN `p_demandeur` `demandeur` ON ((`demandeur`.`permis_fk` = `permis`.`id`)))
+                                    GROUP
+                                    BY
+                                    `ID_PERMIS`;
+                                  """
+                                  )
+    import_urbaweb.db.create_view("get_parcelles",
+                                  """
+                                    SELECT
+                                        `permis`.`id` AS `ID_PERMIS`,
+                                        GROUP_CONCAT( `parcels`.`division_fk`, '|', `parcels`.`section_cadastrale`, '|', `parcels`.`cadastre`
+                                            SEPARATOR '@') AS `CONCAT_PARCELS`
+                                    FROM
+                                        (`p_permis` `permis`
+                                        LEFT JOIN `p_parcelle` `parcels` ON ((`parcels`.`permis_fk` = `permis`.`id`)))
+                                    GROUP BY `ID_PERMIS`;
+                                  """
+                                  )
+
+    import_urbaweb.db.create_view("get_document_infos",
+                                  """
+                                    SELECT
+                                        `permis`.`id` AS `ID_PERMIS`,
+                                        GROUP_CONCAT( `infos`.`id_document`,'|', `infos`.`libelle`,'|', `infos`.`file_id`
+                                            SEPARATOR '@') AS `DOCUMENTS`
+                                    FROM
+                                        (`p_permis` `permis`
+                                        LEFT JOIN `p_document_info_permis` `infos` ON ((`infos`.`permis_fk` = `permis`.`id`)))
+                                    GROUP BY `ID_PERMIS`;
+                                  """
+                                  )
+
+    import_urbaweb.db.create_view("get_rubrics_unique",
+                                  """
+                                    SELECT
+                                        `permis`.`id` AS `ID_PERMIS`,
+                                        GROUP_CONCAT( `LABEL_RUBRIC`.`code`
+                                            SEPARATOR '@') AS `CONCAT_RUBRICS_CODE`
+                                    FROM
+                                        (`p_permis` `permis`
+                                        LEFT JOIN `j_permis_unique_environnement_arrete_rubrique` `JOIN_PUN_RUBRIC` ON ((`JOIN_PUN_RUBRIC`.`permis_id` = `permis`.`id`))
+                                        LEFT JOIN `c_environnement_arrete_rubrique` `LABEL_RUBRIC` ON ((`JOIN_PUN_RUBRIC`.`environnement_arrete_rubrique_id` = `LABEL_RUBRIC`.`id`)))
+                                    GROUP BY `ID_PERMIS`;
+                                  """
+                                  )
+
+    import_urbaweb.db.create_view("get_rubrics_cl3",
+                                  """
+                                    SELECT
+                                        `permis`.`id` AS `ID_PERMIS`,
+                                        GROUP_CONCAT( `LABEL_RUBRIC`.`code`
+                                            SEPARATOR '@') AS `CONCAT_RUBRICS_CODE`
+                                    FROM
+                                        (`p_permis` `permis`
+                                        LEFT JOIN `j_permis_environnement_classe3_environnement_arrete_rubrique` `JOIN_PE3_RUBRIC` ON ((`JOIN_PE3_RUBRIC`.`permis_id` = `permis`.`id`))
+                                        LEFT JOIN `c_environnement_arrete_rubrique` `LABEL_RUBRIC` ON ((`JOIN_PE3_RUBRIC`.`environnement_arrete_rubrique_id` = `LABEL_RUBRIC`.`id`)))
+                                    GROUP BY `ID_PERMIS`;
+                                  """
+                                  )
+
+    import_urbaweb.db.create_view("get_rubrics",
+                                  """
+                                    SELECT
+                                        `permis`.`id` AS `ID_PERMIS`,
+                                        GROUP_CONCAT( `LABEL_RUBRIC`.`code`
+                                            SEPARATOR '@') AS `CONCAT_RUBRICS_CODE`
+                                    FROM
+                                        (`p_permis` `permis`
+                                        LEFT JOIN `j_permis_environnement_environnement_arrete_rubrique` `JOIN_PE_RUBRIC` ON ((`JOIN_PE_RUBRIC`.`permis_id` = `permis`.`id`))
+                                        LEFT JOIN `c_environnement_arrete_rubrique` `LABEL_RUBRIC` ON ((`JOIN_PE_RUBRIC`.`environnement_arrete_rubrique_id` = `LABEL_RUBRIC`.`id`)))
+                                    GROUP BY `ID_PERMIS`;
+                                  """
                                   )

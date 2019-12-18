@@ -23,6 +23,14 @@ def format_path(path):
     return os.path.join(os.getcwd(), path)
 
 
+def represent_int(string):
+    try:
+        int(string)
+        return True
+    except ValueError:
+        return False
+
+
 def parse_cadastral_reference(string):
     cadastral_regex = '\W*(?P<division>\d+)?\W*(?P<section>[A-Z])?\W*(?P<radical>\d+)?\W*/?\s*(?P<bis>\d+)?\W*' \
                       '(?P<exposant>[a-zA-Z])?\W*(?P<puissance>\d+)?\W*(?P<partie>pie)?.*'
@@ -34,11 +42,11 @@ def parse_cadastral_reference(string):
 
 
 def export_to_customer_json(import_object):
-    json_data = json.dumps(import_object.data)
+    json_data = json.dumps([import_object.data])
     path = import_object.config['main']['output_customer_path']
-    output_customer_licence_type_split = bool(import_object.config['main']['output_customer_licence_type_split'])
+    output_customer_licence_type_split = import_object.config['main']['output_customer_licence_type_split']
     creation_date = datetime.datetime.now().strftime("%Y%m%d")
-    if not output_customer_licence_type_split:
+    if output_customer_licence_type_split != 'True':
         translate_and_write(json_data, "{0}.{1}".format(path, "json"))
     else:
         licence_types = ["BuildLicence",
@@ -52,7 +60,6 @@ def export_to_customer_json(import_object):
                          "Declaration",
                          "Division"
                          ]
-
         licences = pd.DataFrame(import_object.data)
         output_customer_licence_type_count = import_object.config['main']['output_customer_licence_type_count']
         random_selection = import_object.config['main']['output_customer_licence_type_random_selection']
@@ -60,7 +67,7 @@ def export_to_customer_json(import_object):
             filtered_licences = licences[licences.portalType == licence_type]
             json_data = filtered_licences.to_json(orient='records')
             if output_customer_licence_type_count.isdigit():
-                if random_selection:
+                if random_selection == 'True':
                     licence_list = json.loads(json_data)
                     shuffle(licence_list)
                     split_string = licence_list[:int(output_customer_licence_type_count)]
