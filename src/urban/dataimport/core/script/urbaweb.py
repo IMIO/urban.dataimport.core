@@ -13,10 +13,7 @@ import time
 from urban.dataimport.core.db import LazyDB
 from urban.dataimport.core.json import get_licence_dict, get_work_locations_dict, DateTimeEncoder, get_applicant_dict, \
     get_organization_dict, get_parcel_dict, get_event_dict
-from urban.dataimport.core.mapping.acropole_mapping import state_mapping, decision_vocabulary_mapping, \
-    custom_state_label_mapping, refused_main_label_mapping, accepted_main_label_mapping, main_state_id_mapping, \
-    events_types
-from urban.dataimport.core.mapping.urbaweb_mapping import division_mapping
+from urban.dataimport.core.mapping.urbaweb_mapping import division_mapping, events_types, decision_code_mapping
 from urban.dataimport.core.mapping.urbaweb_mapping import portal_type_mapping
 from urban.dataimport.core.utils import BaseImport, StateManager, StateHandler, benchmark_decorator, \
     export_to_customer_json, represent_int, IterationError
@@ -136,7 +133,7 @@ class ImportUrbaweb(BaseImport):
         # licence_dict['notaries'] = self.get_organisation(licence, 'notary')
         self.get_applicants(licence, licence_dict['__children__'])
         self.get_parcels(licence, licence_dict['__children__'])
-        # self.get_events(licence, licence_dict['__children__'])
+        self.get_events(licence, licence_dict)
         description = str(''.join(str(d) for d in self.licence_description))
         licence_dict['description'] = {
             'data': "{}{} - {} {}{}".format("<p>", description, licence.NATURE_DETAILS, licence.REMARQUES, "</p>"),
@@ -346,58 +343,51 @@ class ImportUrbaweb(BaseImport):
                 licence_dict['geometricians'].append(organization_dict)
 
     @benchmark_decorator
-    def get_events(self, licence, licence_children):
-        events = self.db.dossier_evenement_vue
+    def get_events(self, licence, licence_dict):
         for key, values in events_types.items():
-            events_etape = events[
-                (events.ETAPE_TETAPEID.isin(values['etape_ids'])) &
-                (events.WRKDOSSIER_ID == licence.WRKDOSSIER_ID)]
             events_param = None
             method = getattr(self, 'get_{0}_event'.format(key))
-            method(licence, events_etape, events_param, licence_children)
+            method(licence, events_param, licence_dict)
 
-    def get_recepisse_event(self, licence, events_etape, events_param, licence_children):
-        for id, event in events_etape.iterrows():
-            event_dict = get_event_dict()
-            event_dict['title'] = 'Récépissé'
-            event_dict['type'] = 'recepisse'
-            event_dict['event_id'] = 'depot-de-la-demande'
-            event_dict['eventDate'] = event.ETAPE_DATEDEPART
-            licence_children.append(event_dict)
-
-    def get_decision_event(self, licence, events_etape, events_param, licence_children):
+    def get_recepisse_event(self, licence, events_param, licence_dict):
         event_dict = get_event_dict()
-        event_dict['title'] = 'Décision'
+        event_dict['title'] = 'Récépissé'
+        event_dict['type'] = 'recepisse'
+        event_dict['event_id'] = 'depot-de-la-demande'
+        event_dict['eventDate'] = licence.DATE_RECEPISSE
+        licence_dict['__children__'].append(event_dict)
+
+    def get_decision_event(self, licence, events_param, licence_dict):
+        event_dict = get_event_dict()
+        event_dict['type'] = 'decision'
         event_dict['event_id'] = 'delivrance-du-permis-octroi-ou-refus'
-        # event_dict['type'] = 'delivrance-du-permis-octroi-ou-refus'
-        event_dict['eventDate'] = str(licence.DOSSIER_DATEDELIV)
-        if str(licence.DOSSIER_OCTROI) == 'nan':
-            self.licence_description.append({'Intitulé de décision': 'indéterminé / NaN'})
+        if licence_dict['portalType'] == 'CODT_BuildLicence':
+            decision_code = decision_code_mapping.get(licence.DECISION_COLLEGE, "")
+            event_dict['eventDate'] = licence.DATE_DECISION_COLLEGE
+            event_dict['decisionDate'] = licence.DATE_DECISION_COLLEGE
+            event_dict['decision'] = decision_code
+            licence_dict['__children__'].append(event_dict)
         else:
-            state = int(licence.DOSSIER_OCTROI)
-            decision_label = "NON CONNU"
-            if state in main_state_id_mapping:
-                portal_type = self.get_portal_type(licence)
-                if state == 0:  # refusé
-                    decision_label = refused_main_label_mapping.get(portal_type)
-                elif state == 1:  # accepté
-                    decision_label = accepted_main_label_mapping.get(portal_type)
-                self.licence_description.append({'Intitulé de décision': decision_label})
-            else:
-                decision_label = custom_state_label_mapping.get(str(state))
-                self.licence_description.append({'Intitulé de décision': decision_label})
-            event_dict['decision_label'] = decision_label
-            if decision_vocabulary_mapping.get(state_mapping.get(licence.DOSSIER_OCTROI)):
-                event_dict['decision'] = decision_vocabulary_mapping.get(state_mapping.get(licence.DOSSIER_OCTROI))
-            if events_etape.shape[0] > 1:
-                raise ValueError('Too many decision events')
-            elif events_etape.shape[0] == 1:
-                event = events_etape.iloc[0]
-                event_dict['decisionDate'] = event.ETAPE_DATEDEPART
-                # if eventDate don't exist, decisionDate is used
-                if not event_dict['eventDate'] or event_dict['eventDate'] == 'NaT':
-                    event_dict['decisionDate'] = event.ETAPE_DATEDEPART
-        licence_children.append(event_dict)
+            if licence.AUTORISATION_DATE_AUTORISATION_COLLEGE or licence.AUTORISATION_DATE_REFUS_COLLEGE:
+                event_dict['title'] = 'Décision'
+                if licence.AUTORISATION_DATE_AUTORISATION_COLLEGE and not licence.AUTORISATION_DATE_REFUS_COLLEGE:
+                    event_dict['eventDate'] = licence.AUTORISATION_DATE_AUTORISATION_COLLEGE
+                    event_dict['decisionDate'] = licence.AUTORISATION_DATE_AUTORISATION_COLLEGE
+                    event_dict['decision'] = 'Octroi'
+                elif not licence.AUTORISATION_DATE_AUTORISATION_COLLEGE and licence.AUTORISATION_DATE_REFUS_COLLEGE:
+                    event_dict['eventDate'] = licence.AUTORISATION_DATE_REFUS_COLLEGE
+                    event_dict['decisionDate'] = licence.AUTORISATION_DATE_REFUS_COLLEGE
+                    event_dict['decision'] = 'Refus'
+                elif licence.AUTORISATION_DATE_AUTORISATION_COLLEGE and licence.AUTORISATION_DATE_REFUS_COLLEGE:
+                    if licence.AUTORISATION_DATE_AUTORISATION_COLLEGE > licence.AUTORISATION_DATE_REFUS_COLLEGE:
+                        event_dict['eventDate'] = licence.AUTORISATION_DATE_AUTORISATION_COLLEGE
+                        event_dict['decisionDate'] = licence.AUTORISATION_DATE_AUTORISATION_COLLEGE
+                        event_dict['decision'] = 'Octroi'
+                    else:
+                        event_dict['eventDate'] = licence.AUTORISATION_DATE_REFUS_COLLEGE
+                        event_dict['decisionDate'] = licence.AUTORISATION_DATE_REFUS_COLLEGE
+                        event_dict['decision'] = 'Refus'
+                licence_dict['__children__'].append(event_dict)
 
 
 def main():

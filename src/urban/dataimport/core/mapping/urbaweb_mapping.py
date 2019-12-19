@@ -1,3 +1,15 @@
+events_types = {
+        'recepisse': {
+        },
+        # 'completefolder': {
+        # },
+        # 'incompletefolder': {
+        # },
+        # 'sendtofd': {
+        # },
+        'decision': {
+        },
+}
 
 portal_type_mapping = {
     1: 'BuildLicence',
@@ -15,14 +27,22 @@ portal_type_mapping = {
     17: 'EnvClassThree',
     18: 'Infraction',  # ?
     19: 'PermisLocation',  # ?
-    21: 'InsalubriteLogement',  # ?
-    22: 'CODT_CommercialLicence',
-    23: 'RoadDecree',
-    24: 'CODT_BuildlLicence',
-    25: 'CODT_UrbanCertificateTwo',
-    26: 'CODT_ParcelOutLicence',
-    27: 'CODT_Infraction',
-    28: 'ProjectMeeting',
+    21: 'CODT_CommercialLicence',  # ?
+    22: 'RoadDecree',
+    23: 'CODT_BuildLicence',
+    24: 'CODT_UrbanCertificateTwo',
+    25: 'CODT_ParcelOutLicence',
+    26: 'Infraction CODT',   # ?
+    27: 'ProjectMeeting',
+}
+
+decision_code_mapping = {
+    '0': 'Favorable',
+    '1': 'Favorable conditionné',
+    '2': 'Défavorable',
+    '3': 'Réputé Favorable',
+    '4': '',
+    '': '',
 }
 
 view_endpoint_mapping = {
