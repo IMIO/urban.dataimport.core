@@ -3,7 +3,8 @@ def create_views(import_urbaweb):
                                   """
                                     SELECT PERMIS.id,
                                            PERMIS.type_permis_fk,
-                                           PERMIS.numero_permis AS REFERENCE,
+                                           PERMIS.numero_permis AS REFERENCE_TECH,
+                                           PERMIS.numero_permis_delivre AS REFERENCE,
                                            PERMIS.reference_urbanisme AS REFERENCE_URB,
                                            PERMIS.info_rue_d AS LOCALITE_RUE,
                                            PERMIS.numero AS LOCALITE_NUM,
@@ -56,7 +57,8 @@ def create_views(import_urbaweb):
                                   """
                                     SELECT PERMIS.id,
                                            PERMIS.type_permis_fk,
-                                           PERMIS.numero_permis AS REFERENCE,
+                                           PERMIS.numero_permis AS REFERENCE_TECH,
+                                           PERMIS.numero_permis_delivre AS REFERENCE,
                                            PERMIS.reference_urbanisme AS REFERENCE_URB,
                                            PERMIS.info_rue_d AS LOCALITE_RUE,
                                            PERMIS.numero AS LOCALITE_NUM,
@@ -110,7 +112,8 @@ def create_views(import_urbaweb):
                                   """
                                     SELECT PERMIS.id,
                                     PERMIS.type_permis_fk,
-                                    PERMIS.numero_permis AS REFERENCE,
+                                    PERMIS.numero_permis AS REFERENCE_TECH,
+                                    PERMIS.numero_permis_delivre AS REFERENCE,
                                     PERMIS.reference_urbanisme  AS REFERENCE_URB,
                                     PERMIS.info_rue_d AS LOCALITE_RUE,
                                     PERMIS.numero  AS LOCALITE_NUM,
@@ -146,7 +149,8 @@ def create_views(import_urbaweb):
                                   """
                                     SELECT PERMIS.id,
                                     PERMIS.type_permis_fk,
-                                    PERMIS.numero_permis AS REFERENCE,
+                                    PERMIS.numero_permis AS REFERENCE_TECH,
+                                    PERMIS.numero_permis_delivre AS REFERENCE,
                                     PERMIS.reference_urbanisme  AS REFERENCE_URB,
                                     PERMIS.info_rue_d AS LOCALITE_RUE,
                                     PERMIS.numero  AS LOCALITE_NUM,
@@ -182,7 +186,8 @@ def create_views(import_urbaweb):
                                   """
                                     SELECT PERMIS.id,
                                            PERMIS.type_permis_fk,
-                                           PERMIS.numero_permis AS REFERENCE,
+                                           PERMIS.numero_permis AS REFERENCE_TECH,
+                                           PERMIS.numero_permis_delivre AS REFERENCE,
                                            PERMIS.reference_urbanisme AS REFERENCE_URB,
                                            PERMIS.info_rue_d AS LOCALITE_RUE,
                                            PERMIS.numero AS LOCALITE_NUM,
@@ -231,7 +236,8 @@ def create_views(import_urbaweb):
                                   """
                                     SELECT PERMIS.id,
                                     PERMIS.type_permis_fk,
-                                    PERMIS.numero_permis AS REFERENCE,
+                                   PERMIS.numero_permis AS REFERENCE_TECH,
+                                   PERMIS.numero_permis_delivre AS REFERENCE,
                                     PERMIS.reference_urbanisme  AS REFERENCE_URB,
                                     (IF(PE.environnement_classe_fk != 1, environnement_classe_fk -1,environnement_classe_fk)) AS CLASSE,
                                     PERMIS.info_rue_d AS LOCALITE_RUE,
@@ -321,7 +327,8 @@ def create_views(import_urbaweb):
                                   """
                                     SELECT PERMIS.id,
                                            PERMIS.type_permis_fk,
-                                           PERMIS.numero_permis AS REFERENCE,
+                                           PERMIS.numero_permis AS REFERENCE_TECH,
+                                           PERMIS.numero_permis_delivre AS REFERENCE,
                                            PERMIS.reference_urbanisme AS REFERENCE_URB,
                                            PERMIS.info_rue_d AS LOCALITE_RUE,
                                            PERMIS.numero AS LOCALITE_NUM,
@@ -339,6 +346,7 @@ def create_views(import_urbaweb):
                                            AUTORISATION.date_decision_college AS DATE_DECISION_COLLEGE,
                                            AUTORISATION.decision_college_ AS DECISION_COLLEGE,
                                            PERMIS_DOCUMENTS.DOCUMENTS AS INFOS_DOCUMENTS,
+                                           ORG.civilite_fk AS ORG_TITLE_ID,
                                            ORG.nom AS ORG_NOM,
                                            ORG.prenom AS ORG_PRENOM,
                                            ORG.rue AS ORG_RUE,
@@ -348,7 +356,9 @@ def create_views(import_urbaweb):
                                            ORG.telephone AS ORG_TEL,
                                            ORG.gsm AS ORG_MOBILE,
                                            ORG.mail AS ORG_MAIL,
-                                           ORG.type_list AS ORG_TYPE
+                                           ORG.type_list AS ORG_TYPE,
+                                           DIRECTIVE.fonctionnaire_delegue AS DIRECTIVE_FD,
+                                           DIRECTIVE.autorite_competente AS DIRECTIVE_AUTORITE_COMPETENTE
                                     FROM p_permis AS PERMIS
                                     LEFT JOIN get_demandeurs AS DEMANDEURS ON DEMANDEURS.ID_PERMIS = PERMIS.id
                                     LEFT JOIN get_parcelles AS PARCELS ON PARCELS.ID_PERMIS = PERMIS.id
@@ -358,7 +368,8 @@ def create_views(import_urbaweb):
                                     LEFT JOIN c_organisme AS ORG ON PUCODT.organisme_fk = ORG.id
                                     LEFT JOIN p_autorisation_codt AS AUTORISATION ON PUCODT.autorisation_codt_fk = AUTORISATION.id
                                     LEFT JOIN get_document_infos AS PERMIS_DOCUMENTS ON PERMIS_DOCUMENTS.ID_PERMIS = PERMIS.id
-                                    WHERE PERMIS.type_permis_fk = 23;
+                                    LEFT JOIN p_directive AS DIRECTIVE ON PERMIS.directive_fk = DIRECTIVE.id
+                                    WHERE PERMIS.type_permis_fk = 23 AND DIRECTIVE.autorite_competente NOT IN ('1', '2');
                                   """
                                   )
 
