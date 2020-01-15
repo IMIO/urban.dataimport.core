@@ -13,7 +13,8 @@ import time
 from urban.dataimport.core.db import LazyDB
 from urban.dataimport.core.json import get_licence_dict, get_work_locations_dict, DateTimeEncoder, get_applicant_dict, \
     get_organization_dict, get_parcel_dict, get_event_dict
-from urban.dataimport.core.mapping.urbaweb_mapping import division_mapping, events_types, decision_code_mapping
+from urban.dataimport.core.mapping.urbaweb_mapping import division_mapping, events_types, decision_code_mapping, \
+    title_types
 from urban.dataimport.core.mapping.urbaweb_mapping import portal_type_mapping
 from urban.dataimport.core.utils import BaseImport, StateManager, StateHandler, benchmark_decorator, \
     export_to_customer_json, represent_int, IterationError
@@ -125,7 +126,7 @@ class ImportUrbaweb(BaseImport):
         licence_dict['reference'] = "{}/{}".format(licence.id, licence.REFERENCE)
         # print(' ***{}***'.format(licence_dict['reference']))
         # licence_dict['referenceDGATLP'] = licence.DOSSIER_REFURB and licence.DOSSIER_REFURB or ''
-        licence_dict['licenceSubject'] = licence.NATURE_TITRE
+        licence_dict['licenceSubject'] = licence.NATURE_DETAILS
         licence_dict['usage'] = 'not_applicable'
         licence_dict['workLocations'] = self.get_work_locations(licence)
         # licence_dict['architects'] = self.get_organisation(licence, 'architect')
@@ -181,7 +182,7 @@ class ImportUrbaweb(BaseImport):
                                                          'street': licence.LOCALITE_RUE,
                                                          'number': licence.LOCALITE_NUM,
                                                          'zipcode': licence.LOCALITE_CP,
-                                                         'entity': licence.LOCALITE_LABEL
+                                                         'locality': licence.LOCALITE_LABEL
                                                          })
                         pass
 
@@ -192,13 +193,13 @@ class ImportUrbaweb(BaseImport):
                 work_locations_dict['number'] = licence.LOCALITE_NUM
                 work_locations_dict['zipcode'] = bestaddress_streets.iloc[0]['zip']
 
-                work_locations_dict['entity'] = bestaddress_streets.iloc[0]['entity']
+                work_locations_dict['locality'] = bestaddress_streets.iloc[0]['entity']
             elif result_count > 1:
                 self.licence_description.append({'object': "Plus d'un seul résultat pour cette rue",
                                                  'street': licence.LOCALITE_RUE,
                                                  'number': licence.LOCALITE_NUM,
                                                  'zipcode': licence.LOCALITE_CP,
-                                                 'entity': licence.LOCALITE_LABEL
+                                                 'locality': licence.LOCALITE_LABEL
                                                  })
 
         work_locations_list.append(work_locations_dict)
@@ -212,7 +213,7 @@ class ImportUrbaweb(BaseImport):
         try:
             for applicant_infos in applicants.split("#"):
                 applicant = applicant_infos.split("|")
-                applicant_dict['personTitle'] = ""  # TODO mapping civilite / urban title
+                applicant_dict['personTitle'] = title_types.get(applicant[0], "")
                 applicant_dict['name1'] = applicant[1]
                 applicant_dict['name2'] = applicant[2]
                 applicant_dict['number'] = applicant[3]
@@ -317,7 +318,7 @@ class ImportUrbaweb(BaseImport):
     def get_organization(self, licence, licence_dict):
         organization_dict = get_organization_dict()
         if licence.ORG_NOM:
-            organization_dict['personTitle'] = ""  # TODO mapping civilite / urban title
+            organization_dict['personTitle'] = title_types.get(licence.ORG_TITLE_ID, "")
             organization_dict['name1'] = licence.ORG_NOM
             organization_dict['name2'] = licence.ORG_PRENOM
             organization_dict['number'] = licence.ORG_NUMERO

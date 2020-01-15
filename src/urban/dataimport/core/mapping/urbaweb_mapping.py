@@ -57,3 +57,27 @@ division_mapping = {
     '05': 25054,
     '06': 25078
 }
+
+# title ids, to update for specific locality, by default b.l'a
+title_types = {
+    8: 'mister',
+    49: 'mister',
+    54: 'mister',
+    7: 'misters',
+    45: 'misters',
+    46: 'misters',
+    1: 'madam',
+    30: 'madam',
+    5: 'ladies',
+    41: 'ladies',
+    44: 'ladies',
+    38: 'miss',
+    9: 'madam_and_mister',
+    27: 'madam_and_mister',
+    50: 'madam_and_mister',
+    3: 'master',
+    39: 'master',
+    52: 'master',
+    40: 'masters',
+    4: 'masters',
+}
