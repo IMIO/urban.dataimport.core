@@ -28,6 +28,7 @@ def create_views(import_urbaweb):
                                            RECOUR.remarque  AS RECOUR_REMARQUE,
                                            RECOUR.reference_rw AS RECOUR_REFERENCE,
                                            PERMIS_DOCUMENTS.DOCUMENTS AS INFOS_DOCUMENTS,
+                                           ORG.civilite_fk AS ORG_TITLE_ID,
                                            ORG.nom AS ORG_NOM,
                                            ORG.prenom AS ORG_PRENOM,
                                            ORG.rue AS ORG_RUE,
@@ -37,7 +38,9 @@ def create_views(import_urbaweb):
                                            ORG.telephone AS ORG_TEL,
                                            ORG.gsm AS ORG_MOBILE,
                                            ORG.mail AS ORG_MAIL,
-                                           ORG.type_list AS ORG_TYPE
+                                           ORG.type_list AS ORG_TYPE,
+                                           DIRECTIVE.fonctionnaire_delegue AS DIRECTIVE_FD,
+                                           DIRECTIVE.autorite_competente AS DIRECTIVE_AUTORITE_COMPETENTE
                                     FROM p_permis AS PERMIS
                                     LEFT JOIN get_demandeurs AS DEMANDEURS ON DEMANDEURS.ID_PERMIS = PERMIS.id
                                     LEFT JOIN get_parcelles AS PARCELS ON PARCELS.ID_PERMIS = PERMIS.id
@@ -50,7 +53,8 @@ def create_views(import_urbaweb):
                                     LEFT JOIN p_recour AS RECOUR ON PU.recour_fk = RECOUR.id
                                     LEFT JOIN c_avis_college AS AVIS_RECOUR ON AVIS_RECOUR.id = RECOUR.avis_fk
                                     LEFT JOIN get_document_infos AS PERMIS_DOCUMENTS ON PERMIS_DOCUMENTS.ID_PERMIS = PERMIS.id
-                                    WHERE PERMIS.type_permis_fk = 1;
+                                    LEFT JOIN p_directive AS DIRECTIVE ON PERMIS.directive_fk = DIRECTIVE.id
+                                    WHERE PERMIS.type_permis_fk = 1 AND DIRECTIVE.autorite_competente NOT IN ('1', '2');
                                   """
                                   )
     import_urbaweb.db.create_view("permis_urbanisation_vue",
