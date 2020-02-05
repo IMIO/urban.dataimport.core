@@ -5,6 +5,8 @@ events_types = {
         # },
         # 'incompletefolder': {
         # },
+        'not_receivable': {
+        },
         # 'sendtofd': {
         # },
         'decision': {
@@ -49,6 +51,7 @@ view_endpoint_mapping = {
     'permis_env_vue': '@envclasstwo'
 }
 
+# division code, to update for specific locality, by default b.l'a
 division_mapping = {
     '01': 25014,
     '02': 25742,
@@ -71,7 +74,7 @@ title_types = {
     5: 'ladies',
     41: 'ladies',
     44: 'ladies',
-    38: 'miss',
+    38: 'madam',
     9: 'madam_and_mister',
     27: 'madam_and_mister',
     50: 'madam_and_mister',
@@ -80,4 +83,12 @@ title_types = {
     52: 'master',
     40: 'masters',
     4: 'masters',
+}
+
+licence_status_mapping = {
+    '0': '',
+    '1': 'Octroi',
+    '2': 'Irrecevable',
+    '3': 'Refusé Tutelle',
+    '4': 'Octroi Tutelle',
 }

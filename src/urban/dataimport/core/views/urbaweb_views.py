@@ -6,6 +6,8 @@ def create_views(import_urbaweb):
                                            PERMIS.numero_permis AS REFERENCE_TECH,
                                            PERMIS.numero_permis_delivre AS REFERENCE,
                                            PERMIS.reference_urbanisme AS REFERENCE_URB,
+                                           PERMIS.statut AS STATUT,
+                                           PERMIS.date_statut AS DATE_STATUT,
                                            PERMIS.info_rue_d AS LOCALITE_RUE,
                                            PERMIS.numero AS LOCALITE_NUM,
                                            LOCALITE.code_postal AS LOCALITE_CP,
@@ -19,12 +21,13 @@ def create_views(import_urbaweb):
                                            DEMANDEURS.CONCAT_DEMANDEUR  AS INFOS_DEMANDEURS,
                                            IF(PARCELS.CONCAT_PARCELS = '1|.|0000/00#000', '', PARCELS.CONCAT_PARCELS) AS INFOS_PARCELLES,
                                            AUTORISATION.date_autorisation_college AS AUTORISATION_DATE_AUTORISATION_COLLEGE,
-                                           AUTORISATION.date_refus_college AS AUTORISATION_DATE_REFUS_COLLEGE,
-                                           AVIS_COLLEGE.libelle_f AS AVIS_COLLEGE_LABEL,
+                                           AUTORISATION.date_refus_college AS AUTORISATION_DATE_REFUS_COLLEGE,                                           
                                            AUTORISATION.date_autorisation_tutelle AS AUTORISATION_DATE_AUTORISATION_TUTELLE,
                                            AUTORISATION.date_refus_tutelle AS AUTORISATION_DATE_REFUS_TUTELLE,
-                                           RECOUR.date_arrete AS RECOUR_DATE_ARRETE,
+                                           AVIS_COLLEGE.libelle_f AS AVIS_COLLEGE_LABEL,
                                            AVIS_RECOUR.libelle_f AS RECOUR_AVIS_LABEL,
+                                           RECOUR.date_decision_tutelle DATE_DECISION_TUTELLE,
+                                           RECOUR.decision_tutelle AS DECISION_TUTELLE,
                                            RECOUR.remarque  AS RECOUR_REMARQUE,
                                            RECOUR.reference_rw AS RECOUR_REFERENCE,
                                            PERMIS_DOCUMENTS.DOCUMENTS AS INFOS_DOCUMENTS,
@@ -59,11 +62,13 @@ def create_views(import_urbaweb):
                                   )
     import_urbaweb.db.create_view("permis_urbanisation_vue",
                                   """
-                                    SELECT PERMIS.id,
+                                           SELECT PERMIS.id,
                                            PERMIS.type_permis_fk,
                                            PERMIS.numero_permis AS REFERENCE_TECH,
                                            PERMIS.numero_permis_delivre AS REFERENCE,
                                            PERMIS.reference_urbanisme AS REFERENCE_URB,
+                                           PERMIS.statut AS STATUT,
+                                           PERMIS.date_statut AS DATE_STATUT,
                                            PERMIS.info_rue_d AS LOCALITE_RUE,
                                            PERMIS.numero AS LOCALITE_NUM,
                                            LOCALITE.code_postal AS LOCALITE_CP,
@@ -77,15 +82,17 @@ def create_views(import_urbaweb):
                                            DEMANDEURS.CONCAT_DEMANDEUR  AS INFOS_DEMANDEURS,
                                            IF(PARCELS.CONCAT_PARCELS = '1|.|0000/00#000', '', PARCELS.CONCAT_PARCELS) AS INFOS_PARCELLES,
                                            AUTORISATION.date_autorisation_college AS AUTORISATION_DATE_AUTORISATION_COLLEGE,
-                                           AUTORISATION.date_refus_college AS AUTORISATION_DATE_REFUS_COLLEGE,
-                                           AVIS_COLLEGE.libelle_f AS AVIS_COLLEGE_LABEL,
+                                           AUTORISATION.date_refus_college AS AUTORISATION_DATE_REFUS_COLLEGE,                                           
                                            AUTORISATION.date_autorisation_tutelle AS AUTORISATION_DATE_AUTORISATION_TUTELLE,
                                            AUTORISATION.date_refus_tutelle AS AUTORISATION_DATE_REFUS_TUTELLE,
-                                           RECOUR.date_arrete AS RECOUR_DATE_ARRETE,
+                                           AVIS_COLLEGE.libelle_f AS AVIS_COLLEGE_LABEL,
                                            AVIS_RECOUR.libelle_f AS RECOUR_AVIS_LABEL,
+                                           RECOUR.date_decision_tutelle DATE_DECISION_TUTELLE,
+                                           RECOUR.decision_tutelle AS DECISION_TUTELLE,
                                            RECOUR.remarque  AS RECOUR_REMARQUE,
                                            RECOUR.reference_rw AS RECOUR_REFERENCE,
                                            PERMIS_DOCUMENTS.DOCUMENTS AS INFOS_DOCUMENTS,
+                                           ORG.civilite_fk AS ORG_TITLE_ID,
                                            ORG.nom AS ORG_NOM,
                                            ORG.prenom AS ORG_PRENOM,
                                            ORG.rue AS ORG_RUE,
@@ -95,7 +102,9 @@ def create_views(import_urbaweb):
                                            ORG.telephone AS ORG_TEL,
                                            ORG.gsm AS ORG_MOBILE,
                                            ORG.mail AS ORG_MAIL,
-                                           ORG.type_list AS ORG_TYPE
+                                           ORG.type_list AS ORG_TYPE,
+                                           DIRECTIVE.fonctionnaire_delegue AS DIRECTIVE_FD,
+                                           DIRECTIVE.autorite_competente AS DIRECTIVE_AUTORITE_COMPETENTE
                                     FROM p_permis AS PERMIS
                                     LEFT JOIN get_demandeurs AS DEMANDEURS ON DEMANDEURS.ID_PERMIS = PERMIS.id
                                     LEFT JOIN get_parcelles AS PARCELS ON PARCELS.ID_PERMIS = PERMIS.id
@@ -108,6 +117,7 @@ def create_views(import_urbaweb):
                                     LEFT JOIN p_recour AS RECOUR ON PURB.recour_fk = RECOUR.id
                                     LEFT JOIN c_avis_college AS AVIS_RECOUR ON AVIS_RECOUR.id = RECOUR.avis_fk
                                     LEFT JOIN get_document_infos AS PERMIS_DOCUMENTS ON PERMIS_DOCUMENTS.ID_PERMIS = PERMIS.id
+                                    LEFT JOIN p_directive AS DIRECTIVE ON PERMIS.directive_fk = DIRECTIVE.id
                                     WHERE PERMIS.type_permis_fk = 2;
                                   """
                                   )
@@ -119,6 +129,10 @@ def create_views(import_urbaweb):
                                     PERMIS.numero_permis AS REFERENCE_TECH,
                                     PERMIS.numero_permis_delivre AS REFERENCE,
                                     PERMIS.reference_urbanisme  AS REFERENCE_URB,
+                                    PERMIS.statut AS STATUT,
+                                    PERMIS.date_statut AS DATE_STATUT,
+                                    PE3_DECISION.date_decision AS DATE_DECISION,
+                                    PE3_DECISION.decision AS DECISION,
                                     PERMIS.info_rue_d AS LOCALITE_RUE,
                                     PERMIS.numero  AS LOCALITE_NUM,
                                     LOCALITE.code_postal AS LOCALITE_CP,
@@ -130,10 +144,7 @@ def create_views(import_urbaweb):
                                     PERMIS.libnat AS NATURE_DETAILS,
                                     IFNULL(PERMIS.remarque_resume, '') AS REMARQUES,
                                     DEMANDEURS.CONCAT_DEMANDEUR AS INFOS_DEMANDEURS,
-                                    IF(PARCELS.CONCAT_PARCELS = '1|.|0000/00#000', '', PARCELS.CONCAT_PARCELS) AS INFOS_PARCELS,
-                                    PE3_DECISION.date_autorisation_college AS DATE_AUTORISATION_COLLEGE,
-                                    PE3_DECISION.date_autorisation_tutelle AS DATE_AUTORISATION_TUTELLE,
-                                    PE3_DECISION.date_refus_college AS DATE_REFUS_COLLEGE,
+                                    IF(PARCELS.CONCAT_PARCELS = '1|.|0000/00#000', '', PARCELS.CONCAT_PARCELS) AS INFOS_PARCELLES,
                                     RUBRICS.CONCAT_RUBRICS_CODE AS INFOS_RUBRIQUES,
                                     PERMIS_DOCUMENTS.DOCUMENTS AS INFOS_DOCUMENTS
                                     FROM p_permis AS PERMIS
@@ -167,7 +178,7 @@ def create_views(import_urbaweb):
                                     PERMIS.libnat AS NATURE_DETAILS,
                                     IFNULL(PERMIS.remarque_resume, '') AS REMARQUES,
                                     DEMANDEURS.CONCAT_DEMANDEUR AS INFOS_DEMANDEURS,
-                                    IF(PARCELS.CONCAT_PARCELS = '1|.|0000/00#000', '', PARCELS.CONCAT_PARCELS) AS INFOS_PARCELS,
+                                    IF(PARCELS.CONCAT_PARCELS = '1|.|0000/00#000', '', PARCELS.CONCAT_PARCELS) AS INFOS_PARCELLES,
                                     PUN_DECISION.date_autorisation_college AS DATE_AUTORISATION_COLLEGE,
                                     PUN_DECISION.date_autorisation_tutelle AS DATE_AUTORISATION_TUTELLE,
                                     PUN_DECISION.date_refus_college AS DATE_REFUS_COLLEGE,
@@ -255,7 +266,7 @@ def create_views(import_urbaweb):
                                     PERMIS.libnat AS NATURE_DETAILS,
                                     IFNULL(PERMIS.remarque_resume, '') AS REMARQUES,
                                     DEMANDEURS.CONCAT_DEMANDEUR AS INFOS_DEMANDEURS,
-                                    IF(PARCELS.CONCAT_PARCELS = '1|.|0000/00#000', '', PARCELS.CONCAT_PARCELS) AS INFOS_PARCELS,
+                                    IF(PARCELS.CONCAT_PARCELS = '1|.|0000/00#000', '', PARCELS.CONCAT_PARCELS) AS INFOS_PARCELLES,
                                     PERMIS.date_permis_annule_abandon  AS DATE_PERMIS_ABANDON,
                                     PE_DECISION.date_autorisation_college AS DATE_AUTORISATION_COLLEGE,
                                     PE_DECISION.date_autorisation_tutelle AS DATE_AUTORISATION_TUTELLE,
@@ -334,6 +345,8 @@ def create_views(import_urbaweb):
                                            PERMIS.numero_permis AS REFERENCE_TECH,
                                            PERMIS.numero_permis_delivre AS REFERENCE,
                                            PERMIS.reference_urbanisme AS REFERENCE_URB,
+                                           PERMIS.statut AS STATUT,
+                                           PERMIS.date_statut AS DATE_STATUT,
                                            PERMIS.info_rue_d AS LOCALITE_RUE,
                                            PERMIS.numero AS LOCALITE_NUM,
                                            LOCALITE.code_postal AS LOCALITE_CP,
