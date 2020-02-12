@@ -164,6 +164,9 @@ class ImportUrbaweb(BaseImport):
                 self.licence_description.append({'Demandes Diverses': "Autre Dossier"})
             elif licence.type_permis_fk == 20:
                 self.licence_description.append({'Demandes Diverses': "Insalubrité Logement"})
+            elif licence.type_permis_fk == 19:
+                self.licence_description.append({'Demandes Diverses': "Permis Location"})
+
         return portal_type
 
     @benchmark_decorator

@@ -28,7 +28,7 @@ portal_type_mapping = {
     16: 'ParcelOutLicence',
     17: 'EnvClassThree',
     18: 'Infraction',  # ?
-    19: 'PermisLocation',  # ?
+    19: 'MiscDemand',  # Permis Location
     20: 'MiscDemand',  # Insalubrités logement
     21: 'CODT_CommercialLicence',  # ?
     22: 'RoadDecree',
