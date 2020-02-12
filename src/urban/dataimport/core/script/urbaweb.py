@@ -9,6 +9,7 @@ import argparse
 import configparser
 import json
 import time
+import unidecode
 
 from urban.dataimport.core.db import LazyDB
 from urban.dataimport.core.json import get_licence_dict, get_work_locations_dict, DateTimeEncoder, get_applicant_dict, \
@@ -135,6 +136,8 @@ class ImportUrbaweb(BaseImport):
         self.get_applicants(licence, licence_dict['__children__'])
         self.get_parcels(licence, licence_dict['__children__'])
         self.get_events(licence, licence_dict)
+        self.get_rubrics(licence)
+        self.get_parcellings(licence)
         description = str(''.join(str(d) for d in self.licence_description))
         licence_dict['description'] = {
             'data': "{}{} - {} {}{}".format("<p>", description, licence.NATURE_DETAILS, licence.REMARQUES, "</p>"),
@@ -150,8 +153,17 @@ class ImportUrbaweb(BaseImport):
     @benchmark_decorator
     def get_portal_type(self, licence):
         portal_type = portal_type_mapping.get(licence.type_permis_fk, None)
+        if portal_type == 'BuildLicence' and licence.DIRECTIVE_AUTORITE_COMPETENTE in ('1', '2'):
+            portal_type = 'Article127'
         if portal_type == 'EnvClassOne' and licence.CLASSE == 2:
             portal_type = 'EnvClassTwo'
+        if portal_type == 'NotaryLetter' and licence.TYPE_DOSSIER == '1':
+            portal_type = 'Division'
+        if portal_type == 'MiscDemand':
+            if licence.type_permis_fk == 11:
+                self.licence_description.append({'Demandes Diverses': "Autre Dossier"})
+            elif licence.type_permis_fk == 20:
+                self.licence_description.append({'Demandes Diverses': "Insalubrité Logement"})
         return portal_type
 
     @benchmark_decorator
@@ -190,7 +202,7 @@ class ImportUrbaweb(BaseImport):
             if result_count == 1:
                 work_locations_dict['street'] = bestaddress_streets.iloc[0]['street']
                 work_locations_dict['street_ins'] = str(bestaddress_streets.iloc[0]['key'])
-                work_locations_dict['number'] = licence.LOCALITE_NUM
+                work_locations_dict['number'] = unidecode.unidecode(licence.LOCALITE_NUM)
                 work_locations_dict['zipcode'] = bestaddress_streets.iloc[0]['zip']
 
                 work_locations_dict['locality'] = bestaddress_streets.iloc[0]['entity']
@@ -224,7 +236,7 @@ class ImportUrbaweb(BaseImport):
                 applicant_dict['email'] = applicant[8]
 
                 licence_children.append(applicant_dict)
-        except:
+        except Exception:
             print("debug applicant")
 
     @benchmark_decorator
@@ -311,7 +323,7 @@ class ImportUrbaweb(BaseImport):
                                                          })
                     if parcels_dict['division'] and parcels_dict['section']:
                         licence_children.append(parcels_dict)
-            except:
+            except Exception:
                 print("debug)")
 
     @benchmark_decorator
@@ -321,7 +333,7 @@ class ImportUrbaweb(BaseImport):
             organization_dict['personTitle'] = title_types.get(licence.ORG_TITLE_ID, "")
             organization_dict['name1'] = licence.ORG_NOM
             organization_dict['name2'] = licence.ORG_PRENOM
-            organization_dict['number'] = licence.ORG_NUMERO
+            organization_dict['number'] = unidecode.unidecode(licence.ORG_NUMERO)
             organization_dict['street'] = licence.ORG_RUE
             organization_dict['zipcode'] = licence.ORG_CP
             organization_dict['city'] = licence.ORG_LOCALITE
@@ -331,6 +343,7 @@ class ImportUrbaweb(BaseImport):
 
             if licence.ORG_TYPE == 'ARCHITECTE' or \
                licence.ORG_TYPE == 'ARCHITECTE|DEMANDEUR_CU' or \
+               licence.ORG_TYPE == 'DEMANDEUR_CU' or \
                licence.ORG_TYPE == 'AUTEUR_ETUDE' or \
                licence.ORG_TYPE == 'CONTACT_PEB' or \
                licence.ORG_TYPE == 'BUREAU':
@@ -355,7 +368,10 @@ class ImportUrbaweb(BaseImport):
         event_dict['title'] = 'Récépissé'
         event_dict['type'] = 'recepisse'
         event_dict['event_id'] = 'depot-de-la-demande'
-        event_dict['eventDate'] = licence.DATE_RECEPISSE
+        if licence_dict['portalType'] == "Division":
+            event_dict['eventDate'] = licence.DATE_DEMANDE
+        else:
+            event_dict['eventDate'] = licence.DATE_RECEPISSE
         licence_dict['__children__'].append(event_dict)
 
     def get_not_receivable_event(self, licence, events_param, licence_dict):
@@ -372,102 +388,75 @@ class ImportUrbaweb(BaseImport):
         event_dict['type'] = 'decision'
         event_dict['event_id'] = 'delivrance-du-permis-octroi-ou-refus'
 
-        if licence_dict['portalType'] == 'CODT_BuildLicence':
-            if licence.STATUT == 2:
-                event_dict['decision'] = 'Irrecevable'
-                event_dict['eventDate'] = licence.DATE_STATUT
-                event_dict['decisionDate'] = licence.DATE_STATUT
-            else:
-                decision_code = decision_code_mapping.get(licence.DECISION_COLLEGE, "")
-                event_dict['eventDate'] = licence.DATE_DECISION_COLLEGE
-                event_dict['decisionDate'] = licence.DATE_DECISION_COLLEGE
-                event_dict['decision'] = decision_code
-            licence_dict['__children__'].append(event_dict)
-        elif licence_dict['portalType'] == 'BuildLicence' or licence_dict['portalType'] == 'ParcelOutLicence':
-            if licence.STATUT == 4 and licence.DATE_STATUT:
-                event_dict['decision'] = 'Octroi tutelle'
-                event_dict['eventDate'] = licence.DATE_STATUT
-                event_dict['decisionDate'] = licence.DATE_STATUT
-            elif licence.STATUT == 3 and licence.DATE_STATUT:
-                event_dict['decision'] = 'Refus tutelle'
-                event_dict['eventDate'] = licence.DATE_STATUT
-                event_dict['decisionDate'] = licence.DATE_STATUT
-            elif licence.AUTORISATION_DATE_AUTORISATION_COLLEGE or licence.AUTORISATION_DATE_REFUS_COLLEGE:
-                event_dict['title'] = 'Décision'
-                if licence.AUTORISATION_DATE_AUTORISATION_COLLEGE and not licence.AUTORISATION_DATE_REFUS_COLLEGE:
-                    event_dict['eventDate'] = licence.AUTORISATION_DATE_AUTORISATION_COLLEGE
-                    event_dict['decisionDate'] = licence.AUTORISATION_DATE_AUTORISATION_COLLEGE
-                    event_dict['decision'] = 'Octroi'
-                elif not licence.AUTORISATION_DATE_AUTORISATION_COLLEGE and licence.AUTORISATION_DATE_REFUS_COLLEGE:
-                    event_dict['eventDate'] = licence.AUTORISATION_DATE_REFUS_COLLEGE
-                    event_dict['decisionDate'] = licence.AUTORISATION_DATE_REFUS_COLLEGE
-                    event_dict['decision'] = 'Refus'
-                elif licence.AUTORISATION_DATE_AUTORISATION_COLLEGE and licence.AUTORISATION_DATE_REFUS_COLLEGE:
-                    if licence.AUTORISATION_DATE_AUTORISATION_COLLEGE > licence.AUTORISATION_DATE_REFUS_COLLEGE:
-                        event_dict['eventDate'] = licence.AUTORISATION_DATE_AUTORISATION_COLLEGE
-                        event_dict['decisionDate'] = licence.AUTORISATION_DATE_AUTORISATION_COLLEGE
-                        event_dict['decision'] = 'Octroi'
-                    else:
-                        event_dict['eventDate'] = licence.AUTORISATION_DATE_REFUS_COLLEGE
-                        event_dict['decisionDate'] = licence.AUTORISATION_DATE_REFUS_COLLEGE
-                        event_dict['decision'] = 'Refus'
-        elif licence_dict['portalType'] == 'EnvClassThree':
-            if licence.STATUT == 1:
-                event_dict['decision'] = 'Recevable'
-                event_dict['eventDate'] = licence.DATE_STATUT
-                event_dict['decisionDate'] = licence.DATE_STATUT
-            elif licence.STATUT == 2:
-                event_dict['decision'] = 'Irrecevable'
-                event_dict['eventDate'] = licence.DATE_STATUT
-                event_dict['decisionDate'] = licence.DATE_STATUT
-            elif licence.STATUT == 34:
-                event_dict['decision'] = 'Recevable'  # pour BLA, remettre à abandonné pour les autres
-                # event_dict['decision'] = 'Abandonné'
-                if licence.DATE_STATUT:
-                    event_dict['eventDate'] = licence.DATE_STATUT
-                    event_dict['decisionDate'] = licence.DATE_STATUT
-                else:
-                    event_dict['eventDate'] = licence.DATE_DECISION
-                    event_dict['decisionDate'] = licence.DATE_DECISION
-            elif licence.STATUT == 35:
-                event_dict['decision'] = 'Recevable'
-                self.licence_description.append({'Précision décision': "Recevable avec condition"})
-                event_dict['eventDate'] = licence.DATE_STATUT
-                event_dict['decisionDate'] = licence.DATE_STATUT
-            elif licence.STATUT == 36:
-                # Twice incomplete : Refused
-                event_dict['decision'] = 'Irrecevable'
-                event_dict['eventDate'] = licence.DATE_STATUT
-                event_dict['decisionDate'] = licence.DATE_STATUT
-            elif licence.STATUT == 0 or licence.STATUT == '':
-                """
-                    En cours ou non déterminé
-                """
-            else:
-                print("unknown status")
-
+        if licence.STATUT == 1:
+            event_dict['decision'] = 'Octroi Collège'
+        elif licence.STATUT == 2:
+            event_dict['decision'] = 'Refus Collège'
+        elif licence.STATUT == 3:
+            event_dict['decision'] = 'Refus tutelle'
+        elif licence.STATUT == 4:
+            event_dict['decision'] = 'Octroi tutelle'
+        elif licence.STATUT == 5:
+            event_dict['decision'] = 'Refus par le FD'
+        elif licence.STATUT == 8:
+            event_dict['decision'] = 'Irrecevable'
+            self.licence_description.append({'Précision décision': "Irrecevable car deux fois incomplet"})
+        elif licence.STATUT == 9:
+            # pas de date de décision
+            self.licence_description.append({'Précision décision': "Refus tacite du Fonctionnaire"})
+        elif licence.STATUT == 10:
+            event_dict['decision'] = 'Abandonné par le demandeur'
+        elif licence.STATUT == 14:
+            event_dict['decision'] = 'Octroi par le FD'
+        elif licence.STATUT == 17:
+            event_dict['decision'] = 'Octroi par le FD'
+        elif licence.STATUT == 18:
+            event_dict['decision'] = 'Refus par le FD'
+        elif licence.STATUT == 34:
+            event_dict['decision'] = 'Recevable'  # pour BLA, remettre à abandonné pour les autres
+            # event_dict['decision'] = 'Abandonné'
+        elif licence.STATUT == 35:
+            event_dict['decision'] = 'Recevable'
+            self.licence_description.append({'Précision décision': "Recevable avec condition"})
+        elif licence.STATUT == 36:
+            # Twice incomplete : Refused
+            event_dict['decision'] = 'Irrecevable'
+            self.licence_description.append({'Précision décision': "Irrecevable car deux fois incomplet"})
+        elif licence.STATUT == 0 or licence.STATUT == 30 or licence.STATUT == '':
+            """
+                En cours ou non déterminé
+            """
         else:
-            if licence.AUTORISATION_DATE_AUTORISATION_COLLEGE or licence.AUTORISATION_DATE_REFUS_COLLEGE:
-                event_dict['title'] = 'Décision'
-                if licence.AUTORISATION_DATE_AUTORISATION_COLLEGE and not licence.AUTORISATION_DATE_REFUS_COLLEGE:
-                    event_dict['eventDate'] = licence.AUTORISATION_DATE_AUTORISATION_COLLEGE
-                    event_dict['decisionDate'] = licence.AUTORISATION_DATE_AUTORISATION_COLLEGE
-                    event_dict['decision'] = 'Octroi'
-                elif not licence.AUTORISATION_DATE_AUTORISATION_COLLEGE and licence.AUTORISATION_DATE_REFUS_COLLEGE:
-                    event_dict['eventDate'] = licence.AUTORISATION_DATE_REFUS_COLLEGE
-                    event_dict['decisionDate'] = licence.AUTORISATION_DATE_REFUS_COLLEGE
-                    event_dict['decision'] = 'Refus'
-                elif licence.AUTORISATION_DATE_AUTORISATION_COLLEGE and licence.AUTORISATION_DATE_REFUS_COLLEGE:
-                    if licence.AUTORISATION_DATE_AUTORISATION_COLLEGE > licence.AUTORISATION_DATE_REFUS_COLLEGE:
-                        event_dict['eventDate'] = licence.AUTORISATION_DATE_AUTORISATION_COLLEGE
-                        event_dict['decisionDate'] = licence.AUTORISATION_DATE_AUTORISATION_COLLEGE
-                        event_dict['decision'] = 'Octroi'
-                    else:
-                        event_dict['eventDate'] = licence.AUTORISATION_DATE_REFUS_COLLEGE
-                        event_dict['decisionDate'] = licence.AUTORISATION_DATE_REFUS_COLLEGE
-                        event_dict['decision'] = 'Refus'
-        if event_dict['eventDate'] and event_dict['decisionDate'] and event_dict['decision']:
+            import ipdb; ipdb.set_trace() # TODO REMOVE BREAKPOINT
+            print("unknown status")
+
+        # CUSTOM encoding error for example
+        # custom BLA
+        if licence_dict['portalType'] == "Declaration":
+            if licence.REFERENCE in ("2014/DU001", "2014/DU002", "2015/DU013"):
+                event_dict['decision'] = 'Octroi par le FD'
+                self.licence_description.append({'Précision décision': "Erreur encodage : Octroi par le FD"})
+        # END CUSTOM
+
+        if hasattr(licence, "DATE_STATUT"):
+            event_dict['eventDate'] = licence.DATE_STATUT
+            event_dict['decisionDate'] = licence.DATE_STATUT
+        elif hasattr(licence, "DATE_DECISION"):
+            event_dict['eventDate'] = licence.DATE_DECISION
+            event_dict['decisionDate'] = licence.DATE_DECISION
+
+        if event_dict['eventDate'] and event_dict['decisionDate']:
             licence_dict['__children__'].append(event_dict)
+
+    def get_rubrics(self, licence):
+        if hasattr(licence, "INFOS_RUBRIQUES") and licence.INFOS_RUBRIQUES:
+            self.licence_description.append({'Rubriques': licence.INFOS_RUBRIQUES})
+
+    def get_parcellings(self, licence):
+        if hasattr(licence, "NOM_LOT") and licence.NOM_LOT:
+            self.licence_description.append({'Nom lotissement': licence.NOM_LOT})
+        if hasattr(licence, "NB_LOT") and licence.NB_LOT:
+            self.licence_description.append({'Nombre de lots': licence.NB_LOT})
 
 
 def main():

@@ -29,6 +29,7 @@ portal_type_mapping = {
     17: 'EnvClassThree',
     18: 'Infraction',  # ?
     19: 'PermisLocation',  # ?
+    20: 'MiscDemand',  # Insalubrités logement
     21: 'CODT_CommercialLicence',  # ?
     22: 'RoadDecree',
     23: 'CODT_BuildLicence',

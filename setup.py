@@ -48,6 +48,7 @@ setup(
         'polib',
         'progress',
         'requests',
+        'Unidecode',
     ],
     extras_require={
         'test': [
