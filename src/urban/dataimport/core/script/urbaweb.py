@@ -14,6 +14,8 @@ import unidecode
 from urban.dataimport.core.db import LazyDB
 from urban.dataimport.core.json import get_licence_dict, get_work_locations_dict, DateTimeEncoder, get_applicant_dict, \
     get_organization_dict, get_parcel_dict, get_event_dict
+from urban.dataimport.core.mapping.main_mapping import main_licence_decision_event_id_mapping, \
+    main_licence_deposit_event_id_mapping, main_licence_not_receivable_event_id_mapping, main_licence_decision_mapping
 from urban.dataimport.core.mapping.urbaweb_mapping import division_mapping, events_types, decision_code_mapping, \
     title_types
 from urban.dataimport.core.mapping.urbaweb_mapping import portal_type_mapping
@@ -95,7 +97,7 @@ class ImportUrbaweb(BaseImport):
         if self.limit:
             folders = folders.head(self.limit)
         if self.licence_id:
-            folders = folders[folders.reference == self.licence_id]
+            folders = folders[folders.REFERENCE == self.licence_id]
 
         bar = FillingSquaresBar('Processing licences', max=folders.shape[0])
         for id, licence in folders.iterrows():
@@ -112,40 +114,29 @@ class ImportUrbaweb(BaseImport):
     def get_licence(self, id, licence):
         self.licence_description = []
         licence_dict = get_licence_dict()
-        # licence_dict['id'] = str(licence.WRKDOSSIER_ID)
         licence_dict['portalType'] = self.get_portal_type(licence)  # licence type must be the first licence set
         if not licence_dict['portalType']:
             return
         licence_dict["@type"] = licence_dict["portalType"]
-        # # licence completionState must be the second licence set
-        # licence_dict['review_state'] = state_mapping.get(licence.DOSSIER_OCTROI)
-        # licence_dict['investigationStart'] = self.get_inquiry_values(licence, 'investigationStart')
-        # licence_dict['investigationEnd'] = self.get_inquiry_values(licence, 'investigationEnd')
-        # investigation_reasons = self.get_inquiry_values(licence, 'investigationReasons')
-        # if investigation_reasons:
-        #     licence_dict['investigationReasons'] = [investigation_reasons]
         licence_dict['reference'] = "{}/{}".format(licence.id, licence.REFERENCE)
-        # print(' ***{}***'.format(licence_dict['reference']))
-        # licence_dict['referenceDGATLP'] = licence.DOSSIER_REFURB and licence.DOSSIER_REFURB or ''
+        # licence_dict['Title'] = "{} {}".format(licence_dict['reference'], licence.NATURE_TITRE)
         licence_dict['licenceSubject'] = licence.NATURE_DETAILS
         licence_dict['usage'] = 'not_applicable'
         licence_dict['workLocations'] = self.get_work_locations(licence)
-        # licence_dict['architects'] = self.get_organisation(licence, 'architect')
         self.get_organization(licence, licence_dict)
-        # licence_dict['notaries'] = self.get_organisation(licence, 'notary')
         self.get_applicants(licence, licence_dict['__children__'])
         self.get_parcels(licence, licence_dict['__children__'])
         self.get_events(licence, licence_dict)
         self.get_rubrics(licence)
         self.get_parcellings(licence)
+        if hasattr(licence, "PHC") and licence.PHC:
+            self.licence_description.append({'Parcelle(s) hors commune': licence.PHC})
         description = str(''.join(str(d) for d in self.licence_description))
         licence_dict['description'] = {
-            'data': "{}{} - {} {}{}".format("<p>", description, licence.NATURE_DETAILS, licence.REMARQUES, "</p>"),
+            'data': "{}{} - {} {}{}".format("<p>", description, str(licence.NATURE_DETAILS).replace("\n",""), str(licence.REMARQUES).replace("\n",""), "</p>"),
             'content-type': 'text/html'
         }  # description must be the last licence set
         # self.validate_schema(licence_dict, 'GenericLicence')
-        # request_dict = get_request_dict()
-        # request_dict['parameters'] = licence_dict
         request_dict = licence_dict
 
         return request_dict
@@ -193,31 +184,31 @@ class ImportUrbaweb(BaseImport):
                         (self.bestaddress.bestaddress_vue.street == urbaweb_street_without_last_char.strip())
                     ]
                     if bestaddress_streets.shape[0] == 0:
-                        self.licence_description.append({'object': "Pas de résultat pour cette rue",
-                                                         'street': licence.LOCALITE_RUE,
-                                                         'number': licence.LOCALITE_NUM,
-                                                         'zipcode': licence.LOCALITE_CP,
-                                                         'locality': licence.LOCALITE_LABEL
+                        self.licence_description.append({'objet': "Pas de résultat pour cette rue",
+                                                         'rue': licence.LOCALITE_RUE,
+                                                         'n°': licence.LOCALITE_NUM,
+                                                         'code postal': licence.LOCALITE_CP,
+                                                         'localité': licence.LOCALITE_LABEL
                                                          })
                         pass
 
             result_count = bestaddress_streets.shape[0]
             if result_count == 1:
                 work_locations_dict['street'] = bestaddress_streets.iloc[0]['street']
-                work_locations_dict['street_ins'] = str(bestaddress_streets.iloc[0]['key'])
-                work_locations_dict['number'] = unidecode.unidecode(licence.LOCALITE_NUM)
+                work_locations_dict['bestaddress_key'] = str(bestaddress_streets.iloc[0]['key'])
+                work_locations_dict['number'] = str(unidecode.unidecode(licence.LOCALITE_NUM))
                 work_locations_dict['zipcode'] = bestaddress_streets.iloc[0]['zip']
 
                 work_locations_dict['locality'] = bestaddress_streets.iloc[0]['entity']
             elif result_count > 1:
-                self.licence_description.append({'object': "Plus d'un seul résultat pour cette rue",
-                                                 'street': licence.LOCALITE_RUE,
-                                                 'number': licence.LOCALITE_NUM,
-                                                 'zipcode': licence.LOCALITE_CP,
-                                                 'locality': licence.LOCALITE_LABEL
+                self.licence_description.append({'objet': "Plus d'un seul résultat pour cette rue",
+                                                 'rue': licence.LOCALITE_RUE,
+                                                 'n°': licence.LOCALITE_NUM,
+                                                 'code postal': licence.LOCALITE_CP,
+                                                 'localité': licence.LOCALITE_LABEL
                                                  })
-
-        work_locations_list.append(work_locations_dict)
+        if work_locations_dict['street'] or work_locations_dict['number']:
+            work_locations_list.append(work_locations_dict)
 
         return work_locations_list
 
@@ -288,46 +279,47 @@ class ImportUrbaweb(BaseImport):
                                         parcels_dict['is_official'] = 'True'
                                         parcels_dict['division'] = str(cadastral_parcels.iloc[0]['division'])
                                         parcels_dict['section'] = cadastral_parcels.iloc[0]['section']
-                                        parcels_dict['radical'] = str(cadastral_parcels.iloc[0]['radical'])
-                                        parcels_dict['bis'] = str(cadastral_parcels.iloc[0]['bis'])
+                                        parcels_dict['radical'] = str(int(cadastral_parcels.iloc[0]['radical']))
+                                        parcels_dict['bis'] = str(cadastral_parcels.iloc[0]['bis']) if cadastral_parcels.iloc[0]['bis'] else ""
                                         parcels_dict['exposant'] = cadastral_parcels.iloc[0]['exposant']
-                                        parcels_dict['puissance'] = str(cadastral_parcels.iloc[0]['puissance'])
+                                        parcels_dict['puissance'] = str(cadastral_parcels.iloc[0]['puissance']) if cadastral_parcels.iloc[0]['puissance'] else ""
                                     elif result_count > 1:
-                                        self.licence_description.append({'object': "Trop de résultats pour cette parcelle",
-                                                                         'parcel': parcels_dict['complete_name'],
+                                        self.licence_description.append({'objet': "Trop de résultats pour cette parcelle",
+                                                                         'parcelle': parcels_dict['complete_name'],
                                                                          })
                                     else:
                                         parcels_dict['outdated'] = 'False'
                                         parcels_dict['is_official'] = 'False'
                                         parcels_dict['division'] = str(int(division))
                                         parcels_dict['section'] = section
-                                        parcels_dict['radical'] = str(radical)
+                                        parcels_dict['radical'] = str(int(radical))
                                         parcels_dict['bis'] = str(int(bis))
                                         parcels_dict['exposant'] = exposant
                                         parcels_dict['puissance'] = str(int(puissance))
-                                        self.licence_description.append({'object': "Pas de résultat pour cette parcelle",
-                                                                         'parcel': parcels_dict['complete_name'],
+                                        self.licence_description.append({'objet': "Pas de résultat pour cette parcelle",
+                                                                         'parcelle': parcels_dict['complete_name'],
                                                                          })
                                 else:
-                                    self.licence_description.append({'object': "Parcelle incomplète ou non valide",
-                                                                     'parcel': parcels_dict['complete_name'],
+                                    self.licence_description.append({'objet': "Parcelle incomplète ou non valide",
+                                                                     'parcelle': parcels_dict['complete_name'],
                                                                      })
                             else:
-                                self.licence_description.append({'object': "Parcelle incomplète ou non valide",
-                                                                 'parcel': parcels_dict['complete_name'],
+                                self.licence_description.append({'objet': "Parcelle incomplète ou non valide",
+                                                                 'parcelle': parcels_dict['complete_name'],
                                                                  })
                         else:
-                            self.licence_description.append({'object': "Parcelle incomplète ou non valide",
-                                                             'parcel': parcels_dict['complete_name'],
+                            self.licence_description.append({'objet': "Parcelle incomplète ou non valide",
+                                                             'parcelle': parcels_dict['complete_name'],
                                                              })
                     else:
-                        self.licence_description.append({'object': "Parcelle incomplète ou non valide",
-                                                         'parcel': parcels_dict['complete_name'],
+                        self.licence_description.append({'objet': "Parcelle incomplète ou non valide",
+                                                         'parcelle': parcels_dict['complete_name'],
                                                          })
                     if parcels_dict['division'] and parcels_dict['section']:
                         licence_children.append(parcels_dict)
             except Exception:
-                print("debug)")
+                import ipdb; ipdb.set_trace() # TODO REMOVE BREAKPOINT
+                print("debug")
 
     @benchmark_decorator
     def get_organization(self, licence, licence_dict):
@@ -335,6 +327,7 @@ class ImportUrbaweb(BaseImport):
         if hasattr(licence, 'ORG_NOM') and licence.ORG_NOM:
             organization_dict['personTitle'] = title_types.get(licence.ORG_TITLE_ID, "")
             organization_dict['name1'] = licence.ORG_NOM
+            organization_dict['name1'] = organization_dict['name1'].replace("/", "")
             organization_dict['name2'] = licence.ORG_PRENOM
             organization_dict['number'] = unidecode.unidecode(licence.ORG_NUMERO)
             organization_dict['street'] = licence.ORG_RUE
@@ -370,7 +363,8 @@ class ImportUrbaweb(BaseImport):
         event_dict = get_event_dict()
         event_dict['title'] = 'Récépissé'
         event_dict['type'] = 'recepisse'
-        event_dict['event_id'] = 'depot-de-la-demande'
+        event_dict['event_id'] = main_licence_deposit_event_id_mapping[licence_dict['portalType']]
+        event_dict['eventPortalType'] = 'UrbanEvent'
         if licence_dict['portalType'] == "Division":
             event_dict['eventDate'] = licence.DATE_DEMANDE
         else:
@@ -382,50 +376,85 @@ class ImportUrbaweb(BaseImport):
             event_dict = get_event_dict()
             event_dict['title'] = 'Non recevable'
             event_dict['type'] = 'not_receivable'
-            event_dict['event_id'] = 'dossier-incomplet-irrecevable-codt'
+            event_dict['event_id'] = main_licence_not_receivable_event_id_mapping[licence_dict['portalType']]
             event_dict['eventDate'] = licence.DATE_STATUT
             licence_dict['__children__'].append(event_dict)
 
     def get_decision_event(self, licence, events_param, licence_dict):
         event_dict = get_event_dict()
+        event_dict['title'] = 'Événement décisionnel'
         event_dict['type'] = 'decision'
-        event_dict['event_id'] = 'delivrance-du-permis-octroi-ou-refus'
+        event_dict['event_id'] = main_licence_decision_event_id_mapping[licence_dict['portalType']]
 
         if licence.STATUT == 1:
-            event_dict['decision'] = 'Octroi Collège'
+            event_dict['decision'] = main_licence_decision_mapping['OctroiCollege']
+            licence_dict['wf_state'] = 'accept'
+            self.licence_description.append({'Précision décision': "Octroi Collège"})
         elif licence.STATUT == 2:
-            event_dict['decision'] = 'Refus Collège'
+            event_dict['decision'] = main_licence_decision_mapping['RefusCollege']
+            licence_dict['wf_state'] = 'refuse'
+            self.licence_description.append({'Précision décision': "Refus Collège"})
         elif licence.STATUT == 3:
-            event_dict['decision'] = 'Refus tutelle'
+            event_dict['decision'] = main_licence_decision_mapping['RefusTutelle']
+            licence_dict['wf_state'] = 'refuse'
+            self.licence_description.append({'Précision décision': "Refus Tutelle"})
         elif licence.STATUT == 4:
-            event_dict['decision'] = 'Octroi tutelle'
+            event_dict['decision'] = main_licence_decision_mapping['OctroiTutelle']
+            licence_dict['wf_state'] = 'accept'
+            self.licence_description.append({'Précision décision': "Octroi Tutelle"})
         elif licence.STATUT == 5:
-            event_dict['decision'] = 'Refus par le FD'
+            event_dict['decision'] = main_licence_decision_mapping['RefusFD']
+            licence_dict['wf_state'] = 'refuse'
+            self.licence_description.append({'Précision décision': "Refus par le FD"})
+        elif licence.STATUT == 6:
+            event_dict['decision'] = main_licence_decision_mapping['RefusCollege']
+            licence_dict['wf_state'] = 'refuse'
+            self.licence_description.append({'Précision décision': "Refus Collège (2)"})
         elif licence.STATUT == 8:
-            event_dict['decision'] = 'Irrecevable'
+            event_dict['decision'] = main_licence_decision_mapping['Irrecevable_2xI']
+            licence_dict['wf_state'] = 'refuse'
             self.licence_description.append({'Précision décision': "Irrecevable car deux fois incomplet"})
         elif licence.STATUT == 9:
             # pas de date de décision
+            licence_dict['wf_state'] = 'refuse'
             self.licence_description.append({'Précision décision': "Refus tacite du Fonctionnaire"})
         elif licence.STATUT == 10:
-            event_dict['decision'] = 'Abandonné par le demandeur'
+            event_dict['decision'] = main_licence_decision_mapping['AbandonDemandeur']
+            licence_dict['wf_state'] = 'retire'
+            self.licence_description.append({'Précision décision': "Abandonné par le demandeur"})
         elif licence.STATUT == 14:
-            event_dict['decision'] = 'Octroi par le FD'
+            event_dict['decision'] = main_licence_decision_mapping['OctroiFD']
+            licence_dict['wf_state'] = 'accept'
+            self.licence_description.append({'Précision décision': "Octroi par le FD"})
         elif licence.STATUT == 17:
-            event_dict['decision'] = 'Octroi par le FD'
+            event_dict['decision'] = main_licence_decision_mapping['OctroiFD']
+            licence_dict['wf_state'] = 'accept'
+            self.licence_description.append({'Précision décision': "Octroi par le FD"})
         elif licence.STATUT == 18:
-            event_dict['decision'] = 'Refus par le FD'
+            event_dict['decision'] = main_licence_decision_mapping['RefusFD']
+            licence_dict['wf_state'] = 'refuse'
+            self.licence_description.append({'Précision décision': "Refus par le FD"})
+        elif licence.STATUT == 28:
+            event_dict['decision'] = main_licence_decision_mapping['OctroiFD']
+            licence_dict['wf_state'] = 'accept'
+            self.licence_description.append({'Précision décision': "Octroi partiel du FD"})
         elif licence.STATUT == 34:
-            event_dict['decision'] = 'Recevable'  # pour BLA, remettre à abandonné pour les autres
-            # event_dict['decision'] = 'Abandonné'
+            # TODO pour BLA!!!!!!!!!!!!!!!!, remettre à abandonné / retire pour les autres!
+            event_dict['decision'] = main_licence_decision_mapping['Recevable']
+            licence_dict['wf_state'] = 'accept'
+            self.licence_description.append({'Précision décision': "Recevable"})
+            # event_dict['decision'] = main_licence_decision_mapping['Abandon']
+            # licence_dict['wf_state'] = 'retire'
         elif licence.STATUT == 35:
-            event_dict['decision'] = 'Recevable'
+            event_dict['decision'] = main_licence_decision_mapping['Recevable']
+            licence_dict['wf_state'] = 'accept'
             self.licence_description.append({'Précision décision': "Recevable avec condition"})
         elif licence.STATUT == 36:
             # Twice incomplete : Refused
-            event_dict['decision'] = 'Irrecevable'
+            event_dict['decision'] = main_licence_decision_mapping['Irrecevable']
+            licence_dict['wf_state'] = 'refuse'
             self.licence_description.append({'Précision décision': "Irrecevable car deux fois incomplet"})
-        elif licence.STATUT == 0 or licence.STATUT == 30 or licence.STATUT == '':
+        elif licence.STATUT == 0 or licence.STATUT == 30 or licence.STATUT == 31 or licence.STATUT == '' or licence.STATUT == 15 or licence.STATUT == 27:
             """
                 En cours ou non déterminé
             """
@@ -437,9 +466,12 @@ class ImportUrbaweb(BaseImport):
         # custom BLA
         if licence_dict['portalType'] == "Declaration":
             if licence.REFERENCE in ("2014/DU001", "2014/DU002", "2015/DU013"):
-                event_dict['decision'] = 'Octroi par le FD'
+                event_dict['decision']= main_licence_decision_mapping['OctroiFD']
+                licence_dict['wf_state'] = 'accept'
                 self.licence_description.append({'Précision décision': "Erreur encodage : Octroi par le FD"})
         # END CUSTOM
+
+        # if licence_dict['portalType'].startWith("CODT_"):
 
         if hasattr(licence, "DATE_STATUT"):
             event_dict['eventDate'] = licence.DATE_STATUT
@@ -448,6 +480,9 @@ class ImportUrbaweb(BaseImport):
             event_dict['eventDate'] = licence.DATE_DECISION
             event_dict['decisionDate'] = licence.DATE_DECISION
 
+        # Divison has a specific WF and hasn't 'refuse' transition
+        if licence_dict['portalType'] == 'Division' and (licence_dict['wf_state'] == 'refuse' or licence_dict['wf_state'] == 'retire'):
+            licence_dict['wf_state'] = 'nonapplicable'
         if event_dict['eventDate'] and event_dict['decisionDate']:
             licence_dict['__children__'].append(event_dict)
 

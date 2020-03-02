@@ -58,7 +58,15 @@ def export_to_customer_json(import_object):
                          "UniqueLicence",
                          "NotaryLetter",
                          "Declaration",
-                         "Division"
+                         "Division",
+                         "PreliminaryNotice",
+                         "CODT_BuildLicence",
+                         "CODT_UrbanCertificateTwo",
+                         "CODT_ParcelOutLicence",
+                         "UrbanCertificateTwo",
+                         "UrbanCertificateOne",
+                         "CODT_CommercialLicence",
+                         "MiscDemand",
                          ]
         licences = pd.DataFrame(import_object.data)
         output_customer_licence_type_count = import_object.config['main']['output_customer_licence_type_count']
