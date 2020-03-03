@@ -127,7 +127,7 @@ class ImportUrbaweb(BaseImport):
         self.get_applicants(licence, licence_dict['__children__'])
         self.get_parcels(licence, licence_dict['__children__'])
         self.get_events(licence, licence_dict)
-        self.get_rubrics(licence)
+        self.get_rubrics(licence,  licence_dict)
         self.get_parcellings(licence)
         if hasattr(licence, "PHC") and licence.PHC:
             self.licence_description.append({'Parcelle(s) hors commune': licence.PHC})
@@ -248,6 +248,7 @@ class ImportUrbaweb(BaseImport):
 
                     if division_num and section and radical_bis_exp_puissance:
                         # capakey without division and section is 11 character long.
+                        section = section.upper()
                         if len(radical_bis_exp_puissance) == 11:
                             radical = radical_bis_exp_puissance[0:4]
                             bis = radical_bis_exp_puissance[5:7]
@@ -486,9 +487,14 @@ class ImportUrbaweb(BaseImport):
         if event_dict['eventDate'] and event_dict['decisionDate']:
             licence_dict['__children__'].append(event_dict)
 
-    def get_rubrics(self, licence):
+    def get_rubrics(self, licence, licence_dict):
         if hasattr(licence, "INFOS_RUBRIQUES") and licence.INFOS_RUBRIQUES:
             self.licence_description.append({'Rubriques': licence.INFOS_RUBRIQUES})
+            rubrics_list = []
+            for rubric in licence.INFOS_RUBRIQUES.split("@"):
+                rubrics_list.append(rubric)
+            if rubrics_list:
+                licence_dict['rubrics'] = rubrics_list
 
     def get_parcellings(self, licence):
         if hasattr(licence, "NOM_LOT") and licence.NOM_LOT:
