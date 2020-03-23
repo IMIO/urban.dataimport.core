@@ -3,19 +3,34 @@ import json
 from datetime import datetime
 
 
+def get_request_dict():
+    return {
+        "client_id": "LIEGE",
+        "application_id": "URBAN",
+        "request_type": "POST",
+        "path": "/@buildlicence",
+        "parameters": ""
+    }
+
+
 def get_licence_dict():
     return {
-        'id': '',
+        # 'id': '',
         'portalType': '',
         'reference': '',
+        'Title': '',
         'referenceDGATLP': '',
         'licenceSubject': '',
-        'completionState': '',
+        'review_state': '',
+        'wf_transition': '',
+        'wf_state': '',
         'description': '',
         'workLocations': [],
-        'applicants': [],
-        'parcels': [],
-        'events': [],
+        'architects': [],
+        'notaries': [],
+        'geometricians': [],
+        'rubrics': [],
+        '__children__': [],
     }
 
 
@@ -23,6 +38,8 @@ def get_work_locations_dict():
     return {
         'number': '',
         'street': '',
+        'locality': '',
+        'bestaddress_key': '',
     }
 
 
@@ -43,6 +60,24 @@ def get_applicant_dict():
     }
 
 
+def get_organization_dict():
+    return {
+        '@type': '',
+        'personTitle': '',
+        'name1': '',
+        'name2': '',
+        'email': '',
+        'phone': '',
+        'gsm': '',
+        'fax': '',
+        'street': '',
+        'zipcode': '',
+        'city': '',
+        'country': '',
+        'force_create': 'True',
+    }
+
+
 def get_parcel_dict():
     return {
         '@type': 'PortionOut',
@@ -60,8 +95,9 @@ def get_parcel_dict():
 def get_event_dict():
     return {
         '@type': 'UrbanEvent',
-        'urbaneventtypes': '',
+        'event_id': '',
         'type': '',
+        'eventPortalType': '',
         'eventDate': '',
         'decisionDate': '',
         'decision': '',
@@ -70,7 +106,10 @@ def get_event_dict():
 
 class DateTimeEncoder(json.JSONEncoder):
     def default(self, o):
-        if isinstance(o, datetime):
-            return o.isoformat()
+        try:
+            if isinstance(o, datetime):
+                return o.isoformat()
 
-        return json.JSONEncoder.default(self, o)
+            return json.JSONEncoder.default(self, o)
+        except:
+            print("debug")
