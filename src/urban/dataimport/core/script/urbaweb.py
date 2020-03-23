@@ -195,7 +195,7 @@ class ImportUrbaweb(BaseImport):
             result_count = bestaddress_streets.shape[0]
             if result_count == 1:
                 work_locations_dict['street'] = bestaddress_streets.iloc[0]['street']
-                work_locations_dict['bestaddress_key'] = str(bestaddress_streets.iloc[0]['key'])
+                work_locations_dict['bestaddress_key'] = str(bestaddress_streets.iloc[0]['key']) if str(bestaddress_streets.iloc[0]['key']) not in ('7044037', '7008904') else ""
                 work_locations_dict['number'] = str(unidecode.unidecode(licence.LOCALITE_NUM))
                 work_locations_dict['zipcode'] = bestaddress_streets.iloc[0]['zip']
 
@@ -246,7 +246,8 @@ class ImportUrbaweb(BaseImport):
                     section = parcels_args[1]
                     radical_bis_exp_puissance = parcels_args[2]
 
-                    if division_num and section and radical_bis_exp_puissance:
+                    # re.match('^[A-Z]?$' single uppercase standard character
+                    if division_num and section and radical_bis_exp_puissance and re.match('^[A-Z]?$', section.upper().replace(' ','')):
                         # capakey without division and section is 11 character long.
                         section = section.upper()
                         if len(radical_bis_exp_puissance) == 11:
@@ -325,33 +326,46 @@ class ImportUrbaweb(BaseImport):
     @benchmark_decorator
     def get_organization(self, licence, licence_dict):
         organization_dict = get_organization_dict()
-        if hasattr(licence, 'ORG_NOM') and licence.ORG_NOM:
-            organization_dict['personTitle'] = title_types.get(licence.ORG_TITLE_ID, "")
-            organization_dict['name1'] = licence.ORG_NOM
-            organization_dict['name1'] = organization_dict['name1'].replace("/", "")
-            organization_dict['name2'] = licence.ORG_PRENOM
-            organization_dict['number'] = unidecode.unidecode(licence.ORG_NUMERO)
-            organization_dict['street'] = licence.ORG_RUE
-            organization_dict['zipcode'] = licence.ORG_CP
-            organization_dict['city'] = licence.ORG_LOCALITE
-            organization_dict['phone'] = licence.ORG_TEL
-            organization_dict['gsm'] = licence.ORG_MOBILE
-            organization_dict['email'] = licence.ORG_MAIL
 
-            if licence.ORG_TYPE == 'ARCHITECTE' or \
-               licence.ORG_TYPE == 'ARCHITECTE|DEMANDEUR_CU' or \
-               licence.ORG_TYPE == 'DEMANDEUR_CU' or \
-               licence.ORG_TYPE == 'AUTEUR_ETUDE' or \
-               licence.ORG_TYPE == 'CONTACT_PEB' or \
-               licence.ORG_TYPE == 'BUREAU':
-                organization_dict['@type'] = 'Architect'
-                licence_dict['architects'].append(organization_dict)
-            elif licence.ORG_TYPE == 'NOTAIRE':
-                organization_dict['@type'] = 'Notary'
-                licence_dict['notaries'].append(organization_dict)
-            elif licence.ORG_TYPE == 'GEOMETRE':
-                organization_dict['@type'] = 'Geometrician'
-                licence_dict['geometricians'].append(organization_dict)
+        if hasattr(licence, 'ORG_NOM') and licence.ORG_NOM:
+            check_org_name = licence.ORG_NOM.replace("/", "").replace("-", "").replace(".", "").replace(" ", "")
+            if check_org_name:
+                organization_dict['personTitle'] = title_types.get(licence.ORG_TITLE_ID, "")
+                organization_dict['name1'] = licence.ORG_NOM
+                organization_dict['name1'] = organization_dict['name1'].replace("/", "").replace(".", " ")
+                organization_dict['name2'] = licence.ORG_PRENOM
+                organization_dict['name2'] = organization_dict['name2'].replace("/", "").replace(".", " ")
+                organization_dict['number'] = unidecode.unidecode(licence.ORG_NUMERO)
+                organization_dict['street'] = licence.ORG_RUE
+                organization_dict['zipcode'] = str(int(licence.ORG_CP))
+                organization_dict['city'] = licence.ORG_LOCALITE
+                organization_dict['phone'] = licence.ORG_TEL
+                organization_dict['gsm'] = licence.ORG_MOBILE
+                organization_dict['email'] = licence.ORG_MAIL
+
+                if licence.ORG_TYPE == 'ARCHITECTE' or \
+                   licence.ORG_TYPE == 'ARCHITECTE|DEMANDEUR_CU' or \
+                   licence.ORG_TYPE == 'DEMANDEUR_CU' or \
+                   licence.ORG_TYPE == 'AUTEUR_ETUDE' or \
+                   licence.ORG_TYPE == 'CONTACT_PEB' or \
+                   licence.ORG_TYPE == 'BUREAU':
+                    organization_dict['@type'] = 'Architect'
+                    licence_dict['architects'].append(organization_dict)
+                elif licence.ORG_TYPE == 'NOTAIRE':
+                    organization_dict['@type'] = 'Notary'
+                    licence_dict['notaries'].append(organization_dict)
+                elif licence.ORG_TYPE == 'GEOMETRE':
+                    organization_dict['@type'] = 'Geometrician'
+                    licence_dict['geometricians'].append(organization_dict)
+
+        # Geometrician is mandatory for parceloutlicence type in Urban
+        if licence_dict['portalType'] in ('ParcelOutLicence', 'CODT_ParcelOutLicence') and len(licence_dict['geometricians']) == 0:
+            organization_dict['@type'] = 'Geometrician'
+            organization_dict['name1'] = "Géomètre par défaut"
+            organization_dict['name2'] = "Géomètre par défaut"
+            organization_dict['zipcode'] = "1000"
+            organization_dict['city'] = "Ville"
+            licence_dict['geometricians'].append(organization_dict)
 
     @benchmark_decorator
     def get_events(self, licence, licence_dict):
@@ -467,12 +481,10 @@ class ImportUrbaweb(BaseImport):
         # custom BLA
         if licence_dict['portalType'] == "Declaration":
             if licence.REFERENCE in ("2014/DU001", "2014/DU002", "2015/DU013"):
-                event_dict['decision']= main_licence_decision_mapping['OctroiFD']
+                event_dict['decision'] = main_licence_decision_mapping['OctroiFD']
                 licence_dict['wf_state'] = 'accept'
                 self.licence_description.append({'Précision décision': "Erreur encodage : Octroi par le FD"})
         # END CUSTOM
-
-        # if licence_dict['portalType'].startWith("CODT_"):
 
         if hasattr(licence, "DATE_STATUT"):
             event_dict['eventDate'] = licence.DATE_STATUT
@@ -480,6 +492,16 @@ class ImportUrbaweb(BaseImport):
         elif hasattr(licence, "DATE_DECISION"):
             event_dict['eventDate'] = licence.DATE_DECISION
             event_dict['decisionDate'] = licence.DATE_DECISION
+
+        # CODT licences need a transition
+        if licence_dict['portalType'].startswith("CODT_") and licence_dict['wf_state']:
+                if licence_dict['wf_state'] == 'accept':
+                    licence_dict['wf_transition'] = 'accepted'
+                elif licence_dict['wf_state'] == 'refuse':
+                    licence_dict['wf_transition'] = 'refused'
+                elif licence_dict['wf_state'] == 'retire':
+                    licence_dict['wf_transition'] = 'retired'
+                licence_dict['wf_state'] = ''
 
         # Divison has a specific WF and hasn't 'refuse' transition
         if licence_dict['portalType'] == 'Division' and (licence_dict['wf_state'] == 'refuse' or licence_dict['wf_state'] == 'retire'):
