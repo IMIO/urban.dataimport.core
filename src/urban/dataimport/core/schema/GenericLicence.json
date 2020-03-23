@@ -1,7 +1,7 @@
 {
   "description": "A representation of a buidlicence",
   "type": "object",
-  "required": [ "id", "reference", "portalType" ],
+  "required": [ "reference", "portalType" ],
   "properties": {
     "id": {
       "description": "unique id",
@@ -19,7 +19,7 @@
     "licenceSubject": {
       "type": ["string", "null"]
     },
-    "completionState": {
+    "review_state": {
       "type": ["string", "null"]
     },
     "usage": {

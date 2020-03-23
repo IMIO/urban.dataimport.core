@@ -1,8 +1,12 @@
 {
   "description": "Event description",
   "type": "object",
+  "required": [ "event_id"],
   "properties": {
     "type": {
+      "type": "string"
+    },
+    "event_id": {
       "type": "string"
     },
     "eventDate": {
