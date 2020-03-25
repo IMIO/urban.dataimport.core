@@ -6,8 +6,7 @@ from sqlalchemy import create_engine
 from urban.dataimport.core import utils
 from urban.dataimport.core.db import LazyDB
 from urban.dataimport.core.mapping.acropole_mapping import events_types, portal_type_mapping, \
-    state_mapping, decision_vocabulary_mapping, title_types, division_mapping, main_state_id_mapping, refused_main_label_mapping, \
-    accepted_main_label_mapping, custom_state_label_mapping
+    state_mapping, title_types, division_mapping, decision_label_mapping
 
 import argparse
 import configparser
@@ -16,19 +15,21 @@ import time
 
 from urban.dataimport.core.json import DateTimeEncoder, get_applicant_dict, get_event_dict, get_licence_dict, \
     get_parcel_dict, get_work_locations_dict
-from urban.dataimport.core.utils import parse_cadastral_reference, benchmark_decorator, BaseImport,\
-    export_to_customer_json
+from urban.dataimport.core.mapping.main_mapping import main_licence_deposit_event_id_mapping, \
+    main_licence_decision_event_id_mapping
+from urban.dataimport.core.utils import parse_cadastral_reference, benchmark_decorator, BaseImport, \
+    export_to_customer_json, datetime_to_string_date
 from urban.dataimport.core.utils import StateManager
 from urban.dataimport.core.utils import StateHandler
 from urban.dataimport.core.utils import IterationError
-from urban.dataimport.core.views.acropole_views import create_views
+from urban.dataimport.core.views.acropole_views import create_views, create_concat_views
 from urban.dataimport.core.views.cadastral_views import create_cadastral_views
 from urban.dataimport.core.views.bestaddress_views import create_bestaddress_views
 
 
 class ImportAcropole(BaseImport):
 
-    def __init__(self, config_file, limit=None, licence_id=None, ignore_cache=False, benchmarking=False, noop=False, iterate=False):
+    def __init__(self, config_file, limit=None, range=None, view="dossiers_vue", licence_id=None, ignore_cache=False, benchmarking=False, noop=False, iterate=False):
         self.start_time = time.time()
         self.benchmarking = benchmarking
         self.noop = noop
@@ -40,6 +41,8 @@ class ImportAcropole(BaseImport):
         config.read(config_file)
         self.config = config
         self.limit = limit
+        self.range = range
+        self.view = view
         self.licence_id = licence_id
         self.search_old_parcels = config['main']['search_old_parcels']
         engine = create_engine('mysql://{user}:{password}@{host}:{port}'.format(**config._sections['database']))
@@ -65,6 +68,7 @@ class ImportAcropole(BaseImport):
             config['bestaddress_database']['schema'],
             ignore_cache=ignore_cache,
         )
+        create_concat_views(self)
         create_views(self)
         create_cadastral_views(self)
         create_bestaddress_views(self, config['main']['locality'])
@@ -93,7 +97,9 @@ class ImportAcropole(BaseImport):
 
     @StateManager
     def extract_data(self):
-        folders = self.db.wrkdossier
+        folders = getattr(self.db, self.view)
+        if self.range:
+            folders = folders[int(self.range.split(':')[0]):int(self.range.split(':')[1])]
         if self.limit:
             folders = folders.head(self.limit)
         if self.licence_id:
@@ -114,45 +120,41 @@ class ImportAcropole(BaseImport):
     def get_licence(self, id, licence):
         self.licence_description = []
         licence_dict = get_licence_dict()
-        licence_dict['id'] = str(licence.WRKDOSSIER_ID)
+        # licence_dict['id'] = str(licence.WRKDOSSIER_ID)
         licence_dict['portalType'] = self.get_portal_type(licence)  # licence type must be the first licence set
         if not licence_dict['portalType']:
             return
+        licence_dict["@type"] = licence_dict["portalType"]
         # licence completionState must be the second licence set
-        licence_dict['completionState'] = state_mapping.get(licence.DOSSIER_OCTROI)
-        licence_dict['investigationStart'] = self.get_inquiry_values(licence, 'investigationStart')
-        licence_dict['investigationEnd'] = self.get_inquiry_values(licence, 'investigationEnd')
-        investigation_reasons = self.get_inquiry_values(licence, 'investigationReasons')
-        if investigation_reasons:
-            licence_dict['investigationReasons'] = [investigation_reasons]
-        licence_dict['reference'] = licence.DOSSIER_NUMERO
-        licence_dict['referenceDGATLP'] = licence.DOSSIER_REFURB and licence.DOSSIER_REFURB or ''
-        licence_dict['licenceSubject'] = self.get_subject_licence(licence)
+        # licence_dict['investigationStart'] = self.get_inquiry_values(licence, 'investigationStart')
+        # licence_dict['investigationEnd'] = self.get_inquiry_values(licence, 'investigationEnd')
+        # investigation_reasons = self.get_inquiry_values(licence, 'investigationReasons')
+        # if investigation_reasons:
+        #     licence_dict['investigationReasons'] = [investigation_reasons]
+        licence_dict['reference'] = "{}/{}".format(licence.WRKDOSSIER_ID, licence.DOSSIER_NUMERO)
+        # licence_dict['referenceDGATLP'] = licence.DOSSIER_REFURB and licence.DOSSIER_REFURB or ''
+        licence_dict['licenceSubject'] = licence.DOSSIER_OBJETFR
         licence_dict['usage'] = 'not_applicable'
-        licence_dict['workLocations'] = self.get_work_locations(licence)
-        licence_dict['applicants'] = self.get_applicants(licence)
-        licence_dict['parcels'] = self.get_parcels(licence)
-        licence_dict['events'] = self.get_events(licence)
+        # licence_dict['workLocations'] = self.get_work_locations(licence)
+        # self.get_applicants(licence, licence_dict['__children__'])
+        # self.get_parcels(licence, licence_dict['__children__'])
+        self.get_events(licence, licence_dict)
         description = str(''.join(str(d) for d in self.licence_description))
         licence_dict['description'] = {
-            'data': "{0}{1}{2}".format("<p>", description, "</p>"),
+            'data': "{}{} - {}{}".format("<p>", str(licence.DETAILS).replace("\n", ""), description, "</p>"),
             'content-type': 'text/html'
         }  # description must be the last licence set
         self.validate_schema(licence_dict, 'GenericLicence')
-        return licence_dict
+        request_dict = licence_dict
+
+        return request_dict
 
     @benchmark_decorator
     def get_portal_type(self, licence):
         portal_type = portal_type_mapping.get(licence.DOSSIER_TDOSSIERID, None)
-        if portal_type == 'UrbanCertificateOne' and licence.DOSSIER_TYPEIDENT == 'CU2':
-            portal_type = 'UrbanCertificateTwo'
+        # if portal_type == 'UrbanCertificateOne' and licence.DOSSIER_TYPEIDENT == 'CU2':
+        #     portal_type = 'UrbanCertificateTwo'
         return portal_type
-
-    @benchmark_decorator
-    def get_subject_licence(self, licence):
-        subject_licence = self.db.dossier_infos_vue[
-            (self.db.dossier_infos_vue.WRKDOSSIER_ID == licence.WRKDOSSIER_ID)]
-        return subject_licence.iloc[0]['OBJET_KEY']
 
     @benchmark_decorator
     def get_inquiry_values(self, licence, field):
@@ -209,11 +211,11 @@ class ImportAcropole(BaseImport):
                             (self.bestaddress.bestaddress_vue.street == acropole_street_without_last_char.strip())
                         ]
                         if bestaddress_streets.shape[0] == 0:
-                            self.licence_description.append({'object': "Pas de résultat pour cette rue",
-                                                             'street': work_location.ADR_ADRESSE,
-                                                             'number': work_location.ADR_NUM,
-                                                             'zipcode': work_location.ADR_ZIP,
-                                                             'entity': work_location.ADR_LOCALITE
+                            self.licence_description.append({'objet': "Pas de résultat pour cette rue",
+                                                             'rue': work_location.ADR_ADRESSE,
+                                                             'n°': work_location.ADR_NUM,
+                                                             'code postal': work_location.ADR_ZIP,
+                                                             'localité': work_location.ADR_LOCALITE
                                                              })
                             pass
 
@@ -225,11 +227,11 @@ class ImportAcropole(BaseImport):
                     work_locations_dict['zipcode'] = bestaddress_streets.iloc[0]['zip']
                     work_locations_dict['entity'] = bestaddress_streets.iloc[0]['entity']
                 elif result_count > 1:
-                    self.licence_description.append({'object': "Plus d'un seul résultat pour cette rue",
-                                                     'street': work_location.ADR_ADRESSE,
-                                                     'number': work_location.ADR_NUM,
-                                                     'zipcode': work_location.ADR_ZIP,
-                                                     'entity': work_location.ADR_LOCALITE
+                    self.licence_description.append({'objet': "Plus d'un seul résultat pour cette rue",
+                                                     'rue': work_location.ADR_ADRESSE,
+                                                     'n°': work_location.ADR_NUM,
+                                                     'code postal': work_location.ADR_ZIP,
+                                                     'localité': work_location.ADR_LOCALITE
                                                      })
 
             work_locations_list.append(work_locations_dict)
@@ -237,8 +239,7 @@ class ImportAcropole(BaseImport):
         return work_locations_list
 
     @benchmark_decorator
-    def get_applicants(self, licence):
-        applicant_list = []
+    def get_applicants(self, licence, licence_children):
         applicants = self.db.dossier_personne_vue[
             (self.db.dossier_personne_vue.WRKDOSSIER_ID == licence.WRKDOSSIER_ID) &
             (self.db.dossier_personne_vue.K2KND_ID == -204)]
@@ -254,13 +255,10 @@ class ImportAcropole(BaseImport):
             applicant_dict['street'] = applicant.CLOC_ADRESSE
             applicant_dict['zipcode'] = applicant.CLOC_ZIP
             applicant_dict['city'] = applicant.CLOC_LOCALITE
-            applicant_list.append(applicant_dict)
-
-        return applicant_list
+            licence_children.append(applicant_dict)
 
     @benchmark_decorator
-    def get_parcels(self, licence):
-        parcels_list = []
+    def get_parcels(self, licence, licence_children):
         parcels = self.db.dossier_parcelles_vue[
             (self.db.dossier_parcelles_vue.WRKDOSSIER_ID == licence.WRKDOSSIER_ID)]
         for id, parcels in parcels.iterrows():
@@ -292,9 +290,9 @@ class ImportAcropole(BaseImport):
                     parcels_dict['exposant'] = cadastral_parcels.iloc[0]['exposant']
                     parcels_dict['puissance'] = cadastral_parcels.iloc[0]['puissance']
                 elif result_count > 1:
-                    self.licence_description.append({'object': "Trop de résultats pour cette parcelle",
-                                                     'old': 'False',
-                                                     'parcel': parcels.CAD_NOM,
+                    self.licence_description.append({'objet': "Trop de résultats pour cette parcelle",
+                                                     'ancienne parcelle': 'Non',
+                                                     'parcelle': parcels.CAD_NOM,
                                                      })
                 else:
                     if self.search_old_parcels:
@@ -321,129 +319,101 @@ class ImportAcropole(BaseImport):
                             parcels_dict['exposant'] = old_cadastral_parcels.iloc[0]['exposant']
                             parcels_dict['puissance'] = old_cadastral_parcels.iloc[0]['puissance']
                         elif old_result_count > 1:
-                            self.licence_description.append({'object': "Trop de résultats pour cette parcelle",
-                                                             'old': 'True',
+                            self.licence_description.append({'objet': "Trop de résultats pour cette parcelle",
+                                                             'ancienne parcelle': 'Oui',
                                                              'parcel': parcels.CAD_NOM,
                                                              })
                         else:
-                            self.licence_description.append({'object': "Parcelle non trouvée",
-                                                             'old': '',
-                                                             'parcel': parcels.CAD_NOM,
+                            self.licence_description.append({'objet': "Parcelle non trouvée",
+                                                             'parcelle': parcels.CAD_NOM,
                                                              })
                             pass
             else:
-                self.licence_description.append({'object': "Parcelle incomplète ou non valide",
-                                                 'old': '',
-                                                 'parcel': parcels.CAD_NOM,
+                self.licence_description.append({'objet': "Parcelle incomplète ou non valide",
+                                                 'parcelle': parcels.CAD_NOM,
                                                  })
-            parcels_list.append(parcels_dict)
-
-        return parcels_list
+            if parcels_dict['division'] and parcels_dict['section']:
+                licence_children.append(parcels_dict)
 
     @benchmark_decorator
-    def get_events(self, licence):
-        event_list = []
-        events = self.db.dossier_evenement_vue
+    def get_events(self, licence, licence_dict):
         for key, values in events_types.items():
-            events_etape = events[
-                (events.ETAPE_TETAPEID.isin(values['etape_ids'])) &
-                (events.WRKDOSSIER_ID == licence.WRKDOSSIER_ID)]
             events_param = None
             method = getattr(self, 'get_{0}_event'.format(key))
-            result_list = method(licence, events_etape, events_param)
-            if result_list:
-                event_list.extend(result_list)
+            method(licence, events_param, licence_dict)
 
-        return event_list
+    def get_recepisse_event(self, licence, events_param, licence_dict):
+        event_dict = get_event_dict()
+        event_dict['title'] = 'Récépissé'
+        event_dict['type'] = 'recepisse'
+        event_dict['event_id'] = main_licence_deposit_event_id_mapping[licence_dict['portalType']]
+        event_dict['eventPortalType'] = 'UrbanEvent'
+        if licence.DOSSIER_DATEDEPART:
+            event_dict['eventDate'] = str(licence.DOSSIER_DATEDEPART)
+        elif licence.DOSSIER_DATEDEPOT:
+            event_dict['eventDate'] = str(licence.DOSSIER_DATEDEPOT)
+        else:
+            return
+        licence_dict['__children__'].append(event_dict)
 
-    def get_recepisse_event(self, licence, events_etape, events_param):
-        events_dict = []
-        for id, event in events_etape.iterrows():
-            event_dict = get_event_dict()
-            event_dict['title'] = 'Récépissé'
-            event_dict['type'] = 'recepisse'
-            event_dict['urbaneventtypes'] = 'depot-de-la-demande'
-            event_dict['eventDate'] = event.ETAPE_DATEDEPART
-            events_dict.append(event_dict)
-        return events_dict
-
-    def get_completefolder_event(self, licence, events_etape, events_param):
-        events_dict = []
+    def get_completefolder_event(self, licence, events_etape, events_param, licence_children):
         for id, event in events_etape.iterrows():
             event_dict = get_event_dict()
             event_dict['title'] = 'Dossier complet'
             event_dict['type'] = 'completefolder'
-            event_dict['urbaneventtypes'] = 'accuse-de-reception'
+            event_dict['event_id'] = 'accuse-de-reception'
             event_dict['eventDate'] = event.ETAPE_DATEDEPART
-            events_dict.append(event_dict)
-        return events_dict
+            licence_children.append(event_dict)
 
-    def get_incompletefolder_event(self, licence, events_etape, events_param):
-        events_dict = []
+    def get_incompletefolder_event(self, licence, events_etape, events_param, licence_children):
         for id, event in events_etape.iterrows():
             event_dict = get_event_dict()
             event_dict['title'] = 'Dossier incomplet'
             event_dict['type'] = 'incompletefolder'
-            event_dict['urbaneventtypes'] = 'dossier-incomplet'
+            event_dict['event_id'] = 'dossier-incomplet'
             event_dict['eventDate'] = event.ETAPE_DATEDEPART
-            events_dict.append(event_dict)
-        return events_dict
+            licence_children.append(event_dict)
 
-    def get_sendtofd_event(self, licence, events_etape, events_param):
-        events_dict = []
+    def get_sendtofd_event(self, licence, events_etape, events_param, licence_children):
         for id, event in events_etape.iterrows():
             event_dict = get_event_dict()
             event_dict['title'] = 'Envoyé au FD'
             event_dict['type'] = 'sendtofd'
-            event_dict['urbaneventtypes'] = 'transmis-1er-dossier-rw'
+            event_dict['event_id'] = 'transmis-1er-dossier-rw'
             event_dict['eventDate'] = event.ETAPE_DATEDEPART
-            events_dict.append(event_dict)
-        return events_dict
+            licence_children.append(event_dict)
 
-    def get_sendtoapplicant_event(self, licence, events_etape, events_param):
-        events_dict = []
+    def get_sendtoapplicant_event(self, licence, events_etape, events_param, licence_children):
         for id, event in events_etape.iterrows():
             event_dict = get_event_dict()
             event_dict['title'] = 'Envoyé au demandeur'
             event_dict['type'] = 'sendtoapplicant'
             event_dict['eventDate'] = event.ETAPE_DATEDEPART
-            events_dict.append(event_dict)
-        return events_dict
+            licence_children.append(event_dict)
 
-    def get_decision_event(self, licence, events_etape, events_param):
-        events_dict = []
+    def get_decision_event(self, licence, events_param, licence_dict):
         event_dict = get_event_dict()
-        event_dict['title'] = 'Décision'
-        event_dict['type'] = 'delivrance-du-permis-octroi-ou-refus'
-        event_dict['eventDate'] = str(licence.DOSSIER_DATEDELIV)
-        if str(licence.DOSSIER_OCTROI) == 'nan':
-            self.licence_description.append({'Intitulé de décision': 'indéterminé / NaN'})
-        else:
-            state = int(licence.DOSSIER_OCTROI)
-            decision_label = "NON CONNU"
-            if state in main_state_id_mapping:
-                portal_type = self.get_portal_type(licence)
-                if state == 0:  # refusé
-                    decision_label = refused_main_label_mapping.get(portal_type)
-                elif state == 1:  # accepté
-                    decision_label = accepted_main_label_mapping.get(portal_type)
-                self.licence_description.append({'Intitulé de décision': decision_label})
-            else:
-                decision_label = custom_state_label_mapping.get(str(state))
-                self.licence_description.append({'Intitulé de décision': decision_label})
-            event_dict['decision_label'] = decision_label
-            if decision_vocabulary_mapping.get(state_mapping.get(licence.DOSSIER_OCTROI)):
-                event_dict['decision'] = decision_vocabulary_mapping.get(state_mapping.get(licence.DOSSIER_OCTROI))
-            if events_etape.shape[0] > 1:
-                raise ValueError('Too many decision events')
-            elif events_etape.shape[0] == 1:
-                event = events_etape.iloc[0]
-                event_dict['decisionDate'] = event.ETAPE_DATEDEPART
-                # if eventDate don't exist, decisionDate is used
-                if not event_dict['eventDate'] or event_dict['eventDate'] == 'NaT':
-                    event_dict['decisionDate'] = event.ETAPE_DATEDEPART
-        events_dict.append(event_dict)
-        return events_dict
+        event_dict['title'] = 'Événement décisionnel'
+        event_dict['event_id'] = main_licence_decision_event_id_mapping[licence_dict['portalType']]
+
+        licence_dict['wf_state'] = state_mapping.get(licence.DOSSIER_OCTROI)
+        if licence_dict['wf_state']:
+            self.licence_description.append({'Précision décision': decision_label_mapping.get(licence_dict['wf_state'])})
+
+        # CODT licences need a transition
+        if licence_dict['portalType'].startswith("CODT_") and licence_dict['wf_state']:
+                if licence_dict['wf_state'] == 'accept':
+                    licence_dict['wf_transition'] = 'accepted'
+                elif licence_dict['wf_state'] == 'refuse':
+                    licence_dict['wf_transition'] = 'refused'
+                elif licence_dict['wf_state'] == 'retire':
+                    licence_dict['wf_transition'] = 'retired'
+                licence_dict['wf_state'] = ''
+
+        if licence.DOSSIER_DATEDELIV:
+            event_dict['eventDate'] = str(licence.DOSSIER_DATEDELIV)
+            event_dict['decisionDate'] = str(licence.DOSSIER_DATEDELIV)
+            licence_dict['__children__'].append(event_dict)
 
 
 def main():
@@ -451,7 +421,9 @@ def main():
     parser = argparse.ArgumentParser(description='Import data from Acropole Database')
     parser.add_argument('config_file', type=str, help='path to the config')
     parser.add_argument('--limit', type=int, help='number of records')
+    parser.add_argument('--view', type=str, default='permis_urbanisme_vue', help='give licence view to call')
     parser.add_argument('--licence_id', type=str, help='reference of a licence')
+    parser.add_argument('--range', type=str, help="input slice, example : '5:10'")
     parser.add_argument('--ignore_cache', type=bool, nargs='?',
                         const=True, default=False, help='ignore local cache')
     parser.add_argument('--benchmarking', type=bool, nargs='?',
@@ -464,7 +436,9 @@ def main():
 
     ImportAcropole(
         args.config_file,
+        view=args.view,
         limit=args.limit,
+        range=args.range,
         licence_id=args.licence_id,
         ignore_cache=args.ignore_cache,
         benchmarking=args.benchmarking,
