@@ -12,13 +12,14 @@ import argparse
 import configparser
 import json
 import time
+import unidecode
 
 from urban.dataimport.core.json import DateTimeEncoder, get_applicant_dict, get_event_dict, get_licence_dict, \
     get_parcel_dict, get_work_locations_dict
 from urban.dataimport.core.mapping.main_mapping import main_licence_deposit_event_id_mapping, \
     main_licence_decision_event_id_mapping
 from urban.dataimport.core.utils import parse_cadastral_reference, benchmark_decorator, BaseImport, \
-    export_to_customer_json, datetime_to_string_date
+    export_to_customer_json
 from urban.dataimport.core.utils import StateManager
 from urban.dataimport.core.utils import StateHandler
 from urban.dataimport.core.utils import IterationError
@@ -29,7 +30,8 @@ from urban.dataimport.core.views.bestaddress_views import create_bestaddress_vie
 
 class ImportAcropole(BaseImport):
 
-    def __init__(self, config_file, limit=None, range=None, view="dossiers_vue", licence_id=None, ignore_cache=False, benchmarking=False, noop=False, iterate=False):
+    def __init__(self, config_file, limit=None, range=None, view=None, licence_id=None, ignore_cache=False, benchmarking=False, noop=False, iterate=False):
+        print("INITIALIZING")
         self.start_time = time.time()
         self.benchmarking = benchmarking
         self.noop = noop
@@ -72,6 +74,7 @@ class ImportAcropole(BaseImport):
         create_views(self)
         create_cadastral_views(self)
         create_bestaddress_views(self, config['main']['locality'])
+        print("INITIALIZATION COMPLETED")
 
     def execute(self):
         self.data = []
@@ -135,7 +138,7 @@ class ImportAcropole(BaseImport):
         # licence_dict['referenceDGATLP'] = licence.DOSSIER_REFURB and licence.DOSSIER_REFURB or ''
         licence_dict['licenceSubject'] = licence.DOSSIER_OBJETFR
         licence_dict['usage'] = 'not_applicable'
-        # licence_dict['workLocations'] = self.get_work_locations(licence)
+        licence_dict['workLocations'] = self.get_work_locations(licence)
         # self.get_applicants(licence, licence_dict['__children__'])
         # self.get_parcels(licence, licence_dict['__children__'])
         self.get_events(licence, licence_dict)
@@ -184,57 +187,65 @@ class ImportAcropole(BaseImport):
     @benchmark_decorator
     def get_work_locations(self, licence):
         work_locations_list = []
-
-        work_locations = self.db.dossier_adresse_vue[
-            (self.db.dossier_adresse_vue.WRKDOSSIER_ID == licence.WRKDOSSIER_ID)]
-
-        for id, work_location in work_locations.iterrows():
-            work_locations_dict = get_work_locations_dict()
-
-            if work_location.ADR_ADRESSE:
-                # remove parentheses and its content
-                acropole_street = re.sub(r'\([^)]*\)', '', work_location.ADR_ADRESSE).strip()
-
-                bestaddress_streets = self.bestaddress.bestaddress_vue[
-                    (self.bestaddress.bestaddress_vue.street == acropole_street)
-                ]
-                if bestaddress_streets.shape[0] == 0:
-                    # second chance without street number
-                    acropole_street_without_digits = ''.join([letter for letter in acropole_street if not letter.isdigit()]).strip()
+        work_locations_dict = get_work_locations_dict()
+        if licence.CONCAT_ADRESSES and licence.CONCAT_ADRESSES.replace("@", "").replace("|", ""):
+            for wl in licence.CONCAT_ADRESSES.split("@"):
+                split_wl = wl.split("|")
+                street = split_wl[0]
+                number = split_wl[1]
+                zipcode = split_wl[2]
+                city = split_wl[3]
+                if street:
+                    # remove parentheses and its content
+                    acropole_street = re.sub(r'\([^)]*\)', '', street).strip()
+                    # remove unnecessary characters
+                    acropole_street = acropole_street.replace(",", " ").strip().replace("?", " ").strip()
                     bestaddress_streets = self.bestaddress.bestaddress_vue[
-                        (self.bestaddress.bestaddress_vue.street == acropole_street_without_digits)
+                        (self.bestaddress.bestaddress_vue.street == acropole_street)
                     ]
                     if bestaddress_streets.shape[0] == 0:
-                        # last chance : try to remove last char, for example : 1a or 36C
-                        acropole_street_without_last_char = acropole_street_without_digits.strip()[:-1]
+                        # second chance without street number
+                        acropole_street_without_digits = ''.join([letter for letter in acropole_street if not letter.isdigit()]).strip()
                         bestaddress_streets = self.bestaddress.bestaddress_vue[
-                            (self.bestaddress.bestaddress_vue.street == acropole_street_without_last_char.strip())
+                            (self.bestaddress.bestaddress_vue.street == acropole_street_without_digits)
                         ]
                         if bestaddress_streets.shape[0] == 0:
-                            self.licence_description.append({'objet': "Pas de résultat pour cette rue",
-                                                             'rue': work_location.ADR_ADRESSE,
-                                                             'n°': work_location.ADR_NUM,
-                                                             'code postal': work_location.ADR_ZIP,
-                                                             'localité': work_location.ADR_LOCALITE
-                                                             })
-                            pass
+                            # last chance : try to remove last char, for example : 1a or 36C
+                            acropole_street_without_last_char = acropole_street_without_digits.strip()[:-1]
+                            bestaddress_streets = self.bestaddress.bestaddress_vue[
+                                (self.bestaddress.bestaddress_vue.street == acropole_street_without_last_char.strip())
+                            ]
+                            if bestaddress_streets.shape[0] == 0:
+                                self.licence_description.append({'objet': "Pas de résultat pour cette rue",
+                                                                 'rue': street,
+                                                                 'n°': number,
+                                                                 'code postal': zipcode,
+                                                                 'localité': city
+                                                                 })
+                                pass
 
-                result_count = bestaddress_streets.shape[0]
-                if result_count == 1:
-                    work_locations_dict['street'] = bestaddress_streets.iloc[0]['street']
-                    work_locations_dict['street_ins'] = str(bestaddress_streets.iloc[0]['key'])
-                    work_locations_dict['number'] = str(work_location.ADR_NUM)
-                    work_locations_dict['zipcode'] = bestaddress_streets.iloc[0]['zip']
-                    work_locations_dict['entity'] = bestaddress_streets.iloc[0]['entity']
-                elif result_count > 1:
-                    self.licence_description.append({'objet': "Plus d'un seul résultat pour cette rue",
-                                                     'rue': work_location.ADR_ADRESSE,
-                                                     'n°': work_location.ADR_NUM,
-                                                     'code postal': work_location.ADR_ZIP,
-                                                     'localité': work_location.ADR_LOCALITE
-                                                     })
-
-            work_locations_list.append(work_locations_dict)
+                    result_count = bestaddress_streets.shape[0]
+                    if result_count == 1:
+                        work_locations_dict['street'] = bestaddress_streets.iloc[0]['street']
+                        work_locations_dict['bestaddress_key'] = str(bestaddress_streets.iloc[0]['key'])  # if str(bestaddress_streets.iloc[0]['key']) not in ('7044037', '7008904') else ""
+                        work_locations_dict['number'] = str(unidecode.unidecode(number))
+                        work_locations_dict['zipcode'] = bestaddress_streets.iloc[0]['zip']
+                        work_locations_dict['locality'] = bestaddress_streets.iloc[0]['entity']
+                        self.licence_description.append({'objet': "Rue trouvée",
+                                                         'rue': street,
+                                                         'n°': number,
+                                                         'code postal': zipcode,
+                                                         'localité': city
+                                                         })
+                    elif result_count > 1:
+                        self.licence_description.append({'objet': "Plus d'un seul résultat pour cette rue",
+                                                         'rue': street,
+                                                         'n°': number,
+                                                         'code postal': zipcode,
+                                                         'localité': city
+                                                         })
+                if work_locations_dict['street'] or work_locations_dict['number']:
+                    work_locations_list.append(work_locations_dict)
 
         return work_locations_list
 
@@ -421,7 +432,7 @@ def main():
     parser = argparse.ArgumentParser(description='Import data from Acropole Database')
     parser.add_argument('config_file', type=str, help='path to the config')
     parser.add_argument('--limit', type=int, help='number of records')
-    parser.add_argument('--view', type=str, default='permis_urbanisme_vue', help='give licence view to call')
+    parser.add_argument('--view', type=str, default='dossiers_vue', help='give licence view to call')
     parser.add_argument('--licence_id', type=str, help='reference of a licence')
     parser.add_argument('--range', type=str, help="input slice, example : '5:10'")
     parser.add_argument('--ignore_cache', type=bool, nargs='?',
