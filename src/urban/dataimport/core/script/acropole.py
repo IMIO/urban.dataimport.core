@@ -19,7 +19,7 @@ from urban.dataimport.core.json import DateTimeEncoder, get_applicant_dict, get_
 from urban.dataimport.core.mapping.main_mapping import main_licence_deposit_event_id_mapping, \
     main_licence_decision_event_id_mapping
 from urban.dataimport.core.utils import parse_cadastral_reference, benchmark_decorator, BaseImport, \
-    export_to_customer_json
+    export_to_customer_json, represent_int
 from urban.dataimport.core.utils import StateManager
 from urban.dataimport.core.utils import StateHandler
 from urban.dataimport.core.utils import IterationError
@@ -140,7 +140,7 @@ class ImportAcropole(BaseImport):
         licence_dict['usage'] = 'not_applicable'
         licence_dict['workLocations'] = self.get_work_locations(licence)
         # self.get_applicants(licence, licence_dict['__children__'])
-        # self.get_parcels(licence, licence_dict['__children__'])
+        self.get_parcels(licence, licence_dict['__children__'])
         self.get_events(licence, licence_dict)
         description = str(''.join(str(d) for d in self.licence_description))
         licence_dict['description'] = {
@@ -270,81 +270,78 @@ class ImportAcropole(BaseImport):
 
     @benchmark_decorator
     def get_parcels(self, licence, licence_children):
-        parcels = self.db.dossier_parcelles_vue[
-            (self.db.dossier_parcelles_vue.WRKDOSSIER_ID == licence.WRKDOSSIER_ID)]
-        for id, parcels in parcels.iterrows():
-            parcels_dict = get_parcel_dict()
-            parcels_dict['complete_name'] = parcels.CAD_NOM
-            parcels_args = parse_cadastral_reference(parcels.CAD_NOM)
-            if parcels_args[0] and parcels_args[1] and parcels_args[2]:
-                division = division_mapping.get(parcels_args[0], None)
-                parcelles_cadastrales = self.cadastral.parcelles_cadastrales_vue
-                cadastral_parcels = parcelles_cadastrales[
-                    (parcelles_cadastrales.division == division) &
-                    (parcelles_cadastrales.section == parcels_args[1]) &
-                    (parcelles_cadastrales.radical == parcels_args[2]) &
-                    (parcelles_cadastrales.bis == (parcels_args[3] and
-                                                   parcels_args[3] or '0')) &
-                    (parcelles_cadastrales.exposant == parcels_args[4]) &
-                    (parcelles_cadastrales.puissance == (parcels_args[5] and
-                                                         parcels_args[5] or '0'))
-                ]
-
-                result_count = cadastral_parcels.shape[0]
-                if result_count == 1:
-                    parcels_dict['outdated'] = 'False'
-                    parcels_dict['is_official'] = 'True'
-                    parcels_dict['division'] = cadastral_parcels.iloc[0]['division']
-                    parcels_dict['section'] = cadastral_parcels.iloc[0]['section']
-                    parcels_dict['radical'] = cadastral_parcels.iloc[0]['radical']
-                    parcels_dict['bis'] = cadastral_parcels.iloc[0]['bis']
-                    parcels_dict['exposant'] = cadastral_parcels.iloc[0]['exposant']
-                    parcels_dict['puissance'] = cadastral_parcels.iloc[0]['puissance']
-                elif result_count > 1:
-                    self.licence_description.append({'objet': "Trop de résultats pour cette parcelle",
-                                                     'ancienne parcelle': 'Non',
-                                                     'parcelle': parcels.CAD_NOM,
-                                                     })
-                else:
-                    if self.search_old_parcels:
-                        # Looking for old parcels
-                        vieilles_parcelles_cadastrales = self.cadastral.vieilles_parcelles_cadastrales_vue
-                        old_cadastral_parcels = vieilles_parcelles_cadastrales[
-                            (vieilles_parcelles_cadastrales.division == division) &
-                            (vieilles_parcelles_cadastrales.section == parcels_args[1]) &
-                            (vieilles_parcelles_cadastrales.radical == parcels_args[2]) &
-                            (vieilles_parcelles_cadastrales.bis == (parcels_args[3] and
-                                                                    parcels_args[3] or '0')) &
-                            (vieilles_parcelles_cadastrales.exposant == parcels_args[4]) &
-                            (vieilles_parcelles_cadastrales.puissance == (parcels_args[5] and
-                                                                          parcels_args[5] or '0'))
+        parcels = licence.CONCAT_PARCELS
+        if parcels:
+            for parcel in parcels.split("@"):
+                parcels_dict = get_parcel_dict()
+                parcels_dict['complete_name'] = parcel
+                parcels_args = parse_cadastral_reference(parcel)
+                division_code = parcels_args[0]
+                section = parcels_args[1] if parcels_args[1] else ''
+                radical = parcels_args[2] if parcels_args[2] else 0
+                bis = parcels_args[3] if parcels_args[3] else 0
+                exposant = parcels_args[4] if parcels_args[4] else ''
+                puissance = parcels_args[5] if parcels_args[5] else 0
+                if division_code and section and radical:
+                    if represent_int(puissance) and int(puissance) < 100:
+                        if represent_int(radical) and represent_int(bis) and represent_int(puissance):
+                            division = division_mapping.get(division_code, None)
+                            parcelles_cadastrales = self.cadastral.cadastre_parcelles_vue
+                            cadastral_parcels = parcelles_cadastrales[
+                                (parcelles_cadastrales.division == division) &
+                                (parcelles_cadastrales.section == section) &
+                                (parcelles_cadastrales.radical == int(radical)) &
+                                ((parcelles_cadastrales.bis.isnull()) if not int(bis)
+                                 else parcelles_cadastrales.bis == int(bis)) &
+                                ((parcelles_cadastrales.exposant.isnull()) if not exposant
+                                 else parcelles_cadastrales.exposant == exposant) &
+                                ((parcelles_cadastrales.puissance.isnull()) if not int(puissance)
+                                 else parcelles_cadastrales.puissance == puissance)
                             ]
-                        old_result_count = old_cadastral_parcels.shape[0]
-                        if old_result_count == 1:
-                            parcels_dict['outdated'] = 'True'
-                            parcels_dict['is_official'] = 'True'
-                            parcels_dict['division'] = old_cadastral_parcels.iloc[0]['division']
-                            parcels_dict['section'] = old_cadastral_parcels.iloc[0]['section']
-                            parcels_dict['radical'] = str(old_cadastral_parcels.iloc[0]['radical'])
-                            parcels_dict['bis'] = old_cadastral_parcels.iloc[0]['bis']
-                            parcels_dict['exposant'] = old_cadastral_parcels.iloc[0]['exposant']
-                            parcels_dict['puissance'] = old_cadastral_parcels.iloc[0]['puissance']
-                        elif old_result_count > 1:
-                            self.licence_description.append({'objet': "Trop de résultats pour cette parcelle",
-                                                             'ancienne parcelle': 'Oui',
-                                                             'parcel': parcels.CAD_NOM,
-                                                             })
+
+                            result_count = cadastral_parcels.shape[0]
+                            if result_count == 1:
+                                parcels_dict['outdated'] = 'False'
+                                parcels_dict['is_official'] = 'True'
+                                parcels_dict['division'] = str(cadastral_parcels.iloc[0]['division'])
+                                parcels_dict['section'] = cadastral_parcels.iloc[0]['section']
+                                parcels_dict['radical'] = str(cadastral_parcels.iloc[0]['radical'])
+                                parcels_dict['bis'] = str(cadastral_parcels.iloc[0]['bis']) if cadastral_parcels.iloc[0]['bis'] else ""
+                                parcels_dict['exposant'] = cadastral_parcels.iloc[0]['exposant']
+                                parcels_dict['puissance'] = str(cadastral_parcels.iloc[0]['puissance']) if cadastral_parcels.iloc[0]['puissance'] else ""
+                                self.licence_description.append({'objet': "Parcelle trouvée",
+                                                                 'parcelle': parcel,
+                                                                 })
+                            elif result_count > 1:
+                                self.licence_description.append({'objet': "Trop de résultats pour cette parcelle",
+                                                                 'parcelle': parcel,
+                                                                 })
+                            else:
+                                parcels_dict['outdated'] = 'False'
+                                parcels_dict['is_official'] = 'False'
+                                parcels_dict['division'] = str(division)
+                                parcels_dict['section'] = section
+                                parcels_dict['radical'] = str(int(radical))
+                                parcels_dict['bis'] = str(int(bis))
+                                parcels_dict['exposant'] = exposant
+                                parcels_dict['puissance'] = str(int(puissance))
+                                self.licence_description.append({'objet': "Pas de résultat pour cette parcelle",
+                                                                 'parcelle': parcels_dict['complete_name'],
+                                                                 })
                         else:
-                            self.licence_description.append({'objet': "Parcelle non trouvée",
-                                                             'parcelle': parcels.CAD_NOM,
+                            self.licence_description.append({'objet': "Parcelle incomplète ou non valide",
+                                                             'parcelle': parcel,
                                                              })
-                            pass
-            else:
-                self.licence_description.append({'objet': "Parcelle incomplète ou non valide",
-                                                 'parcelle': parcels.CAD_NOM,
-                                                 })
-            if parcels_dict['division'] and parcels_dict['section']:
-                licence_children.append(parcels_dict)
+                    else:
+                        self.licence_description.append({'objet': "Parcelle incomplète ou non valide",
+                                                         'parcelle': parcels_dict['complete_name'],
+                                                         })
+                else:
+                    self.licence_description.append({'objet': "Parcelle incomplète ou non valide",
+                                                     'parcelle': parcels_dict['complete_name'],
+                                                     })
+                if parcels_dict['division'] and parcels_dict['section']:
+                    licence_children.append(parcels_dict)
 
     @benchmark_decorator
     def get_events(self, licence, licence_dict):
@@ -360,9 +357,9 @@ class ImportAcropole(BaseImport):
         event_dict['event_id'] = main_licence_deposit_event_id_mapping[licence_dict['portalType']]
         event_dict['eventPortalType'] = 'UrbanEvent'
         if licence.DOSSIER_DATEDEPART:
-            event_dict['eventDate'] = str(licence.DOSSIER_DATEDEPART)
+            event_dict['eventDate'] = str(licence.DOSSIER_DATEDEPART)[0:10]
         elif licence.DOSSIER_DATEDEPOT:
-            event_dict['eventDate'] = str(licence.DOSSIER_DATEDEPOT)
+            event_dict['eventDate'] = str(licence.DOSSIER_DATEDEPOT)[0:10]
         else:
             return
         licence_dict['__children__'].append(event_dict)
@@ -422,8 +419,8 @@ class ImportAcropole(BaseImport):
                 licence_dict['wf_state'] = ''
 
         if licence.DOSSIER_DATEDELIV:
-            event_dict['eventDate'] = str(licence.DOSSIER_DATEDELIV)
-            event_dict['decisionDate'] = str(licence.DOSSIER_DATEDELIV)
+            event_dict['eventDate'] = str(licence.DOSSIER_DATEDELIV)[0:10]
+            event_dict['decisionDate'] = str(licence.DOSSIER_DATEDELIV)[0:10]
             licence_dict['__children__'].append(event_dict)
 
 
