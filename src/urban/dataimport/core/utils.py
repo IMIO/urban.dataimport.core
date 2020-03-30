@@ -6,6 +6,7 @@ from progress.bar import FillingSquaresBar
 from random import shuffle
 from urban.dataimport.core.json import DateTimeEncoder
 
+import csv
 import json
 import jsonschema
 import os
@@ -28,6 +29,8 @@ def represent_int(string):
         int(string)
         return True
     except ValueError:
+        return False
+    except TypeError:
         return False
 
 
@@ -109,6 +112,17 @@ def benchmark_decorator(method):
         return returned_value
 
     return replacement
+
+
+def export_error_csv(errors):
+    print("WRITING ERRORS REPORTS")
+    for error_list in errors:
+        if len(error_list) > 0:
+            csv_writer = csv.writer(open('{}.csv'.format(error_list[0].filename), 'w'), delimiter=';', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+            csv_writer.writerow(["Référence", "Valeur", "Description Erreur"])
+            for error in error_list:
+                csv_writer.writerow(error)
+    print("ERRORS REPORTS WRITED")
 
 
 class IterationError(Exception):
@@ -224,3 +238,15 @@ class BaseImport:
             self._validation_schema,
             resolver=self._validation_resolver,
         )
+
+
+class ErrorToCsv:
+
+    def __init__(self, filename, error, reference, object):
+        self.error = error
+        self.reference = reference
+        self.object = object
+        self.filename = filename
+
+    def __iter__(self):
+        return iter([self.reference, self.object, self.error])
