@@ -20,7 +20,7 @@ from urban.dataimport.core.mapping.urbaweb_mapping import division_mapping, even
     title_types
 from urban.dataimport.core.mapping.urbaweb_mapping import portal_type_mapping
 from urban.dataimport.core.utils import BaseImport, StateManager, StateHandler, benchmark_decorator, \
-    export_to_customer_json, represent_int, IterationError
+    export_to_customer_json, represent_int, IterationError, ErrorToCsv, export_error_csv
 from urban.dataimport.core.views.bestaddress_views import create_bestaddress_views
 from urban.dataimport.core.views.cadastral_views import create_cadastral_views
 from urban.dataimport.core.views.urbaweb_views import create_views, create_concat_views
@@ -69,6 +69,8 @@ class ImportUrbaweb(BaseImport):
         create_views(self)
         create_cadastral_views(self)
         create_bestaddress_views(self, config['main']['locality'])
+        self.parcel_errors = []
+        self.street_errors = []
         print("INITIALIZATION COMPLETED")
 
     def execute(self):
@@ -104,6 +106,7 @@ class ImportUrbaweb(BaseImport):
             self.get_licence(id, licence)
             bar.next()
         bar.finish()
+        export_error_csv([self.parcel_errors, self.street_errors])
         if self.iterate is True:
             try:
                 self.validate_data(self.data, 'GenericLicence')
@@ -184,6 +187,14 @@ class ImportUrbaweb(BaseImport):
                         (self.bestaddress.bestaddress_vue.street == urbaweb_street_without_last_char.strip())
                     ]
                     if bestaddress_streets.shape[0] == 0:
+                        self.street_errors.append(ErrorToCsv("street_errors",
+                                                             "Pas de résultat pour cette rue",
+                                                             licence.REFERENCE,
+                                                             "rue : {} n°: {} cp: {} localité: {}"
+                                                             .format(licence.LOCALITE_RUE,
+                                                                     licence.LOCALITE_NUM,
+                                                                     licence.LOCALITE_CP,
+                                                                     licence.LOCALITE_LABEL)))
                         self.licence_description.append({'objet': "Pas de résultat pour cette rue",
                                                          'rue': licence.LOCALITE_RUE,
                                                          'n°': licence.LOCALITE_NUM,
@@ -201,6 +212,14 @@ class ImportUrbaweb(BaseImport):
 
                 work_locations_dict['locality'] = bestaddress_streets.iloc[0]['entity']
             elif result_count > 1:
+                self.street_errors.append(ErrorToCsv("street_errors",
+                                                     "Plus d'un seul résultat pour cette rue",
+                                                     licence.REFERENCE,
+                                                     "rue : {} n°: {} cp: {} localité: {}"
+                                                     .format(licence.LOCALITE_RUE,
+                                                             licence.LOCALITE_NUM,
+                                                             licence.LOCALITE_CP,
+                                                             licence.LOCALITE_LABEL)))
                 self.licence_description.append({'objet': "Plus d'un seul résultat pour cette rue",
                                                  'rue': licence.LOCALITE_RUE,
                                                  'n°': licence.LOCALITE_NUM,
@@ -286,6 +305,10 @@ class ImportUrbaweb(BaseImport):
                                         parcels_dict['exposant'] = cadastral_parcels.iloc[0]['exposant']
                                         parcels_dict['puissance'] = str(cadastral_parcels.iloc[0]['puissance']) if cadastral_parcels.iloc[0]['puissance'] else ""
                                     elif result_count > 1:
+                                        self.parcel_errors.append(ErrorToCsv("parcels_errors",
+                                                                             "Trop de résultats pour cette parcelle",
+                                                                             licence.REFERENCE,
+                                                                             parcels_dict['complete_name']))
                                         self.licence_description.append({'objet': "Trop de résultats pour cette parcelle",
                                                                          'parcelle': parcels_dict['complete_name'],
                                                                          })
@@ -302,24 +325,40 @@ class ImportUrbaweb(BaseImport):
                                                                          'parcelle': parcels_dict['complete_name'],
                                                                          })
                                 else:
+                                    self.parcel_errors.append(ErrorToCsv("parcels_errors",
+                                                                         "Parcelle incomplète ou non valide",
+                                                                         licence.REFERENCE,
+                                                                         parcels_dict['complete_name']))
                                     self.licence_description.append({'objet': "Parcelle incomplète ou non valide",
                                                                      'parcelle': parcels_dict['complete_name'],
                                                                      })
                             else:
+                                self.parcel_errors.append(ErrorToCsv("parcels_errors",
+                                                                     "Parcelle incomplète ou non valide",
+                                                                     licence.REFERENCE,
+                                                                     parcels_dict['complete_name']))
                                 self.licence_description.append({'objet': "Parcelle incomplète ou non valide",
                                                                  'parcelle': parcels_dict['complete_name'],
                                                                  })
                         else:
+                            self.parcel_errors.append(ErrorToCsv("parcels_errors",
+                                                                 "Parcelle incomplète ou non valide",
+                                                                 licence.REFERENCE,
+                                                                 parcels_dict['complete_name']))
                             self.licence_description.append({'objet': "Parcelle incomplète ou non valide",
                                                              'parcelle': parcels_dict['complete_name'],
                                                              })
                     else:
+                        self.parcel_errors.append(ErrorToCsv("parcels_errors",
+                                                             "Parcelle incomplète ou non valide",
+                                                             licence.REFERENCE,
+                                                             parcels_dict['complete_name']))
                         self.licence_description.append({'objet': "Parcelle incomplète ou non valide",
                                                          'parcelle': parcels_dict['complete_name'],
                                                          })
                     if parcels_dict['division'] and parcels_dict['section']:
                         licence_children.append(parcels_dict)
-            except Exception:
+            except Exception as e:
                 import ipdb; ipdb.set_trace() # TODO REMOVE BREAKPOINT
                 print("debug")
 
