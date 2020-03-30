@@ -187,7 +187,7 @@ def create_views(import_urbaweb):
                                     LEFT JOIN c_avis_college AS AVIS_RECOUR ON AVIS_RECOUR.id = RECOUR.avis_fk
                                     LEFT JOIN get_document_infos AS PERMIS_DOCUMENTS ON PERMIS_DOCUMENTS.ID_PERMIS = PERMIS.id
                                     LEFT JOIN p_directive AS DIRECTIVE ON PERMIS.directive_fk = DIRECTIVE.id
-                                    WHERE PERMIS.type_permis_fk = 2;
+                                    WHERE PERMIS.type_permis_fk = 2 OR PERMIS.type_permis_fk = 16;
                                   """
                                   )
 
