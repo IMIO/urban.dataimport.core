@@ -39,6 +39,42 @@ msgstr "Lettre de notaire"
 msgid "Declaration"
 msgstr "Déclaration"
 
+#. Default: "PreliminaryNotice"
+msgid "PreliminaryNotice"
+msgstr "Avis Préalable"
+
+#. Default: "UrbanCertificateTwo"
+msgid "UrbanCertificateTwo"
+msgstr "Certificat d'urbanisme 2"
+
+#. Default: "UrbanCertificateOne"
+msgid "UrbanCertificateOne"
+msgstr "Certificat d'urbanisme 1"
+
+#. Default: "CODT_BuildLicence"
+msgid "CODT_BuildLicence"
+msgstr "Permis d'urbanisme CODT"
+
+#. Default: "CODT_UrbanCertificateTwo"
+msgid "CODT_UrbanCertificateTwo"
+msgstr "Certificat d'urbanisme 2 CODT"
+
+#. Default: "CODT_UrbanCertificateOne"
+msgid "CODT_UrbanCertificateOne"
+msgstr "Certificat d'urbanisme 1 CODT"
+
+#. Default: "CODT_ParcelOutLicence"
+msgid "CODT_ParcelOutLicence"
+msgstr "Permis d'urbanisation CODT"
+
+#. Default: "CODT_CommercialLicence"
+msgid "CODT_CommercialLicence"
+msgstr "Permis d'implantation commerciale"
+
+#. Default: "MiscDemand"
+msgid "MiscDemand"
+msgstr "Demandes diverses"
+
 #. Default: "workLocations"
 msgid "workLocations"
 msgstr "adresse des travaux"
