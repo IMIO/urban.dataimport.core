@@ -28,7 +28,7 @@ from urban.dataimport.core.views.urbaweb_views import create_views, create_conca
 
 class ImportUrbaweb(BaseImport):
 
-    def __init__(self, config_file, view, limit=None, range=None, licence_id=None, ignore_cache=False, benchmarking=False, noop=False, iterate=False):
+    def __init__(self, config_file, view, limit=None, range=None, licence_id=None, ignore_cache=False, pg_ignore_cache=False, benchmarking=False, noop=False, iterate=False):
         print("INITIALIZING")
         self.view = view
         self.limit = limit
@@ -55,7 +55,7 @@ class ImportUrbaweb(BaseImport):
         self.cadastral = LazyDB(
             connection_cadastral,
             config['cadastral_database']['schema'],
-            ignore_cache=False,
+            ignore_cache=pg_ignore_cache,
         )
         engine_bestaddress = create_engine('postgresql://{user}:{password}@{host}:{port}'.format(
             **config._sections['bestaddress_database']))
@@ -63,7 +63,7 @@ class ImportUrbaweb(BaseImport):
         self.bestaddress = LazyDB(
             connection_bestaddress,
             config['bestaddress_database']['schema'],
-            ignore_cache=False,
+            ignore_cache=pg_ignore_cache,
         )
         create_concat_views(self)
         create_views(self)
@@ -80,7 +80,6 @@ class ImportUrbaweb(BaseImport):
             self.extract_data()
         except Exception as e:
             error = e
-
         if error:
             raise error
 
@@ -166,25 +165,48 @@ class ImportUrbaweb(BaseImport):
     @benchmark_decorator
     def get_work_locations(self, licence):
         work_locations_list = []
-
         work_locations_dict = get_work_locations_dict()
         if licence.LOCALITE_RUE:
             # remove parentheses and its content
             urbaweb_street = re.sub(r'\([^)]*\)', '', licence.LOCALITE_RUE).strip()
-            bestaddress_streets = self.bestaddress.bestaddress_vue[
-                (self.bestaddress.bestaddress_vue.street == urbaweb_street)
+            urbaweb_street = re.sub(r'^Av[.]', 'Avenue', urbaweb_street).strip()
+            urbaweb_street = re.sub(r'^Av ', 'Avenue ', urbaweb_street).strip()
+            urbaweb_street = re.sub(r'^Pl[.]', 'Place', urbaweb_street).strip()
+            urbaweb_street = re.sub(r'^Pl ', 'Place ', urbaweb_street).strip()
+            urbaweb_street = re.sub(r'^rue ', 'Rue ', urbaweb_street).strip()
+            urbaweb_street = re.sub(r' St ', ' Saint-', urbaweb_street).strip()
+            urbaweb_street = re.sub(r' Ste ', ' Sainte-', urbaweb_street).strip()
+
+            # TODO custom BLA : to remove
+            urbaweb_street = re.sub(r'Ch du Blanc Caillou', 'Chemin du Blanc Caillou', urbaweb_street).strip()
+            urbaweb_street = re.sub(r' Alph Allard', ' Alphonse Allard', urbaweb_street).strip()
+            urbaweb_street = re.sub(r'Dr du Triage Bruyère', 'Drève du Triage Bruyère', urbaweb_street).strip()
+
+            if urbaweb_street.strip() == 'Avenue de la Chevauchée':
+                self.licence_description.append({'objet': "",
+                                                 'rue': licence.LOCALITE_RUE,
+                                                 'n°': licence.LOCALITE_NUM,
+                                                 'code postal': licence.LOCALITE_CP,
+                                                 'localité': licence.LOCALITE_LABEL
+                                                 })
+            urbaweb_street = re.sub(r'Avenue de la Chevauchée', '', urbaweb_street).strip()
+            # End custom code
+
+            df_ba_vue = self.bestaddress.bestaddress_vue
+            bestaddress_streets = df_ba_vue[
+                (df_ba_vue.street == urbaweb_street)
             ]
             if bestaddress_streets.shape[0] == 0:
                 # second chance without street number
                 urbaweb_street_without_digits = ''.join([letter for letter in urbaweb_street if not letter.isdigit()]).strip()
-                bestaddress_streets = self.bestaddress.bestaddress_vue[
-                    (self.bestaddress.bestaddress_vue.street == urbaweb_street_without_digits)
+                bestaddress_streets = df_ba_vue[
+                    (df_ba_vue.street == urbaweb_street_without_digits)
                 ]
                 if bestaddress_streets.shape[0] == 0:
                     # last chance : try to remove last char, for example : 1a or 36C
                     urbaweb_street_without_last_char = urbaweb_street_without_digits.strip()[:-1]
-                    bestaddress_streets = self.bestaddress.bestaddress_vue[
-                        (self.bestaddress.bestaddress_vue.street == urbaweb_street_without_last_char.strip())
+                    bestaddress_streets = df_ba_vue[
+                        (df_ba_vue.street == urbaweb_street_without_last_char.strip())
                     ]
                     if bestaddress_streets.shape[0] == 0:
                         self.street_errors.append(ErrorToCsv("street_errors",
@@ -206,7 +228,7 @@ class ImportUrbaweb(BaseImport):
             result_count = bestaddress_streets.shape[0]
             if result_count == 1:
                 work_locations_dict['street'] = bestaddress_streets.iloc[0]['street']
-                work_locations_dict['bestaddress_key'] = str(bestaddress_streets.iloc[0]['key']) if str(bestaddress_streets.iloc[0]['key']) not in ('7044037', '7008904') else ""
+                work_locations_dict['bestaddress_key'] = str(bestaddress_streets.iloc[0]['key']) if str(bestaddress_streets.iloc[0]['key']) not in ('7044037', '7008904', '7017260', '7011944') else ""
                 work_locations_dict['number'] = str(unidecode.unidecode(licence.LOCALITE_NUM))
                 work_locations_dict['zipcode'] = bestaddress_streets.iloc[0]['zip']
 
@@ -573,7 +595,9 @@ def main():
     parser.add_argument('--licence_id', type=str, help='reference of a licence')
     parser.add_argument('--range', type=str, help="input slice, example : '5:10'")
     parser.add_argument('--ignore_cache', type=bool, nargs='?',
-                        const=True, default=False, help='ignore local cache')
+                        const=True, default=False, help='ignore mysql db local cache')
+    parser.add_argument('--pg_ignore_cache', type=bool, nargs='?',
+                        const=True, default=False, help='ignore postgres db local cache')
     parser.add_argument('--benchmarking', type=bool, nargs='?',
                         const=True, default=False, help='add benchmark infos')
     parser.add_argument('--noop', type=bool, nargs='?',
@@ -589,6 +613,7 @@ def main():
         range=args.range,
         licence_id=args.licence_id,
         ignore_cache=args.ignore_cache,
+        pg_ignore_cache=args.pg_ignore_cache,
         benchmarking=args.benchmarking,
         noop=args.noop,
         iterate=args.iterate
