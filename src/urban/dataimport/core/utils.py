@@ -118,7 +118,7 @@ def export_error_csv(errors):
     print("WRITING ERRORS REPORTS")
     for error_list in errors:
         if len(error_list) > 0:
-            csv_writer = csv.writer(open('{}.csv'.format(error_list[0].filename), 'w'), delimiter=';', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+            csv_writer = csv.writer(open('{}_{}.csv'.format(error_list[0].filename, datetime.datetime.now().strftime("%Y%m%d_%H%M%S")), 'w'), delimiter=';', quotechar='"', quoting=csv.QUOTE_MINIMAL)
             csv_writer.writerow(["Référence", "Valeur", "Description Erreur"])
             for error in error_list:
                 csv_writer.writerow(error)
