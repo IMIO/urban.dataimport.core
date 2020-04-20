@@ -12,7 +12,7 @@ import requests
 
 from urban.dataimport.core.http import post_query, search_query, delete_query, get_query
 from urban.dataimport.core.json import DateTimeEncoder
-from urban.dataimport.core.utils import BaseImport, benchmark_decorator
+from urban.dataimport.core.utils import BaseImport, benchmark_decorator, ErrorToCsv, export_error_csv
 
 RESPONSE_SUCCESS = 200
 RESPONSE_CREATED_SUCCESS = 201
@@ -26,6 +26,8 @@ class ImportToPlone(BaseImport):
 
     def __init__(self, config_file, limit=None, licence_id=None, licence_type=None, benchmarking=False, noop=False, exit_on_error=False):
         self._log = []
+        self._current_licence = ""
+        self.licence_errors = []
         self.start_time = time.time()
         self.benchmarking = benchmarking
         self.noop = noop
@@ -77,8 +79,11 @@ class ImportToPlone(BaseImport):
             print("Erreur: {} *** Licence: {}".format(e, licence))
 
             if self.exit_on_error:
+                export_error_csv([self.licence_errors])
                 sys.exit(1)
             pass
+
+        export_error_csv([self.licence_errors])
 
         if self._log:
             print("--- LOGS ---")
