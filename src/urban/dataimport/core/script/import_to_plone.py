@@ -8,6 +8,7 @@ import argparse
 import configparser
 import json
 import time
+import traceback
 import requests
 
 from urban.dataimport.core.http import post_query, search_query, delete_query, get_query
@@ -24,7 +25,7 @@ LOGIN_STRING = '{"login": "%s", "password": "%s"}'
 
 class ImportToPlone(BaseImport):
 
-    def __init__(self, config_file, limit=None, licence_id=None, licence_type=None, benchmarking=False, noop=False, exit_on_error=False):
+    def __init__(self, config_file, group_licences=None, limit=None, licence_id=None, licence_type=None, benchmarking=False, noop=False, exit_on_error=False):
         self._log = []
         self._current_licence = ""
         self.licence_errors = []
@@ -38,10 +39,10 @@ class ImportToPlone(BaseImport):
         config_file = utils.format_path(config_file)
         config.read(config_file)
         self.config = config
+        self.group_licences = group_licences
         self.limit = limit
         self.licence_id = licence_id
         self.licence_type = licence_type
-
         self.plone_site = ('{host}/{site}'.format(**config._sections['plone']))
         self.host = config._sections['plone']['host']
         response = requests.post(self.plone_site + '/@login',
@@ -52,8 +53,8 @@ class ImportToPlone(BaseImport):
             self.token = response.json()['token']
             self.head = {'Accept': 'application/json', 'Content-Type': 'application/json',
                          'Authorization': 'Bearer {}'.format(self.token)}
-        else:
-            print(response.status_code)
+        self.nb_licence = 0
+        self.licence_global_list = []
 
     def execute(self):
 
@@ -61,23 +62,38 @@ class ImportToPlone(BaseImport):
             data = json.load(input_file)
 
         try:
-            self.foldermanager_uid = self.search_foldermanager(self.config['plone']['foldermanager'])
+            if self.config['plone']['foldermanager']:
+                self.foldermanager_uid = self.search_foldermanager(self.config['plone']['foldermanager'])
             bar = FillingSquaresBar('Importing licences', max=len(data))
-            for licence in data:
-                if self.licence_type:
-                    if licence['portalType'] == self.licence_type:
-                        self.import_licence(licence)
-                else:
-                    if self.licence_id:
-                        if self.licence_id == licence['reference']:
+            self.nb_licence = len(data)
+            if self.limit:
+                self.nb_licence = self.limit
+            if self.group_licences:
+                for i in range(0, self.nb_licence, self.group_licences):
+                    group_list = data[i: i + self.group_licences]
+                    self.import_licence(group_list)
+                    for j in group_list:
+                        bar.next()
+            else:
+                for licence in data:
+                    self._current_licence = licence
+                    if self.licence_type:
+                        if licence['portalType'] == self.licence_type:
                             self.import_licence(licence)
                     else:
-                        self.import_licence(licence)
-                bar.next()
+                        if self.licence_id:
+                            if self.licence_id == licence['reference']:
+                                self.import_licence([licence])
+                        else:
+                            self.import_licence(licence)
             bar.finish()
         except Exception as e:
-            print("Erreur: {} *** Licence: {}".format(e, licence))
-
+            exc_type, exc_obj, exc_tb = sys.exc_info()
+            self.licence_errors.append(ErrorToCsv("licence_errors",
+                                                  "Dossier non traité et en erreur",
+                                                  self._current_licence['reference'],
+                                                  str(exc_type)))
+            print("Erreur: {} *** Licence: {} *** traceback: {}".format(e, group_list, traceback.print_tb(e.__traceback__)))
             if self.exit_on_error:
                 export_error_csv([self.licence_errors])
                 sys.exit(1)
@@ -94,40 +110,28 @@ class ImportToPlone(BaseImport):
 
     def import_licence(self, licence):
         try:
-            if self.licence_exists(licence):
-                print("Licence: {} already exists".format(licence))
-            else:
-                licence_url = self.post_licence(licence)
-                if licence['applicants']:
-                    self.post_applicants(licence_url, licence)
-                if licence['parcels']:
-                    self.post_parcels(licence_url, licence)
-                if licence['events']:
-                    self.post_events(licence_url, licence)
-            # ...
-        except Warning as w:
-            print("\nWarning: {} *** Licence: {}".format(w, licence))
+            self.post_licences(licence)
+        except Warning as warn:
+            print("\nWarning: {} *** Licence: {}".format(warn, licence))
+            self.licence_errors.append(ErrorToCsv("licence_errors",
+                                                  "Dossier non traité et en erreur",
+                                                  self._current_licence['reference'],
+                                                  str(traceback.format_exc())))
+            if self.exit_on_error:
+                # raise Exception(warn)
+                sys.exit(1)
             pass
 
     @benchmark_decorator
-    def post_licence(self, licence):
-        licence["@type"] = licence.pop("portalType")
-        licence["foldermanagers"] = self.foldermanager_uid
-        licence["usage"] = "not_applicable"
-        # licence["workLocations"] = [{'number': '', 'street': 'blabla'}]
-        data = {key: val for key, val in licence.items() if not isinstance(val, list)}
-        licence_url = self.plone_site + '/urban/buildlicences/'
-        response = post_query(url=licence_url, header=self.head, data=json.dumps(data))
-        if response.status_code != RESPONSE_CREATED_SUCCESS:
-            if "This reference has already been encoded" in str(response.content):
-                self._log.append({'object': "Référence déjà existante",
-                                  'reference': data['reference'],
-                                  'id': data['id'],
-                                  'licenceSubject': data['licenceSubject']
-                                  })
-            raise Warning("Licence issue : not created :{}".format(data['reference']))
-        response_dict = json.loads(response.text)
-        return response_dict['@id']
+    def post_licences(self, licences):
+        main_dict = {'__elements__': licences}
+        imio_webservice_json_url = "{}/{}/{}".format(self.host,
+                                                     self.config['plone']['site'],
+                                                     self.config['plone']['endpoint'])
+        response = post_query(url=imio_webservice_json_url, header=self.head, data=json.dumps(main_dict))
+        if response.status_code != RESPONSE_CREATED_SUCCESS and response.status_code != RESPONSE_SUCCESS:
+            raise Warning("Licence issue : not created :{} with response: {}".format(main_dict, response.text))
+        json.loads(response.text)
 
     @benchmark_decorator
     def post_applicants(self, licence_url, licence):
@@ -157,7 +161,7 @@ class ImportToPlone(BaseImport):
     def post_events(self, licence_url, licence):
         urbanevents_folder = "{0}{1}".format(self.plone_site, "/portal_urban/buildlicence/urbaneventtypes/")
         for event in licence['events']:
-            event['urbaneventtypes'] = "{0}{1}".format(urbanevents_folder, event['type'])
+            event['event_id'] = "{0}{1}".format(urbanevents_folder, event['type'])
             # data = {key: val for key, val in applicant.items() if not isinstance(val, list)}
             response = post_query(url=licence_url, header=self.head, data=json.dumps(event))
             if response.status_code != RESPONSE_CREATED_SUCCESS:
@@ -192,6 +196,7 @@ def main():
     """ """
     parser = argparse.ArgumentParser(description='Import data in Urban from json input')
     parser.add_argument('config_file', type=str, help='path to the config')
+    parser.add_argument('--group_licences', type=int, help='request with multi-licences number')
     parser.add_argument('--limit', type=int, help='number of records')
     parser.add_argument('--licence_id', type=str, help='reference of a licence')
     parser.add_argument('--licence_type', type=str, help='type of licence')
@@ -205,6 +210,7 @@ def main():
 
     ImportToPlone(
         args.config_file,
+        group_licences=args.group_licences,
         limit=args.limit,
         licence_id=args.licence_id,
         licence_type=args.licence_type,
