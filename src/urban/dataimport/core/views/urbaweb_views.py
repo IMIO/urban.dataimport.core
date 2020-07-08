@@ -95,6 +95,8 @@ def create_views(import_urbaweb):
                                            RECOUR.decision_tutelle AS DECISION_TUTELLE,
                                            RECOUR.remarque  AS RECOUR_REMARQUE,
                                            RECOUR.reference_rw AS RECOUR_REFERENCE,
+                                           TRAVAUX.date_debut AS DEBUT_TRAVAUX,
+                                           TRAVAUX.date_fin AS FIN_TRAVAUX,
                                            PERMIS_DOCUMENTS.DOCUMENTS AS INFOS_DOCUMENTS,
                                            ORG.civilite_fk AS ORG_TITLE_ID,
                                            ORG.nom AS ORG_NOM,
@@ -122,6 +124,7 @@ def create_views(import_urbaweb):
                                     LEFT JOIN c_avis_college AS AVIS_RECOUR ON AVIS_RECOUR.id = RECOUR.avis_fk
                                     LEFT JOIN get_document_infos AS PERMIS_DOCUMENTS ON PERMIS_DOCUMENTS.ID_PERMIS = PERMIS.id
                                     LEFT JOIN p_directive AS DIRECTIVE ON PERMIS.directive_fk = DIRECTIVE.id
+                                    LEFT JOIN p_travaux AS TRAVAUX ON TRAVAUX.id = PU.travaux_fk
                                     WHERE PERMIS.type_permis_fk = 1 AND DIRECTIVE.autorite_competente IN ('1', '2');
                                   """
                                   )
@@ -158,6 +161,8 @@ def create_views(import_urbaweb):
                                            RECOUR.decision_tutelle AS DECISION_TUTELLE,
                                            RECOUR.remarque  AS RECOUR_REMARQUE,
                                            RECOUR.reference_rw AS RECOUR_REFERENCE,
+                                           TRAVAUX.date_debut AS DEBUT_TRAVAUX,
+                                           TRAVAUX.date_fin AS FIN_TRAVAUX,
                                            PERMIS_DOCUMENTS.DOCUMENTS AS INFOS_DOCUMENTS,
                                            ORG.civilite_fk AS ORG_TITLE_ID,
                                            ORG.nom AS ORG_NOM,
@@ -187,6 +192,7 @@ def create_views(import_urbaweb):
                                     LEFT JOIN c_avis_college AS AVIS_RECOUR ON AVIS_RECOUR.id = RECOUR.avis_fk
                                     LEFT JOIN get_document_infos AS PERMIS_DOCUMENTS ON PERMIS_DOCUMENTS.ID_PERMIS = PERMIS.id
                                     LEFT JOIN p_directive AS DIRECTIVE ON PERMIS.directive_fk = DIRECTIVE.id
+                                    LEFT JOIN p_travaux AS TRAVAUX ON TRAVAUX.id = PURB.travaux_fk
                                     WHERE PERMIS.type_permis_fk = 2 OR PERMIS.type_permis_fk = 16;
                                   """
                                   )
@@ -256,6 +262,8 @@ def create_views(import_urbaweb):
                                     PUN_DECISION.date_autorisation_tutelle AS DATE_AUTORISATION_TUTELLE,
                                     PUN_DECISION.date_refus_college AS DATE_REFUS_COLLEGE,
                                     PUN_DECISION.date_refus_tutelle AS DATE_REFUS_TUTELLE,
+                                    TRAVAUX.date_debut AS DEBUT_TRAVAUX,
+                                    TRAVAUX.date_fin AS FIN_TRAVAUX,
                                     RUBRICS.CONCAT_RUBRICS_CODE AS INFOS_RUBRIQUES,
                                     PERMIS_DOCUMENTS.DOCUMENTS AS INFOS_DOCUMENTS
                                     FROM p_permis AS PERMIS
@@ -267,6 +275,7 @@ def create_views(import_urbaweb):
                                     LEFT JOIN p_decision_unique AS PUN_DECISION ON PUN.decision_unique_fk = PUN_DECISION.id
                                     LEFT JOIN get_rubrics_unique AS RUBRICS ON RUBRICS.ID_PERMIS = PERMIS.id
                                     LEFT JOIN get_document_infos AS PERMIS_DOCUMENTS ON PERMIS_DOCUMENTS.ID_PERMIS = PERMIS.id
+                                    LEFT JOIN p_travaux AS TRAVAUX ON TRAVAUX.id = PUN.travaux_fk
                                     WHERE PERMIS.type_permis_fk = 10;
                                   """
                                   )
@@ -525,6 +534,8 @@ def create_views(import_urbaweb):
                                            PERMIS.date_demande AS DATE_DEMANDE,
                                            PERMIS.date_recepisse AS DATE_RECEPISSE,
                                            PERMIS.date_depot AS DATE_DEPOT,
+                                           TRAVAUX.date_debut AS DEBUT_TRAVAUX,
+                                           TRAVAUX.date_fin AS FIN_TRAVAUX,
                                            NATURE.libelle_f AS NATURE_TITRE,
                                            PERMIS.libnat AS NATURE_DETAILS,
                                            PERMIS.remarque_resume AS REMARQUES,
@@ -538,6 +549,7 @@ def create_views(import_urbaweb):
                                     LEFT JOIN c_nature AS NATURE ON PERMIS.nature_fk = NATURE.id
                                     LEFT JOIN p_permis_declaration_urbanistique AS DECL ON DECL.id = PERMIS.id
                                     LEFT JOIN get_document_infos AS PERMIS_DOCUMENTS ON PERMIS_DOCUMENTS.ID_PERMIS = PERMIS.id
+                                    LEFT JOIN p_travaux AS TRAVAUX ON TRAVAUX.id = DECL.travaux_fk
                                     WHERE PERMIS.type_permis_fk = 9;
                                   """
                                   )

@@ -1,14 +1,17 @@
 # -*- coding: utf-8 -*-
-import datetime
 
 from jsonschema import validate
 from progress.bar import FillingSquaresBar
 from random import shuffle
 from urban.dataimport.core.json import DateTimeEncoder
 
+import base64
 import csv
+import datetime
+import glob
 import json
 import jsonschema
+import ntpath
 import os
 import re
 import time
@@ -123,6 +126,26 @@ def export_error_csv(errors):
             for error in error_list:
                 csv_writer.writerow(error)
     print("ERRORS REPORTS WRITED")
+
+
+def get_file_data_from_suffix_path(root_documents_path, suffix_path):
+    file_path = os.path.dirname("{}{}".format(root_documents_path, suffix_path))
+    file_suffix = ntpath.basename(suffix_path)
+    byte_content = ''
+    for match_file in glob.glob(os.path.join(file_path, "{}{}".format(file_suffix, ".*"))):
+        byte_content = open(match_file, "rb").read()
+        break
+
+    if byte_content:
+        base64_bytes = base64.b64encode(byte_content)
+        return base64_bytes.decode("utf-8")
+
+
+def get_filename_from_suffix_path(root_documents_path, suffix_path):
+    file_path = os.path.dirname("{}{}".format(root_documents_path, suffix_path))
+    file_suffix = ntpath.basename(suffix_path)
+    for match_file in glob.glob(os.path.join(file_path, "{}{}".format(file_suffix, ".*"))):
+        return ntpath.basename(match_file)
 
 
 class IterationError(Exception):

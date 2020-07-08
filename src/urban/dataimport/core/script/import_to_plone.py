@@ -70,30 +70,35 @@ class ImportToPlone(BaseImport):
                 self.nb_licence = self.limit
             if self.group_licences:
                 for i in range(0, self.nb_licence, self.group_licences):
-                    group_list = data[i: i + self.group_licences]
-                    self.import_licence(group_list)
-                    for j in group_list:
+                    licence = data[i: i + self.group_licences]
+                    self.import_licence(licence)
+                    for j in licence:
                         bar.next()
             else:
-                for licence in data:
-                    self._current_licence = licence
+                self.group_licences = 1
+                for i in range(0, self.nb_licence, self.group_licences):
+                    licence = data[i: i + self.group_licences]
+                    self._current_licence = licence[0]
                     if self.licence_type:
-                        if licence['portalType'] == self.licence_type:
+                        if licence[0]['portalType'] == self.licence_type:
+                            self.import_licence(licence)
+                    elif self.licence_id:
+                        if self.licence_id == licence[0]['reference']:
                             self.import_licence(licence)
                     else:
-                        if self.licence_id:
-                            if self.licence_id == licence['reference']:
-                                self.import_licence([licence])
-                        else:
-                            self.import_licence(licence)
+                        self.import_licence(licence)
+
+                    for j in licence:
+                        bar.next()
+
             bar.finish()
         except Exception as e:
             exc_type, exc_obj, exc_tb = sys.exc_info()
             self.licence_errors.append(ErrorToCsv("licence_errors",
                                                   "Dossier non traité et en erreur",
-                                                  self._current_licence['reference'],
+                                                  self._current_licence,
                                                   str(exc_type)))
-            print("Erreur: {} *** Licence: {} *** traceback: {}".format(e, group_list, traceback.print_tb(e.__traceback__)))
+            print("Erreur: {} *** Licence: {} *** traceback: {}".format(e, "group_list", traceback.print_tb(e.__traceback__)))
             if self.exit_on_error:
                 export_error_csv([self.licence_errors])
                 sys.exit(1)
@@ -115,7 +120,7 @@ class ImportToPlone(BaseImport):
             print("\nWarning: {} *** Licence: {}".format(warn, licence))
             self.licence_errors.append(ErrorToCsv("licence_errors",
                                                   "Dossier non traité et en erreur",
-                                                  self._current_licence['reference'],
+                                                  self._current_licence,
                                                   str(traceback.format_exc())))
             if self.exit_on_error:
                 # raise Exception(warn)

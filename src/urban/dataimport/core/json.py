@@ -104,6 +104,20 @@ def get_event_dict():
     }
 
 
+def get_attachment_dict():
+    return {
+        "@type": "File",
+        "title": '',
+        "description": "",
+        "file": {
+            "data": "",
+            "encoding": "base64",
+            "filename": "",
+            "content-type": ""
+        }
+    }
+
+
 class DateTimeEncoder(json.JSONEncoder):
     def default(self, o):
         try:
@@ -111,5 +125,5 @@ class DateTimeEncoder(json.JSONEncoder):
                 return o.isoformat()
 
             return json.JSONEncoder.default(self, o)
-        except:
+        except Exception as e:
             print("debug")

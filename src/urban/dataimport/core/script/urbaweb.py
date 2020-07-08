@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+
 import re
 
 from progress.bar import FillingSquaresBar
@@ -15,12 +16,13 @@ from urban.dataimport.core.db import LazyDB
 from urban.dataimport.core.json import get_licence_dict, get_work_locations_dict, DateTimeEncoder, get_applicant_dict, \
     get_organization_dict, get_parcel_dict, get_event_dict
 from urban.dataimport.core.mapping.main_mapping import main_licence_decision_event_id_mapping, \
-    main_licence_deposit_event_id_mapping, main_licence_not_receivable_event_id_mapping, main_licence_decision_mapping
-from urban.dataimport.core.mapping.urbaweb_mapping import division_mapping, events_types, decision_code_mapping, \
+    main_licence_deposit_event_id_mapping, main_licence_not_receivable_event_id_mapping
+from urban.dataimport.core.mapping.urbaweb_mapping import division_mapping, events_types, \
     title_types
 from urban.dataimport.core.mapping.urbaweb_mapping import portal_type_mapping
 from urban.dataimport.core.utils import BaseImport, StateManager, StateHandler, benchmark_decorator, \
-    export_to_customer_json, represent_int, IterationError, ErrorToCsv, export_error_csv
+    export_to_customer_json, represent_int, IterationError, ErrorToCsv, export_error_csv, \
+    get_file_data_from_suffix_path, get_filename_from_suffix_path
 from urban.dataimport.core.views.bestaddress_views import create_bestaddress_views
 from urban.dataimport.core.views.cadastral_views import create_cadastral_views
 from urban.dataimport.core.views.urbaweb_views import create_views, create_concat_views
@@ -86,7 +88,8 @@ class ImportUrbaweb(BaseImport):
         if not self.noop and error is None:
             with open("{0}.{1}".format(self.config['main']['output_path'], "json"), 'w') as output_file:
                 json.dump(self.data, output_file, cls=DateTimeEncoder)
-            export_to_customer_json(self)
+            if not(self.config['main']['with_attachments']) or (self.config['main']['with_attachments'] and self.config['main']['with_attachments'] != 'True'):
+                export_to_customer_json(self)
         print("-- {0} folders extracted --".format(len(self.data)))
         print("--- Total Duration --- %s seconds ---" % (time.time() - self.start_time))
 
@@ -288,7 +291,7 @@ class ImportUrbaweb(BaseImport):
                     radical_bis_exp_puissance = parcels_args[2]
 
                     # re.match('^[A-Z]?$' single uppercase standard character
-                    if division_num and section and radical_bis_exp_puissance and re.match('^[A-Z]?$', section.upper().replace(' ','')):
+                    if division_num and section and radical_bis_exp_puissance and re.match('^[A-Z]?$', section.upper().replace(' ', '')):
                         # capakey without division and section is 11 character long.
                         section = section.upper()
                         if len(radical_bis_exp_puissance) == 11:
@@ -314,7 +317,7 @@ class ImportUrbaweb(BaseImport):
                                              else parcelles_cadastrales.puissance == puissance)
                                             ]
                                     except Exception as e:
-                                        print("debug")
+                                        print(e)
 
                                     result_count = cadastral_parcels.shape[0]
                                     if result_count == 1:
@@ -381,8 +384,7 @@ class ImportUrbaweb(BaseImport):
                     if parcels_dict['division'] and parcels_dict['section']:
                         licence_children.append(parcels_dict)
             except Exception as e:
-                import ipdb; ipdb.set_trace() # TODO REMOVE BREAKPOINT
-                print("debug")
+                print(e)
 
     @benchmark_decorator
     def get_organization(self, licence, licence_dict):
@@ -556,13 +558,13 @@ class ImportUrbaweb(BaseImport):
 
         # CODT licences need a transition
         if licence_dict['portalType'].startswith("CODT_") and licence_dict['wf_state']:
-                if licence_dict['wf_state'] == 'accept':
-                    licence_dict['wf_transition'] = 'accepted'
-                elif licence_dict['wf_state'] == 'refuse':
-                    licence_dict['wf_transition'] = 'refused'
-                elif licence_dict['wf_state'] == 'retire':
-                    licence_dict['wf_transition'] = 'retired'
-                licence_dict['wf_state'] = ''
+            if licence_dict['wf_state'] == 'accept':
+                licence_dict['wf_transition'] = 'accepted'
+            elif licence_dict['wf_state'] == 'refuse':
+                licence_dict['wf_transition'] = 'refused'
+            elif licence_dict['wf_state'] == 'retire':
+                licence_dict['wf_transition'] = 'retired'
+            licence_dict['wf_state'] = ''
 
         # Divison has a specific WF and hasn't 'refuse' transition
         if licence_dict['portalType'] == 'Division' and (licence_dict['wf_state'] == 'refuse' or licence_dict['wf_state'] == 'retire'):
