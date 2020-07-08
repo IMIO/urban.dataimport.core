@@ -53,13 +53,23 @@ view_endpoint_mapping = {
 }
 
 # division code, to update for specific locality, by default b.l'a
+# division_mapping = {
+#     '01': 25014,
+#     '02': 25742,
+#     '03': 25743,
+#     '04': 25744,
+#     '05': 25054,
+#     '06': 25078
+# }
 division_mapping = {
-    '01': 25014,
-    '02': 25742,
-    '03': 25743,
-    '04': 25744,
-    '05': 25054,
-    '06': 25078
+    '01': 55040,
+    '02': 55402,
+    '03': 55028,
+    '04': 55044,
+    '05': 55006,
+    '06': 53058,
+    '07': 53017,
+    '08': 55018
 }
 
 # title ids, to update for specific locality, by default b.l'a

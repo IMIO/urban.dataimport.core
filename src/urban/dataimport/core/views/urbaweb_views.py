@@ -7,8 +7,7 @@ def create_views(import_urbaweb):
                                            PERMIS.numero_permis AS REFERENCE_TECH,
                                            PERMIS.numero_permis_delivre AS REFERENCE,
                                            PERMIS.reference_urbanisme AS REFERENCE_URB,
-                                           PERMIS.statut AS STATUT,
-                                           PERMIS.date_statut AS DATE_STATUT,
+                                           PERMIS.statut_permis AS STATUT,
                                            PERMIS.parcelle_hors_commune AS PHC,
                                            PERMIS.info_rue_d AS LOCALITE_RUE,
                                            PERMIS.numero AS LOCALITE_NUM,
@@ -32,6 +31,8 @@ def create_views(import_urbaweb):
                                            RECOUR.decision_tutelle AS DECISION_TUTELLE,
                                            RECOUR.remarque  AS RECOUR_REMARQUE,
                                            RECOUR.reference_rw AS RECOUR_REFERENCE,
+                                           TRAVAUX.date_debut AS DEBUT_TRAVAUX,
+                                           TRAVAUX.date_fin AS FIN_TRAVAUX,
                                            PERMIS_DOCUMENTS.DOCUMENTS AS INFOS_DOCUMENTS,
                                            ORG.civilite_fk AS ORG_TITLE_ID,
                                            ORG.nom AS ORG_NOM,
@@ -59,6 +60,7 @@ def create_views(import_urbaweb):
                                     LEFT JOIN c_avis_college AS AVIS_RECOUR ON AVIS_RECOUR.id = RECOUR.avis_fk
                                     LEFT JOIN get_document_infos AS PERMIS_DOCUMENTS ON PERMIS_DOCUMENTS.ID_PERMIS = PERMIS.id
                                     LEFT JOIN p_directive AS DIRECTIVE ON PERMIS.directive_fk = DIRECTIVE.id
+                                    LEFT JOIN p_travaux AS TRAVAUX ON TRAVAUX.id = PU.travaux_fk
                                     WHERE PERMIS.type_permis_fk = 1 AND DIRECTIVE.autorite_competente NOT IN ('1', '2');
                                   """
                                   )
@@ -70,8 +72,7 @@ def create_views(import_urbaweb):
                                            PERMIS.numero_permis AS REFERENCE_TECH,
                                            PERMIS.numero_permis_delivre AS REFERENCE,
                                            PERMIS.reference_urbanisme AS REFERENCE_URB,
-                                           PERMIS.statut AS STATUT,
-                                           PERMIS.date_statut AS DATE_STATUT,
+                                           PERMIS.statut_permis AS STATUT,
                                            PERMIS.parcelle_hors_commune AS PHC,
                                            PERMIS.info_rue_d AS LOCALITE_RUE,
                                            PERMIS.numero AS LOCALITE_NUM,
@@ -136,8 +137,7 @@ def create_views(import_urbaweb):
                                            PERMIS.numero_permis AS REFERENCE_TECH,
                                            PERMIS.numero_permis_delivre AS REFERENCE,
                                            PERMIS.reference_urbanisme AS REFERENCE_URB,
-                                           PERMIS.statut AS STATUT,
-                                           PERMIS.date_statut AS DATE_STATUT,
+                                           PERMIS.statut_permis AS STATUT,
                                            PERMIS.parcelle_hors_commune AS PHC,
                                            PERMIS.info_rue_d AS LOCALITE_RUE,
                                            PERMIS.numero AS LOCALITE_NUM,
@@ -204,11 +204,8 @@ def create_views(import_urbaweb):
                                     PERMIS.numero_permis AS REFERENCE_TECH,
                                     PERMIS.numero_permis_delivre AS REFERENCE,
                                     PERMIS.reference_urbanisme  AS REFERENCE_URB,
-                                    PERMIS.statut AS STATUT,
-                                    PERMIS.date_statut AS DATE_STATUT,
+                                    PERMIS.statut_permis AS STATUT,
                                     PERMIS.parcelle_hors_commune AS PHC,
-                                    PE3_DECISION.date_decision AS DATE_DECISION,
-                                    PE3_DECISION.decision AS DECISION,
                                     PERMIS.info_rue_d AS LOCALITE_RUE,
                                     PERMIS.numero  AS LOCALITE_NUM,
                                     LOCALITE.code_postal AS LOCALITE_CP,
@@ -243,8 +240,7 @@ def create_views(import_urbaweb):
                                     PERMIS.numero_permis AS REFERENCE_TECH,
                                     PERMIS.numero_permis_delivre AS REFERENCE,
                                     PERMIS.reference_urbanisme  AS REFERENCE_URB,
-                                    PERMIS.statut AS STATUT,
-                                    PERMIS.date_statut AS DATE_STATUT,
+                                    PERMIS.statut_permis AS STATUT,
                                     PERMIS.parcelle_hors_commune AS PHC,
                                     PERMIS.info_rue_d AS LOCALITE_RUE,
                                     PERMIS.numero  AS LOCALITE_NUM,
@@ -289,8 +285,7 @@ def create_views(import_urbaweb):
                                            PERMIS.numero_permis AS REFERENCE_TECH,
                                            PERMIS.numero_permis_delivre AS REFERENCE,
                                            PERMIS.reference_urbanisme AS REFERENCE_URB,
-                                           PERMIS.statut AS STATUT,
-                                           PERMIS.date_statut AS DATE_STATUT,
+                                           PERMIS.statut_permis AS STATUT,
                                            PERMIS.parcelle_hors_commune AS PHC,
                                            PERMIS.info_rue_d AS LOCALITE_RUE,
                                            PERMIS.numero AS LOCALITE_NUM,
@@ -304,7 +299,6 @@ def create_views(import_urbaweb):
                                            PERMIS.remarque_resume AS REMARQUES,
                                            DEMANDEURS.CONCAT_DEMANDEUR  AS INFOS_DEMANDEURS,
                                            IF(PARCELS.CONCAT_PARCELS = '1|.|0000/00#000', '', PARCELS.CONCAT_PARCELS) AS INFOS_PARCELLES,
-                                           PERMIS.date_permis_annule_abandon AS DATE_PERMIS_ABANDON,
                                            PERMIS_DOCUMENTS.DOCUMENTS AS INFOS_DOCUMENTS,
                                            ORG.civilite_fk AS ORG_TITLE_ID,
                                            ORG.nom AS ORG_NOM,
@@ -336,8 +330,7 @@ def create_views(import_urbaweb):
                                     PERMIS.numero_permis AS REFERENCE_TECH,
                                     PERMIS.numero_permis_delivre AS REFERENCE,
                                     PERMIS.reference_urbanisme  AS REFERENCE_URB,
-                                    PERMIS.statut AS STATUT,
-                                    PERMIS.date_statut AS DATE_STATUT,
+                                    PERMIS.statut_permis AS STATUT,
                                     PERMIS.parcelle_hors_commune AS PHC,
                                     (IF(PE.environnement_classe_fk != 1, environnement_classe_fk -1,environnement_classe_fk)) AS CLASSE,
                                     PERMIS.info_rue_d AS LOCALITE_RUE,
@@ -352,7 +345,6 @@ def create_views(import_urbaweb):
                                     IFNULL(PERMIS.remarque_resume, '') AS REMARQUES,
                                     DEMANDEURS.CONCAT_DEMANDEUR AS INFOS_DEMANDEURS,
                                     IF(PARCELS.CONCAT_PARCELS = '1|.|0000/00#000', '', PARCELS.CONCAT_PARCELS) AS INFOS_PARCELLES,
-                                    PERMIS.date_permis_annule_abandon  AS DATE_PERMIS_ABANDON,
                                     PE_DECISION.date_autorisation_college AS DATE_AUTORISATION_COLLEGE,
                                     PE_DECISION.date_autorisation_tutelle AS DATE_AUTORISATION_TUTELLE,
                                     PE_DECISION.date_refus_college AS DATE_REFUS_COLLEGE,
@@ -377,8 +369,7 @@ def create_views(import_urbaweb):
                                     PERMIS.numero_permis AS REFERENCE_TECH,
                                     PERMIS.numero_permis_delivre AS REFERENCE,
                                     PERMIS.reference_urbanisme  AS REFERENCE_URB,
-                                    PERMIS.statut AS STATUT,
-                                    PERMIS.date_statut AS DATE_STATUT,
+                                    PERMIS.statut_permis AS STATUT,
                                     PERMIS.parcelle_hors_commune AS PHC,
                                     (IF(PE.environnement_classe_fk != 1, environnement_classe_fk -1,environnement_classe_fk)) AS CLASSE,
                                     PERMIS.info_rue_d AS LOCALITE_RUE,
@@ -393,7 +384,6 @@ def create_views(import_urbaweb):
                                     IFNULL(PERMIS.remarque_resume, '') AS REMARQUES,
                                     DEMANDEURS.CONCAT_DEMANDEUR AS INFOS_DEMANDEURS,
                                     IF(PARCELS.CONCAT_PARCELS = '1|.|0000/00#000', '', PARCELS.CONCAT_PARCELS) AS INFOS_PARCELLES,
-                                    PERMIS.date_permis_annule_abandon  AS DATE_PERMIS_ABANDON,
                                     PE_DECISION.date_autorisation_college AS DATE_AUTORISATION_COLLEGE,
                                     PE_DECISION.date_autorisation_tutelle AS DATE_AUTORISATION_TUTELLE,
                                     PE_DECISION.date_refus_college AS DATE_REFUS_COLLEGE,
@@ -418,8 +408,7 @@ def create_views(import_urbaweb):
                                            PERMIS.numero_permis AS REFERENCE_TECH,
                                            PERMIS.numero_permis_delivre AS REFERENCE,
                                            PERMIS.reference_urbanisme AS REFERENCE_URB,
-                                           PERMIS.statut AS STATUT,
-                                           PERMIS.date_statut AS DATE_STATUT,
+                                           PERMIS.statut_permis AS STATUT,
                                            PERMIS.parcelle_hors_commune AS PHC,
                                            LN.notaire_type_dossier_fk AS TYPE_DOSSIER,
                                            PERMIS.info_rue_d AS LOCALITE_RUE,
@@ -460,7 +449,7 @@ def create_views(import_urbaweb):
                                     LEFT JOIN p_autorisation_notaire AS AUTORISATION ON LN.autorisation_notaire_fk = AUTORISATION.id
                                     LEFT JOIN get_document_infos AS PERMIS_DOCUMENTS ON PERMIS_DOCUMENTS.ID_PERMIS = PERMIS.id
                                     LEFT JOIN p_directive AS DIRECTIVE ON PERMIS.directive_fk = DIRECTIVE.id
-                                    WHERE PERMIS.type_permis_fk = 8 AND LN.notaire_type_dossier_fk != 1;
+                                    WHERE PERMIS.type_permis_fk = 8 AND (LN.notaire_type_dossier_fk != 1 OR LN.notaire_type_dossier_fk IS NULL);
                                   """
                                   )
 
@@ -471,8 +460,8 @@ def create_views(import_urbaweb):
                                            PERMIS.numero_permis AS REFERENCE_TECH,
                                            PERMIS.numero_permis_delivre AS REFERENCE,
                                            PERMIS.reference_urbanisme AS REFERENCE_URB,
-                                           PERMIS.statut AS STATUT,
-                                           PERMIS.date_statut AS DATE_STATUT,
+                                           PERMIS.statut_permis AS STATUT,
+
                                            PERMIS.parcelle_hors_commune AS PHC,
                                            LN.notaire_type_dossier_fk AS TYPE_DOSSIER,
                                            PERMIS.info_rue_d AS LOCALITE_RUE,
@@ -524,8 +513,7 @@ def create_views(import_urbaweb):
                                            PERMIS.numero_permis AS REFERENCE_TECH,
                                            PERMIS.numero_permis_delivre AS REFERENCE,
                                            PERMIS.reference_urbanisme AS REFERENCE_URB,
-                                           PERMIS.statut AS STATUT,
-                                           PERMIS.date_statut AS DATE_STATUT,
+                                           PERMIS.statut_permis AS STATUT,
                                            PERMIS.parcelle_hors_commune AS PHC,
                                            PERMIS.info_rue_d AS LOCALITE_RUE,
                                            PERMIS.numero AS LOCALITE_NUM,
@@ -554,15 +542,60 @@ def create_views(import_urbaweb):
                                   """
                                   )
 
-    import_urbaweb.db.create_view("avis_prealable_vue",
+    # import_urbaweb.db.create_view("avis_prealable_vue",
+    #                               """
+    #                                 SELECT PERMIS.id,
+    #                                        PERMIS.type_permis_fk,
+    #                                        PERMIS.numero_permis AS REFERENCE_TECH,
+    #                                        PERMIS.numero_permis_delivre AS REFERENCE,
+    #                                        PERMIS.reference_urbanisme AS REFERENCE_URB,
+    #                                        PERMIS.statut_permis AS STATUT,
+    #
+    #                                        PERMIS.parcelle_hors_commune AS PHC,
+    #                                        PERMIS.info_rue_d AS LOCALITE_RUE,
+    #                                        PERMIS.numero AS LOCALITE_NUM,
+    #                                        LOCALITE.code_postal AS LOCALITE_CP,
+    #                                        LOCALITE.libelle_f AS LOCALITE_LABEL,
+    #                                        PERMIS.date_demande AS DATE_DEMANDE,
+    #                                        PERMIS.date_recepisse AS DATE_RECEPISSE,
+    #                                        PERMIS.date_depot AS DATE_DEPOT,
+    #                                        NATURE.libelle_f AS NATURE_TITRE,
+    #                                        PERMIS.libnat AS NATURE_DETAILS,
+    #                                        PERMIS.remarque_resume AS REMARQUES,
+    #                                        DEMANDEURS.CONCAT_DEMANDEUR  AS INFOS_DEMANDEURS,
+    #                                        IF(PARCELS.CONCAT_PARCELS = '1|.|0000/00#000', '', PARCELS.CONCAT_PARCELS) AS INFOS_PARCELLES,
+    #                                        PERMIS_DOCUMENTS.DOCUMENTS AS INFOS_DOCUMENTS,
+    #                                        ORG.civilite_fk AS ORG_TITLE_ID,
+    #                                        ORG.nom AS ORG_NOM,
+    #                                        ORG.prenom AS ORG_PRENOM,
+    #                                        ORG.rue AS ORG_RUE,
+    #                                        ORG.numero AS ORG_NUMERO,
+    #                                        ORG.code_postal AS ORG_CP,
+    #                                        ORG.localite AS ORG_LOCALITE,
+    #                                        ORG.telephone AS ORG_TEL,
+    #                                        ORG.gsm AS ORG_MOBILE,
+    #                                        ORG.mail AS ORG_MAIL,
+    #                                        ORG.type_list AS ORG_TYPE
+    #                                 FROM p_permis AS PERMIS
+    #                                 LEFT JOIN get_demandeurs AS DEMANDEURS ON DEMANDEURS.ID_PERMIS = PERMIS.id
+    #                                 LEFT JOIN get_parcelles AS PARCELS ON PARCELS.ID_PERMIS = PERMIS.id
+    #                                 LEFT JOIN c_localite AS LOCALITE ON PERMIS.localite_fk = LOCALITE.id
+    #                                 LEFT JOIN c_nature AS NATURE ON PERMIS.nature_fk = NATURE.id
+    #                                 LEFT JOIN p_permis_avis_prealable AS AVIS ON AVIS.id = PERMIS.id
+    #                                 LEFT JOIN c_organisme AS ORG ON AVIS.organisme_fk = ORG.id
+    #                                 LEFT JOIN get_document_infos AS PERMIS_DOCUMENTS ON PERMIS_DOCUMENTS.ID_PERMIS = PERMIS.id
+    #                                 LEFT JOIN p_directive AS DIRECTIVE ON PERMIS.directive_fk = DIRECTIVE.id
+    #                                 WHERE PERMIS.type_permis_fk = 5;
+    #                               """
+    #                               )
+    import_urbaweb.db.create_view("certificat_urbanisme1_vue",
                                   """
                                     SELECT PERMIS.id,
                                            PERMIS.type_permis_fk,
                                            PERMIS.numero_permis AS REFERENCE_TECH,
                                            PERMIS.numero_permis_delivre AS REFERENCE,
                                            PERMIS.reference_urbanisme AS REFERENCE_URB,
-                                           PERMIS.statut AS STATUT,
-                                           PERMIS.date_statut AS DATE_STATUT,
+                                           PERMIS.statut_permis AS STATUT,
                                            PERMIS.parcelle_hors_commune AS PHC,
                                            PERMIS.info_rue_d AS LOCALITE_RUE,
                                            PERMIS.numero AS LOCALITE_NUM,
@@ -593,11 +626,10 @@ def create_views(import_urbaweb):
                                     LEFT JOIN get_parcelles AS PARCELS ON PARCELS.ID_PERMIS = PERMIS.id
                                     LEFT JOIN c_localite AS LOCALITE ON PERMIS.localite_fk = LOCALITE.id
                                     LEFT JOIN c_nature AS NATURE ON PERMIS.nature_fk = NATURE.id
-                                    LEFT JOIN p_permis_avis_prealable AS AVIS ON AVIS.id = PERMIS.id
-                                    LEFT JOIN c_organisme AS ORG ON AVIS.organisme_fk = ORG.id
+                                    LEFT JOIN p_permis_certificat_urbanisme1 AS CU1 ON CU1.id = PERMIS.id
+                                    LEFT JOIN c_organisme AS ORG ON CU1.organisme_fk = ORG.id
                                     LEFT JOIN get_document_infos AS PERMIS_DOCUMENTS ON PERMIS_DOCUMENTS.ID_PERMIS = PERMIS.id
-                                    LEFT JOIN p_directive AS DIRECTIVE ON PERMIS.directive_fk = DIRECTIVE.id
-                                    WHERE PERMIS.type_permis_fk = 5;
+                                    WHERE PERMIS.type_permis_fk = 3;
                                   """
                                   )
     import_urbaweb.db.create_view("certificat_urbanisme2_vue",
@@ -607,8 +639,8 @@ def create_views(import_urbaweb):
                                            PERMIS.numero_permis AS REFERENCE_TECH,
                                            PERMIS.numero_permis_delivre AS REFERENCE,
                                            PERMIS.reference_urbanisme AS REFERENCE_URB,
-                                           PERMIS.statut AS STATUT,
-                                           PERMIS.date_statut AS DATE_STATUT,
+                                           PERMIS.statut_permis AS STATUT,
+
                                            PERMIS.parcelle_hors_commune AS PHC,
                                            PERMIS.info_rue_d AS LOCALITE_RUE,
                                            PERMIS.numero AS LOCALITE_NUM,
@@ -646,197 +678,202 @@ def create_views(import_urbaweb):
                                   """
                                   )
 
-    import_urbaweb.db.create_view("pic_vue",
-                                  """
-                                    SELECT PERMIS.id,
-                                           PERMIS.type_permis_fk,
-                                           PERMIS.numero_permis AS REFERENCE_TECH,
-                                           PERMIS.numero_permis_delivre AS REFERENCE,
-                                           PERMIS.reference_urbanisme AS REFERENCE_URB,
-                                           PERMIS.statut AS STATUT,
-                                           PERMIS.date_statut AS DATE_STATUT,
-                                           PERMIS.parcelle_hors_commune AS PHC,
-                                           PERMIS.info_rue_d AS LOCALITE_RUE,
-                                           PERMIS.numero AS LOCALITE_NUM,
-                                           LOCALITE.code_postal AS LOCALITE_CP,
-                                           LOCALITE.libelle_f AS LOCALITE_LABEL,
-                                           PERMIS.date_demande AS DATE_DEMANDE,
-                                           PERMIS.date_recepisse AS DATE_RECEPISSE,
-                                           PERMIS.date_depot AS DATE_DEPOT,
-                                           NATURE.libelle_f AS NATURE_TITRE,
-                                           PERMIS.libnat AS NATURE_DETAILS,
-                                           PERMIS.remarque_resume AS REMARQUES,
-                                           DEMANDEURS.CONCAT_DEMANDEUR  AS INFOS_DEMANDEURS,
-                                           IF(PARCELS.CONCAT_PARCELS = '1|.|0000/00#000', '', PARCELS.CONCAT_PARCELS) AS INFOS_PARCELLES,
-                                           PERMIS_DOCUMENTS.DOCUMENTS AS INFOS_DOCUMENTS,
-                                           ORG.civilite_fk AS ORG_TITLE_ID,
-                                           ORG.nom AS ORG_NOM,
-                                           ORG.prenom AS ORG_PRENOM,
-                                           ORG.rue AS ORG_RUE,
-                                           ORG.numero AS ORG_NUMERO,
-                                           ORG.code_postal AS ORG_CP,
-                                           ORG.localite AS ORG_LOCALITE,
-                                           ORG.telephone AS ORG_TEL,
-                                           ORG.gsm AS ORG_MOBILE,
-                                           ORG.mail AS ORG_MAIL,
-                                           ORG.type_list AS ORG_TYPE
-                                    FROM p_permis AS PERMIS
-                                    LEFT JOIN get_demandeurs AS DEMANDEURS ON DEMANDEURS.ID_PERMIS = PERMIS.id
-                                    LEFT JOIN get_parcelles AS PARCELS ON PARCELS.ID_PERMIS = PERMIS.id
-                                    LEFT JOIN c_localite AS LOCALITE ON PERMIS.localite_fk = LOCALITE.id
-                                    LEFT JOIN c_nature AS NATURE ON PERMIS.nature_fk = NATURE.id
-                                    LEFT JOIN p_permis_implantation_commerciale AS PIC ON PIC.id = PERMIS.id
-                                    LEFT JOIN c_organisme AS ORG ON PIC.organisme_fk = ORG.id
-                                    LEFT JOIN get_document_infos AS PERMIS_DOCUMENTS ON PERMIS_DOCUMENTS.ID_PERMIS = PERMIS.id
-                                    WHERE PERMIS.type_permis_fk = 21;
-                                  """
-                                  )
+    # import_urbaweb.db.create_view("pic_vue",
+    #                               """
+    #                                 SELECT PERMIS.id,
+    #                                        PERMIS.type_permis_fk,
+    #                                        PERMIS.numero_permis AS REFERENCE_TECH,
+    #                                        PERMIS.numero_permis_delivre AS REFERENCE,
+    #                                        PERMIS.reference_urbanisme AS REFERENCE_URB,
+    #                                        PERMIS.statut_permis AS STATUT,
+    #
+    #                                        PERMIS.parcelle_hors_commune AS PHC,
+    #                                        PERMIS.info_rue_d AS LOCALITE_RUE,
+    #                                        PERMIS.numero AS LOCALITE_NUM,
+    #                                        LOCALITE.code_postal AS LOCALITE_CP,
+    #                                        LOCALITE.libelle_f AS LOCALITE_LABEL,
+    #                                        PERMIS.date_demande AS DATE_DEMANDE,
+    #                                        PERMIS.date_recepisse AS DATE_RECEPISSE,
+    #                                        PERMIS.date_depot AS DATE_DEPOT,
+    #                                        NATURE.libelle_f AS NATURE_TITRE,
+    #                                        PERMIS.libnat AS NATURE_DETAILS,
+    #                                        PERMIS.remarque_resume AS REMARQUES,
+    #                                        DEMANDEURS.CONCAT_DEMANDEUR  AS INFOS_DEMANDEURS,
+    #                                        IF(PARCELS.CONCAT_PARCELS = '1|.|0000/00#000', '', PARCELS.CONCAT_PARCELS) AS INFOS_PARCELLES,
+    #                                        PERMIS_DOCUMENTS.DOCUMENTS AS INFOS_DOCUMENTS,
+    #                                        ORG.civilite_fk AS ORG_TITLE_ID,
+    #                                        ORG.nom AS ORG_NOM,
+    #                                        ORG.prenom AS ORG_PRENOM,
+    #                                        ORG.rue AS ORG_RUE,
+    #                                        ORG.numero AS ORG_NUMERO,
+    #                                        ORG.code_postal AS ORG_CP,
+    #                                        ORG.localite AS ORG_LOCALITE,
+    #                                        ORG.telephone AS ORG_TEL,
+    #                                        ORG.gsm AS ORG_MOBILE,
+    #                                        ORG.mail AS ORG_MAIL,
+    #                                        ORG.type_list AS ORG_TYPE
+    #                                 FROM p_permis AS PERMIS
+    #                                 LEFT JOIN get_demandeurs AS DEMANDEURS ON DEMANDEURS.ID_PERMIS = PERMIS.id
+    #                                 LEFT JOIN get_parcelles AS PARCELS ON PARCELS.ID_PERMIS = PERMIS.id
+    #                                 LEFT JOIN c_localite AS LOCALITE ON PERMIS.localite_fk = LOCALITE.id
+    #                                 LEFT JOIN c_nature AS NATURE ON PERMIS.nature_fk = NATURE.id
+    #                                 LEFT JOIN p_permis_implantation_commerciale AS PIC ON PIC.id = PERMIS.id
+    #                                 LEFT JOIN c_organisme AS ORG ON PIC.organisme_fk = ORG.id
+    #                                 LEFT JOIN get_document_infos AS PERMIS_DOCUMENTS ON PERMIS_DOCUMENTS.ID_PERMIS = PERMIS.id
+    #                                 WHERE PERMIS.type_permis_fk = 21;
+    #                               """
+    #                               )
 
-    import_urbaweb.db.create_view("permis_urbanisme_codt_vue",
-                                  """
-                                    SELECT PERMIS.id,
-                                           PERMIS.type_permis_fk,
-                                           PERMIS.numero_permis AS REFERENCE_TECH,
-                                           PERMIS.numero_permis_delivre AS REFERENCE,
-                                           PERMIS.reference_urbanisme AS REFERENCE_URB,
-                                           PERMIS.statut AS STATUT,
-                                           PERMIS.date_statut AS DATE_STATUT,
-                                           PERMIS.parcelle_hors_commune AS PHC,
-                                           PERMIS.info_rue_d AS LOCALITE_RUE,
-                                           PERMIS.numero AS LOCALITE_NUM,
-                                           LOCALITE.code_postal AS LOCALITE_CP,
-                                           LOCALITE.libelle_f AS LOCALITE_LABEL,
-                                           PERMIS.date_demande AS DATE_DEMANDE,
-                                           PERMIS.date_recepisse AS DATE_RECEPISSE,
-                                           PERMIS.date_depot AS DATE_DEPOT,
-                                           NATURE.libelle_f AS NATURE_TITRE,
-                                           PERMIS.libnat AS NATURE_DETAILS,
-                                           PERMIS.remarque_resume AS REMARQUES,
-                                           DEMANDEURS.CONCAT_DEMANDEUR  AS INFOS_DEMANDEURS,
-                                           IF(PARCELS.CONCAT_PARCELS = '1|.|0000/00#000', '', PARCELS.CONCAT_PARCELS) AS INFOS_PARCELLES,
-                                           PERMIS.date_permis_annule_abandon AS DATE_PERMIS_ABANDON,
-                                           AUTORISATION.date_decision_college AS DATE_DECISION_COLLEGE,
-                                           AUTORISATION.decision_college_ AS DECISION_COLLEGE,
-                                           PERMIS_DOCUMENTS.DOCUMENTS AS INFOS_DOCUMENTS,
-                                           ORG.civilite_fk AS ORG_TITLE_ID,
-                                           ORG.nom AS ORG_NOM,
-                                           ORG.prenom AS ORG_PRENOM,
-                                           ORG.rue AS ORG_RUE,
-                                           ORG.numero AS ORG_NUMERO,
-                                           ORG.code_postal AS ORG_CP,
-                                           ORG.localite AS ORG_LOCALITE,
-                                           ORG.telephone AS ORG_TEL,
-                                           ORG.gsm AS ORG_MOBILE,
-                                           ORG.mail AS ORG_MAIL,
-                                           ORG.type_list AS ORG_TYPE,
-                                           DIRECTIVE.fonctionnaire_delegue AS DIRECTIVE_FD,
-                                           DIRECTIVE.autorite_competente AS DIRECTIVE_AUTORITE_COMPETENTE
-                                    FROM p_permis AS PERMIS
-                                    LEFT JOIN get_demandeurs AS DEMANDEURS ON DEMANDEURS.ID_PERMIS = PERMIS.id
-                                    LEFT JOIN get_parcelles AS PARCELS ON PARCELS.ID_PERMIS = PERMIS.id
-                                    LEFT JOIN c_localite AS LOCALITE ON PERMIS.localite_fk = LOCALITE.id
-                                    LEFT JOIN c_nature AS NATURE ON PERMIS.nature_fk = NATURE.id
-                                    LEFT JOIN p_permis_urbanisme_codt AS PUCODT ON PUCODT.id = PERMIS.id
-                                    LEFT JOIN c_organisme AS ORG ON PUCODT.organisme_fk = ORG.id
-                                    LEFT JOIN p_autorisation_codt AS AUTORISATION ON PUCODT.autorisation_codt_fk = AUTORISATION.id
-                                    LEFT JOIN get_document_infos AS PERMIS_DOCUMENTS ON PERMIS_DOCUMENTS.ID_PERMIS = PERMIS.id
-                                    LEFT JOIN p_directive AS DIRECTIVE ON PERMIS.directive_fk = DIRECTIVE.id
-                                    WHERE PERMIS.type_permis_fk = 23 AND DIRECTIVE.autorite_competente NOT IN ('1', '2');
-                                  """
-                                  )
-    import_urbaweb.db.create_view("permis_urbanisation_codt_vue",
-                                  """
-                                           SELECT PERMIS.id,
-                                           PERMIS.type_permis_fk,
-                                           PERMIS.numero_permis AS REFERENCE_TECH,
-                                           PERMIS.numero_permis_delivre AS REFERENCE,
-                                           PERMIS.reference_urbanisme AS REFERENCE_URB,
-                                           PERMIS.statut AS STATUT,
-                                           PERMIS.date_statut AS DATE_STATUT,
-                                           PERMIS.parcelle_hors_commune AS PHC,
-                                           PERMIS.info_rue_d AS LOCALITE_RUE,
-                                           PERMIS.numero AS LOCALITE_NUM,
-                                           LOCALITE.code_postal AS LOCALITE_CP,
-                                           LOCALITE.libelle_f AS LOCALITE_LABEL,
-                                           PERMIS.date_demande AS DATE_DEMANDE,
-                                           PERMIS.date_recepisse AS DATE_RECEPISSE,
-                                           PERMIS.date_depot AS DATE_DEPOT,
-                                           NATURE.libelle_f AS NATURE_TITRE,
-                                           PERMIS.libnat AS NATURE_DETAILS,
-                                           PERMIS.remarque_resume AS REMARQUES,
-                                           DEMANDEURS.CONCAT_DEMANDEUR  AS INFOS_DEMANDEURS,
-                                           IF(PARCELS.CONCAT_PARCELS = '1|.|0000/00#000', '', PARCELS.CONCAT_PARCELS) AS INFOS_PARCELLES,
-                                           PERMIS_DOCUMENTS.DOCUMENTS AS INFOS_DOCUMENTS,
-                                           ORG.civilite_fk AS ORG_TITLE_ID,
-                                           ORG.nom AS ORG_NOM,
-                                           ORG.prenom AS ORG_PRENOM,
-                                           ORG.rue AS ORG_RUE,
-                                           ORG.numero AS ORG_NUMERO,
-                                           ORG.code_postal AS ORG_CP,
-                                           ORG.localite AS ORG_LOCALITE,
-                                           ORG.telephone AS ORG_TEL,
-                                           ORG.gsm AS ORG_MOBILE,
-                                           ORG.mail AS ORG_MAIL,
-                                           ORG.type_list AS ORG_TYPE,
-                                           PURBCODT.nom_lotissement AS NOM_LOT,
-                                           PURBCODT.nombre_de_lots AS NB_LOT
-                                    FROM p_permis AS PERMIS
-                                    LEFT JOIN get_demandeurs AS DEMANDEURS ON DEMANDEURS.ID_PERMIS = PERMIS.id
-                                    LEFT JOIN get_parcelles AS PARCELS ON PARCELS.ID_PERMIS = PERMIS.id
-                                    LEFT JOIN c_localite AS LOCALITE ON PERMIS.localite_fk = LOCALITE.id
-                                    LEFT JOIN c_nature AS NATURE ON PERMIS.nature_fk = NATURE.id
-                                    LEFT JOIN p_permis_urbanisation_codt AS PURBCODT ON PURBCODT.id = PERMIS.id
-                                    LEFT JOIN c_organisme AS ORG ON PURBCODT.organisme_fk = ORG.id
-                                    LEFT JOIN get_document_infos AS PERMIS_DOCUMENTS ON PERMIS_DOCUMENTS.ID_PERMIS = PERMIS.id
-                                    WHERE PERMIS.type_permis_fk = 25;
-                                  """
-                                  )
+    # import_urbaweb.db.create_view("permis_urbanisme_codt_vue",
+    #                               """
+    #                                 SELECT PERMIS.id,
+    #                                        PERMIS.type_permis_fk,
+    #                                        PERMIS.numero_permis AS REFERENCE_TECH,
+    #                                        PERMIS.numero_permis_delivre AS REFERENCE,
+    #                                        PERMIS.reference_urbanisme AS REFERENCE_URB,
+    #                                        PERMIS.statut_permis AS STATUT,
+    #                                        PERMIS.parcelle_hors_commune AS PHC,
+    #                                        PERMIS.info_rue_d AS LOCALITE_RUE,
+    #                                        PERMIS.numero AS LOCALITE_NUM,
+    #                                        LOCALITE.code_postal AS LOCALITE_CP,
+    #                                        LOCALITE.libelle_f AS LOCALITE_LABEL,
+    #                                        PERMIS.date_demande AS DATE_DEMANDE,
+    #                                        PERMIS.date_recepisse AS DATE_RECEPISSE,
+    #                                        PERMIS.date_depot AS DATE_DEPOT,
+    #                                        NATURE.libelle_f AS NATURE_TITRE,
+    #                                        PERMIS.libnat AS NATURE_DETAILS,
+    #                                        PERMIS.remarque_resume AS REMARQUES,
+    #                                        DEMANDEURS.CONCAT_DEMANDEUR  AS INFOS_DEMANDEURS,
+    #                                        IF(PARCELS.CONCAT_PARCELS = '1|.|0000/00#000', '', PARCELS.CONCAT_PARCELS) AS INFOS_PARCELLES,
+    #                                        PERMIS.date_permis_annule_abandon AS DATE_PERMIS_ABANDON,
+    #                                        AUTORISATION.date_decision_college AS DATE_DECISION_COLLEGE,
+    #                                        AUTORISATION.decision_college_ AS DECISION_COLLEGE,
+    #                                        PERMIS_DOCUMENTS.DOCUMENTS AS INFOS_DOCUMENTS,
+    #                                        ORG.civilite_fk AS ORG_TITLE_ID,
+    #                                        ORG.nom AS ORG_NOM,
+    #                                        ORG.prenom AS ORG_PRENOM,
+    #                                        ORG.rue AS ORG_RUE,
+    #                                        ORG.numero AS ORG_NUMERO,
+    #                                        ORG.code_postal AS ORG_CP,
+    #                                        ORG.localite AS ORG_LOCALITE,
+    #                                        ORG.telephone AS ORG_TEL,
+    #                                        ORG.gsm AS ORG_MOBILE,
+    #                                        ORG.mail AS ORG_MAIL,
+    #                                        ORG.type_list AS ORG_TYPE,
+    #                                        DIRECTIVE.fonctionnaire_delegue AS DIRECTIVE_FD,
+    #                                        DIRECTIVE.autorite_competente AS DIRECTIVE_AUTORITE_COMPETENTE
+    #                                 FROM p_permis AS PERMIS
+    #                                 LEFT JOIN get_demandeurs AS DEMANDEURS ON DEMANDEURS.ID_PERMIS = PERMIS.id
+    #                                 LEFT JOIN get_parcelles AS PARCELS ON PARCELS.ID_PERMIS = PERMIS.id
+    #                                 LEFT JOIN c_localite AS LOCALITE ON PERMIS.localite_fk = LOCALITE.id
+    #                                 LEFT JOIN c_nature AS NATURE ON PERMIS.nature_fk = NATURE.id
+    #                                 LEFT JOIN p_permis_urbanisme_codt AS PUCODT ON PUCODT.id = PERMIS.id
+    #                                 LEFT JOIN c_organisme AS ORG ON PUCODT.organisme_fk = ORG.id
+    #                                 LEFT JOIN p_autorisation_codt AS AUTORISATION ON PUCODT.autorisation_codt_fk = AUTORISATION.id
+    #                                 LEFT JOIN get_document_infos AS PERMIS_DOCUMENTS ON PERMIS_DOCUMENTS.ID_PERMIS = PERMIS.id
+    #                                 LEFT JOIN p_directive AS DIRECTIVE ON PERMIS.directive_fk = DIRECTIVE.id
+    #                                 WHERE PERMIS.type_permis_fk = 23 AND DIRECTIVE.autorite_competente NOT IN ('1', '2');
+    #                               """
+    #                               )
+    # import_urbaweb.db.create_view("permis_urbanisation_codt_vue",
+    #                               """
+    #                                        SELECT PERMIS.id,
+    #                                        PERMIS.type_permis_fk,
+    #                                        PERMIS.numero_permis AS REFERENCE_TECH,
+    #                                        PERMIS.numero_permis_delivre AS REFERENCE,
+    #                                        PERMIS.reference_urbanisme AS REFERENCE_URB,
+    #                                        PERMIS.statut_permis AS STATUT,
+    #
+    #                                        PERMIS.parcelle_hors_commune AS PHC,
+    #                                        PERMIS.info_rue_d AS LOCALITE_RUE,
+    #                                        PERMIS.numero AS LOCALITE_NUM,
+    #                                        LOCALITE.code_postal AS LOCALITE_CP,
+    #                                        LOCALITE.libelle_f AS LOCALITE_LABEL,
+    #                                        PERMIS.date_demande AS DATE_DEMANDE,
+    #                                        PERMIS.date_recepisse AS DATE_RECEPISSE,
+    #                                        PERMIS.date_depot AS DATE_DEPOT,
+    #                                        NATURE.libelle_f AS NATURE_TITRE,
+    #                                        PERMIS.libnat AS NATURE_DETAILS,
+    #                                        PERMIS.remarque_resume AS REMARQUES,
+    #                                        DEMANDEURS.CONCAT_DEMANDEUR  AS INFOS_DEMANDEURS,
+    # #                                        IF(PARCELS.CONCAT_PARCELS = '1|.|0000/00#000', '', PARCELS.CONCAT_PARCELS) AS INFOS_PARCELLES,
+    #                                         TRAVAUX.date_debut AS DEBUT_TRAVAUX,
+    #                                         TRAVAUX.date_fin AS FIN_TRAVAUX,
+    #                                        PERMIS_DOCUMENTS.DOCUMENTS AS INFOS_DOCUMENTS,
+    #                                        ORG.civilite_fk AS ORG_TITLE_ID,
+    #                                        ORG.nom AS ORG_NOM,
+    #                                        ORG.prenom AS ORG_PRENOM,
+    #                                        ORG.rue AS ORG_RUE,
+    #                                        ORG.numero AS ORG_NUMERO,
+    #                                        ORG.code_postal AS ORG_CP,
+    #                                        ORG.localite AS ORG_LOCALITE,
+    #                                        ORG.telephone AS ORG_TEL,
+    #                                        ORG.gsm AS ORG_MOBILE,
+    #                                        ORG.mail AS ORG_MAIL,
+    #                                        ORG.type_list AS ORG_TYPE,
+    #                                        PURBCODT.nom_lotissement AS NOM_LOT,
+    #                                        PURBCODT.nombre_de_lots AS NB_LOT
+    #                                 FROM p_permis AS PERMIS
+    #                                 LEFT JOIN get_demandeurs AS DEMANDEURS ON DEMANDEURS.ID_PERMIS = PERMIS.id
+    #                                 LEFT JOIN get_parcelles AS PARCELS ON PARCELS.ID_PERMIS = PERMIS.id
+    #                                 LEFT JOIN c_localite AS LOCALITE ON PERMIS.localite_fk = LOCALITE.id
+    #                                 LEFT JOIN c_nature AS NATURE ON PERMIS.nature_fk = NATURE.id
+    #                                 LEFT JOIN p_permis_urbanisation_codt AS PURBCODT ON PURBCODT.id = PERMIS.id
+    #                                 LEFT JOIN c_organisme AS ORG ON PURBCODT.organisme_fk = ORG.id
+    #                                 LEFT JOIN get_document_infos AS PERMIS_DOCUMENTS ON PERMIS_DOCUMENTS.ID_PERMIS = PERMIS.id
+    #                                 LEFT JOIN p_travaux AS TRAVAUX ON TRAVAUX.id = PURBCODT.travaux_fk
+    #                                 WHERE PERMIS.type_permis_fk = 25;
+    #                               """
+    #                               )
 
-    import_urbaweb.db.create_view("certificat_urbanisme2_codt_vue",
-                                  """
-                                    SELECT PERMIS.id,
-                                           PERMIS.type_permis_fk,
-                                           PERMIS.numero_permis AS REFERENCE_TECH,
-                                           PERMIS.numero_permis_delivre AS REFERENCE,
-                                           PERMIS.reference_urbanisme AS REFERENCE_URB,
-                                           PERMIS.statut AS STATUT,
-                                           PERMIS.date_statut AS DATE_STATUT,
-                                           PERMIS.parcelle_hors_commune AS PHC,
-                                           PERMIS.info_rue_d AS LOCALITE_RUE,
-                                           PERMIS.numero AS LOCALITE_NUM,
-                                           LOCALITE.code_postal AS LOCALITE_CP,
-                                           LOCALITE.libelle_f AS LOCALITE_LABEL,
-                                           PERMIS.date_demande AS DATE_DEMANDE,
-                                           PERMIS.date_recepisse AS DATE_RECEPISSE,
-                                           PERMIS.date_depot AS DATE_DEPOT,
-                                           NATURE.libelle_f AS NATURE_TITRE,
-                                           PERMIS.libnat AS NATURE_DETAILS,
-                                           PERMIS.remarque_resume AS REMARQUES,
-                                           DEMANDEURS.CONCAT_DEMANDEUR  AS INFOS_DEMANDEURS,
-                                           IF(PARCELS.CONCAT_PARCELS = '1|.|0000/00#000', '', PARCELS.CONCAT_PARCELS) AS INFOS_PARCELLES,
-                                           PERMIS_DOCUMENTS.DOCUMENTS AS INFOS_DOCUMENTS,
-                                           ORG.civilite_fk AS ORG_TITLE_ID,
-                                           ORG.nom AS ORG_NOM,
-                                           ORG.prenom AS ORG_PRENOM,
-                                           ORG.rue AS ORG_RUE,
-                                           ORG.numero AS ORG_NUMERO,
-                                           ORG.code_postal AS ORG_CP,
-                                           ORG.localite AS ORG_LOCALITE,
-                                           ORG.telephone AS ORG_TEL,
-                                           ORG.gsm AS ORG_MOBILE,
-                                           ORG.mail AS ORG_MAIL,
-                                           ORG.type_list AS ORG_TYPE
-                                    FROM p_permis AS PERMIS
-                                    LEFT JOIN get_demandeurs AS DEMANDEURS ON DEMANDEURS.ID_PERMIS = PERMIS.id
-                                    LEFT JOIN get_parcelles AS PARCELS ON PARCELS.ID_PERMIS = PERMIS.id
-                                    LEFT JOIN c_localite AS LOCALITE ON PERMIS.localite_fk = LOCALITE.id
-                                    LEFT JOIN c_nature AS NATURE ON PERMIS.nature_fk = NATURE.id
-                                    LEFT JOIN p_permis_certificat_urbanisme2_codt AS CU2CODT ON CU2CODT.id = PERMIS.id
-                                    LEFT JOIN c_organisme AS ORG ON CU2CODT.organisme_fk = ORG.id
-                                    LEFT JOIN get_document_infos AS PERMIS_DOCUMENTS ON PERMIS_DOCUMENTS.ID_PERMIS = PERMIS.id
-                                    WHERE PERMIS.type_permis_fk = 24;
-                                  """
-                                  )
+    # import_urbaweb.db.create_view("certificat_urbanisme2_codt_vue",
+    #                               """
+    #                                 SELECT PERMIS.id,
+    #                                        PERMIS.type_permis_fk,
+    #                                        PERMIS.numero_permis AS REFERENCE_TECH,
+    #                                        PERMIS.numero_permis_delivre AS REFERENCE,
+    #                                        PERMIS.reference_urbanisme AS REFERENCE_URB,
+    #                                        PERMIS.statut_permis AS STATUT,
+    #                                        PERMIS.date_statut AS DATE_STATUT,
+    #                                        PERMIS.parcelle_hors_commune AS PHC,
+    #                                        PERMIS.info_rue_d AS LOCALITE_RUE,
+    #                                        PERMIS.numero AS LOCALITE_NUM,
+    #                                        LOCALITE.code_postal AS LOCALITE_CP,
+    #                                        LOCALITE.libelle_f AS LOCALITE_LABEL,
+    #                                        PERMIS.date_demande AS DATE_DEMANDE,
+    #                                        PERMIS.date_recepisse AS DATE_RECEPISSE,
+    #                                        PERMIS.date_depot AS DATE_DEPOT,
+    #                                        NATURE.libelle_f AS NATURE_TITRE,
+    #                                        PERMIS.libnat AS NATURE_DETAILS,
+    #                                        PERMIS.remarque_resume AS REMARQUES,
+    #                                        DEMANDEURS.CONCAT_DEMANDEUR  AS INFOS_DEMANDEURS,
+    #                                        IF(PARCELS.CONCAT_PARCELS = '1|.|0000/00#000', '', PARCELS.CONCAT_PARCELS) AS INFOS_PARCELLES,
+    #                                          TRAVAUX.date_debut AS DEBUT_TRAVAUX,
+    #                                          TRAVAUX.date_fin AS FIN_TRAVAUX,
+    #                                        PERMIS_DOCUMENTS.DOCUMENTS AS INFOS_DOCUMENTS,
+    #                                        ORG.civilite_fk AS ORG_TITLE_ID,
+    #                                        ORG.nom AS ORG_NOM,
+    #                                        ORG.prenom AS ORG_PRENOM,
+    #                                        ORG.rue AS ORG_RUE,
+    #                                        ORG.numero AS ORG_NUMERO,
+    #                                        ORG.code_postal AS ORG_CP,
+    #                                        ORG.localite AS ORG_LOCALITE,
+    #                                        ORG.telephone AS ORG_TEL,
+    #                                        ORG.gsm AS ORG_MOBILE,
+    #                                        ORG.mail AS ORG_MAIL,
+    #                                        ORG.type_list AS ORG_TYPE
+    #                                 FROM p_permis AS PERMIS
+    #                                 LEFT JOIN get_demandeurs AS DEMANDEURS ON DEMANDEURS.ID_PERMIS = PERMIS.id
+    #                                 LEFT JOIN get_parcelles AS PARCELS ON PARCELS.ID_PERMIS = PERMIS.id
+    #                                 LEFT JOIN c_localite AS LOCALITE ON PERMIS.localite_fk = LOCALITE.id
+    #                                 LEFT JOIN c_nature AS NATURE ON PERMIS.nature_fk = NATURE.id
+    #                                 LEFT JOIN p_permis_certificat_urbanisme2_codt AS CU2CODT ON CU2CODT.id = PERMIS.id
+    #                                 LEFT JOIN c_organisme AS ORG ON CU2CODT.organisme_fk = ORG.id
+    #                                 LEFT JOIN get_document_infos AS PERMIS_DOCUMENTS ON PERMIS_DOCUMENTS.ID_PERMIS = PERMIS.id
+    #                                 LEFT JOIN p_travaux AS TRAVAUX ON TRAVAUX.id = CU2CODT.travaux_fk
+    #                                 WHERE PERMIS.type_permis_fk = 24;
+    #                               """
+    #                               )
 
 
 def create_concat_views(import_urbaweb):

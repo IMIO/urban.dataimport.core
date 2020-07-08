@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import re
+from datetime import datetime
 
 from progress.bar import FillingSquaresBar
 from urban.dataimport.core import utils
@@ -14,7 +15,7 @@ import unidecode
 
 from urban.dataimport.core.db import LazyDB
 from urban.dataimport.core.json import get_licence_dict, get_work_locations_dict, DateTimeEncoder, get_applicant_dict, \
-    get_organization_dict, get_parcel_dict, get_event_dict
+    get_organization_dict, get_parcel_dict, get_event_dict, get_attachment_dict
 from urban.dataimport.core.mapping.main_mapping import main_licence_decision_event_id_mapping, \
     main_licence_deposit_event_id_mapping, main_licence_not_receivable_event_id_mapping
 from urban.dataimport.core.mapping.urbaweb_mapping import division_mapping, events_types, \
@@ -30,12 +31,13 @@ from urban.dataimport.core.views.urbaweb_views import create_views, create_conca
 
 class ImportUrbaweb(BaseImport):
 
-    def __init__(self, config_file, view, limit=None, range=None, licence_id=None, ignore_cache=False, pg_ignore_cache=False, benchmarking=False, noop=False, iterate=False):
+    def __init__(self, config_file, view, limit=None, range=None, licence_id=None, id=None, ignore_cache=False, pg_ignore_cache=False, benchmarking=False, noop=False, iterate=False):
         print("INITIALIZING")
         self.view = view
         self.limit = limit
         self.range = range
         self.licence_id = licence_id
+        self.id = id
         self.start_time = time.time()
         self.benchmarking = benchmarking
         self.noop = noop
@@ -73,6 +75,7 @@ class ImportUrbaweb(BaseImport):
         create_bestaddress_views(self, config['main']['locality'])
         self.parcel_errors = []
         self.street_errors = []
+        self.verify_date_pattern = re.compile("^\d{4}\-(0[1-9]|1[012])\-(0[1-9]|[12][0-9]|3[01])$")
         print("INITIALIZATION COMPLETED")
 
     def execute(self):
@@ -102,7 +105,8 @@ class ImportUrbaweb(BaseImport):
             folders = folders.head(self.limit)
         if self.licence_id:
             folders = folders[folders.REFERENCE == self.licence_id]
-
+        if self.id:
+            folders = folders[folders.id == int(self.id)]
         bar = FillingSquaresBar('Processing licences', max=folders.shape[0])
         for id, licence in folders.iterrows():
             self.get_licence(id, licence)
@@ -123,22 +127,39 @@ class ImportUrbaweb(BaseImport):
         if not licence_dict['portalType']:
             return
         licence_dict["@type"] = licence_dict["portalType"]
-        licence_dict['reference'] = "{}/{}".format(licence.id, licence.REFERENCE)
+        if licence.REFERENCE_TECH == 0 and licence.REFERENCE:
+            ref = licence.REFERENCE
+        elif licence.REFERENCE_TECH and licence.REFERENCE_TECH != 0:
+            ref = licence.REFERENCE_TECH
+        else:
+            ref = 'inconnue'
+
+        licence_dict['reference'] = "{}/{}".format(licence.id, ref)
         # licence_dict['Title'] = "{} {}".format(licence_dict['reference'], licence.NATURE_TITRE)
-        licence_dict['licenceSubject'] = licence.NATURE_DETAILS
+        licence_dict['licenceSubject'] = licence.NATURE_TITRE
         licence_dict['usage'] = 'not_applicable'
         licence_dict['workLocations'] = self.get_work_locations(licence)
         self.get_organization(licence, licence_dict)
         self.get_applicants(licence, licence_dict['__children__'])
         self.get_parcels(licence, licence_dict['__children__'])
         self.get_events(licence, licence_dict)
-        self.get_rubrics(licence,  licence_dict)
+        self.get_rubrics(licence, licence_dict)
         self.get_parcellings(licence)
         if hasattr(licence, "PHC") and licence.PHC:
             self.licence_description.append({'Parcelle(s) hors commune': licence.PHC})
+        if hasattr(licence, "DEBUT_TRAVAUX") and licence.DEBUT_TRAVAUX and len(licence.DEBUT_TRAVAUX) == 10:
+            work_begin_date = datetime.strptime(licence.DEBUT_TRAVAUX, '%Y-%m-%d').strftime('%d/%m/%Y')
+            self.licence_description.append({'Début des travaux': work_begin_date})
+        if hasattr(licence, "FIN_TRAVAUX") and licence.FIN_TRAVAUX and len(licence.FIN_TRAVAUX) == 10:
+            work_end_date = datetime.strptime(licence.FIN_TRAVAUX, '%Y-%m-%d').strftime('%d/%m/%Y')
+            self.licence_description.append({'Fin des travaux': work_end_date})
+
+        if self.config['main']['with_attachments'] and self.config['main']['with_attachments'] == 'True':
+            if hasattr(licence, "INFOS_DOCUMENTS") and licence.INFOS_DOCUMENTS:
+                self.get_documents(licence, licence_dict['__children__'])
         description = str(''.join(str(d) for d in self.licence_description))
         licence_dict['description'] = {
-            'data': "{}{} - {} {}{}".format("<p>", description, str(licence.NATURE_DETAILS).replace("\n",""), str(licence.REMARQUES).replace("\n",""), "</p>"),
+            'data': "{}{} - {} {} {}{}".format("<p>", description, str(licence.NATURE_TITRE).replace("\n", " "), str(licence.NATURE_DETAILS).replace("\n", " "), str(licence.REMARQUES).replace("\n", " "), "</p>"),
             'content-type': 'text/html'
         }  # description must be the last licence set
         # self.validate_schema(licence_dict, 'GenericLicence')
@@ -180,19 +201,21 @@ class ImportUrbaweb(BaseImport):
             urbaweb_street = re.sub(r' St ', ' Saint-', urbaweb_street).strip()
             urbaweb_street = re.sub(r' Ste ', ' Sainte-', urbaweb_street).strip()
 
-            # TODO custom BLA : to remove
-            urbaweb_street = re.sub(r'Ch du Blanc Caillou', 'Chemin du Blanc Caillou', urbaweb_street).strip()
-            urbaweb_street = re.sub(r' Alph Allard', ' Alphonse Allard', urbaweb_street).strip()
-            urbaweb_street = re.sub(r'Dr du Triage Bruyère', 'Drève du Triage Bruyère', urbaweb_street).strip()
+            # TODO custom SOIG : to remove
+            urbaweb_street = re.sub(r'Chemin Biamont', 'Chemin de Biamont', urbaweb_street).strip()
+            if licence.LOCALITE_LABEL in 'Neufvilles':
+                urbaweb_street = re.sub(r'Rue Reine De Hongrie', 'Rue Reine de Hongrie', urbaweb_street).strip()
+            elif licence.LOCALITE_LABEL in 'Casteau(Soignies)':
+                urbaweb_street = re.sub(r'Rue Reine De Hongrie', 'Rue Reine  de Hongrie', urbaweb_street).strip()
+            elif licence.LOCALITE_LABEL in 'Thieusies':
+                urbaweb_street = re.sub(r'Rue Reine De Hongrie', 'Rue  Reine de Hongrie', urbaweb_street).strip()
+            urbaweb_street = re.sub(r"Place d' Horrues", "Place d'Horrues", urbaweb_street).strip()
+            urbaweb_street = re.sub(r"Square de Savoye", "Square Eugène de Savoye", urbaweb_street).strip()
+            urbaweb_street = re.sub(r"Rue de l' Agace", "Rue de l'Agace", urbaweb_street).strip()
+            urbaweb_street = re.sub(r"Rue Mouligneau", "Rue du Mouligneau", urbaweb_street).strip()
+            urbaweb_street = re.sub(r"boul. John Fitzgerald Kennedy", "Boulevard J.F.Kennedy", urbaweb_street).strip()
+            urbaweb_street = re.sub(r"Chemin de Williaupont", "Chemin de Willaupont", urbaweb_street).strip()
 
-            if urbaweb_street.strip() == 'Avenue de la Chevauchée':
-                self.licence_description.append({'objet': "",
-                                                 'rue': licence.LOCALITE_RUE,
-                                                 'n°': licence.LOCALITE_NUM,
-                                                 'code postal': licence.LOCALITE_CP,
-                                                 'localité': licence.LOCALITE_LABEL
-                                                 })
-            urbaweb_street = re.sub(r'Avenue de la Chevauchée', '', urbaweb_street).strip()
             # End custom code
 
             df_ba_vue = self.bestaddress.bestaddress_vue
@@ -455,7 +478,7 @@ class ImportUrbaweb(BaseImport):
             event_dict['title'] = 'Non recevable'
             event_dict['type'] = 'not_receivable'
             event_dict['event_id'] = main_licence_not_receivable_event_id_mapping[licence_dict['portalType']]
-            event_dict['eventDate'] = licence.DATE_STATUT
+            # event_dict['eventDate'] = licence.DATE_STATUT
             licence_dict['__children__'].append(event_dict)
 
     def get_decision_event(self, licence, events_param, licence_dict):
@@ -465,31 +488,35 @@ class ImportUrbaweb(BaseImport):
         event_dict['event_id'] = main_licence_decision_event_id_mapping[licence_dict['portalType']]
 
         if licence.STATUT == 1:
-            event_dict['decision'] = main_licence_decision_mapping['OctroiCollege']
+            # event_dict['decision'] = main_licence_decision_mapping['OctroiCollege']
             licence_dict['wf_state'] = 'accept'
             self.licence_description.append({'Précision décision': "Octroi Collège"})
         elif licence.STATUT == 2:
-            event_dict['decision'] = main_licence_decision_mapping['RefusCollege']
+            # event_dict['decision'] = main_licence_decision_mapping['RefusCollege']
             licence_dict['wf_state'] = 'refuse'
             self.licence_description.append({'Précision décision': "Refus Collège"})
         elif licence.STATUT == 3:
-            event_dict['decision'] = main_licence_decision_mapping['RefusTutelle']
+            # event_dict['decision'] = main_licence_decision_mapping['RefusTutelle']
             licence_dict['wf_state'] = 'refuse'
             self.licence_description.append({'Précision décision': "Refus Tutelle"})
         elif licence.STATUT == 4:
-            event_dict['decision'] = main_licence_decision_mapping['OctroiTutelle']
+            # event_dict['decision'] = main_licence_decision_mapping['OctroiTutelle']
             licence_dict['wf_state'] = 'accept'
             self.licence_description.append({'Précision décision': "Octroi Tutelle"})
         elif licence.STATUT == 5:
-            event_dict['decision'] = main_licence_decision_mapping['RefusFD']
+            # event_dict['decision'] = main_licence_decision_mapping['RefusFD']
             licence_dict['wf_state'] = 'refuse'
             self.licence_description.append({'Précision décision': "Refus par le FD"})
         elif licence.STATUT == 6:
-            event_dict['decision'] = main_licence_decision_mapping['RefusCollege']
+            # event_dict['decision'] = main_licence_decision_mapping['RefusCollege']
             licence_dict['wf_state'] = 'refuse'
             self.licence_description.append({'Précision décision': "Refus Collège (2)"})
+        elif licence.STATUT == 7:
+            # event_dict['decision'] = main_licence_decision_mapping['OctroiCollege']
+            licence_dict['wf_state'] = 'accept'
+            self.licence_description.append({'Précision décision': "Autorisation Collège, retrait puis nouvelle autorisation"})
         elif licence.STATUT == 8:
-            event_dict['decision'] = main_licence_decision_mapping['Irrecevable_2xI']
+            # event_dict['decision'] = main_licence_decision_mapping['Irrecevable_2xI']
             licence_dict['wf_state'] = 'refuse'
             self.licence_description.append({'Précision décision': "Irrecevable car deux fois incomplet"})
         elif licence.STATUT == 9:
@@ -497,39 +524,36 @@ class ImportUrbaweb(BaseImport):
             licence_dict['wf_state'] = 'refuse'
             self.licence_description.append({'Précision décision': "Refus tacite du Fonctionnaire"})
         elif licence.STATUT == 10:
-            event_dict['decision'] = main_licence_decision_mapping['AbandonDemandeur']
+            # event_dict['decision'] = main_licence_decision_mapping['AbandonDemandeur']
             licence_dict['wf_state'] = 'retire'
             self.licence_description.append({'Précision décision': "Abandonné par le demandeur"})
         elif licence.STATUT == 14:
-            event_dict['decision'] = main_licence_decision_mapping['OctroiFD']
+            # event_dict['decision'] = main_licence_decision_mapping['OctroiFD']
             licence_dict['wf_state'] = 'accept'
             self.licence_description.append({'Précision décision': "Octroi par le FD"})
         elif licence.STATUT == 17:
-            event_dict['decision'] = main_licence_decision_mapping['OctroiFD']
+            # event_dict['decision'] = main_licence_decision_mapping['OctroiFD']
             licence_dict['wf_state'] = 'accept'
             self.licence_description.append({'Précision décision': "Octroi par le FD"})
         elif licence.STATUT == 18:
-            event_dict['decision'] = main_licence_decision_mapping['RefusFD']
+            # event_dict['decision'] = main_licence_decision_mapping['RefusFD']
             licence_dict['wf_state'] = 'refuse'
             self.licence_description.append({'Précision décision': "Refus par le FD"})
         elif licence.STATUT == 28:
-            event_dict['decision'] = main_licence_decision_mapping['OctroiFD']
+            # event_dict['decision'] = main_licence_decision_mapping['OctroiFD']
             licence_dict['wf_state'] = 'accept'
             self.licence_description.append({'Précision décision': "Octroi partiel du FD"})
         elif licence.STATUT == 34:
-            # TODO pour BLA!!!!!!!!!!!!!!!!, remettre à abandonné / retire pour les autres!
-            event_dict['decision'] = main_licence_decision_mapping['Recevable']
-            licence_dict['wf_state'] = 'accept'
-            self.licence_description.append({'Précision décision': "Recevable"})
             # event_dict['decision'] = main_licence_decision_mapping['Abandon']
-            # licence_dict['wf_state'] = 'retire'
+            licence_dict['wf_state'] = 'retire'
+            self.licence_description.append({'Précision décision': "Abandon"})
         elif licence.STATUT == 35:
-            event_dict['decision'] = main_licence_decision_mapping['Recevable']
+            # event_dict['decision'] = main_licence_decision_mapping['Recevable']
             licence_dict['wf_state'] = 'accept'
             self.licence_description.append({'Précision décision': "Recevable avec condition"})
         elif licence.STATUT == 36:
             # Twice incomplete : Refused
-            event_dict['decision'] = main_licence_decision_mapping['Irrecevable']
+            # event_dict['decision'] = main_licence_decision_mapping['Irrecevable']
             licence_dict['wf_state'] = 'refuse'
             self.licence_description.append({'Précision décision': "Irrecevable car deux fois incomplet"})
         elif licence.STATUT == 0 or licence.STATUT == 30 or licence.STATUT == 31 or licence.STATUT == '' or licence.STATUT == 15 or licence.STATUT == 27:
@@ -540,21 +564,40 @@ class ImportUrbaweb(BaseImport):
             import ipdb; ipdb.set_trace() # TODO REMOVE BREAKPOINT
             print("unknown status")
 
-        # CUSTOM encoding error for example
-        # custom BLA
-        if licence_dict['portalType'] == "Declaration":
-            if licence.REFERENCE in ("2014/DU001", "2014/DU002", "2015/DU013"):
-                event_dict['decision'] = main_licence_decision_mapping['OctroiFD']
-                licence_dict['wf_state'] = 'accept'
-                self.licence_description.append({'Précision décision': "Erreur encodage : Octroi par le FD"})
+        # CUSTOM encoding error for example drt, dat, drc, dac
+        # custom SOIG
+        # if licence_dict['portalType'] == "Declaration":
+        #     if licence.REFERENCE in ("2014/DU001", "2014/DU002", "2015/DU013"):
+        #         event_dict['decision'] = main_licence_decision_mapping['OctroiFD']
+        #         licence_dict['wf_state'] = 'accept'
+        #         self.licence_description.append({'Précision décision': "Erreur encodage : Octroi par le FD"})
         # END CUSTOM
 
-        if hasattr(licence, "DATE_STATUT"):
-            event_dict['eventDate'] = licence.DATE_STATUT
-            event_dict['decisionDate'] = licence.DATE_STATUT
-        elif hasattr(licence, "DATE_DECISION"):
-            event_dict['eventDate'] = licence.DATE_DECISION
-            event_dict['decisionDate'] = licence.DATE_DECISION
+        if licence_dict['portalType'] in ('BuildLicence'):
+            drt = licence.AUTORISATION_DATE_REFUS_TUTELLE
+            dat = licence.AUTORISATION_DATE_AUTORISATION_TUTELLE
+            drc = licence.AUTORISATION_DATE_REFUS_COLLEGE
+            dac = licence.AUTORISATION_DATE_AUTORISATION_COLLEGE
+            if licence.DATE_DECISION_TUTELLE:
+                event_dict['eventDate'] = licence.DATE_DECISION_TUTELLE
+
+            elif drt or dat:
+                if drt and dat:
+                    event_dict['eventDate'] = drt if drt > dat else dat
+                elif drt:
+                    event_dict['eventDate'] = drt
+                else:
+                    event_dict['eventDate'] = dat
+            elif drc or dac:
+                if drc and dac:
+                    event_dict['eventDate'] = drc if drc > dac else dac
+                elif drc:
+                    event_dict['eventDate'] = drc
+                else:
+                    event_dict['eventDate'] = dac
+
+        if event_dict['eventDate']:
+            event_dict['decisionDate'] = event_dict['eventDate']
 
         # CODT licences need a transition
         if licence_dict['portalType'].startswith("CODT_") and licence_dict['wf_state']:
@@ -569,8 +612,10 @@ class ImportUrbaweb(BaseImport):
         # Divison has a specific WF and hasn't 'refuse' transition
         if licence_dict['portalType'] == 'Division' and (licence_dict['wf_state'] == 'refuse' or licence_dict['wf_state'] == 'retire'):
             licence_dict['wf_state'] = 'nonapplicable'
+
         if event_dict['eventDate'] and event_dict['decisionDate']:
-            licence_dict['__children__'].append(event_dict)
+            if self.verify_date_pattern.match(event_dict['eventDate']) and self.verify_date_pattern.match(event_dict['decisionDate']):
+                licence_dict['__children__'].append(event_dict)
 
     def get_rubrics(self, licence, licence_dict):
         if hasattr(licence, "INFOS_RUBRIQUES") and licence.INFOS_RUBRIQUES:
@@ -587,6 +632,29 @@ class ImportUrbaweb(BaseImport):
         if hasattr(licence, "NB_LOT") and licence.NB_LOT:
             self.licence_description.append({'Nombre de lots': licence.NB_LOT})
 
+    def get_documents(self, licence, licence_children):
+        for document in licence.INFOS_DOCUMENTS.split("@"):
+            try:
+                document_dict = get_attachment_dict()
+                document_split = document.split("|")
+                if document_split[2]:
+                    document_dict["title"] = document_split[0]
+                    document_dict["description"] = document_split[1]
+                    document_dict["file"]["filename"] = get_filename_from_suffix_path(
+                        self.config['main']['documents_path'],
+                        document_split[2]
+                    )
+                    document_dict["file"]["data"] = get_file_data_from_suffix_path(
+                        self.config['main']['documents_path'],
+                        document_split[2]
+                    )
+                    if document_dict["file"]["filename"] and document_dict["file"]["filename"] != "":
+                        licence_children.append(document_dict)
+                    else:
+                        self.licence_description.append({'Document non retrouvé': document})
+            except Exception as e:
+                print(e)
+
 
 def main():
     """ """
@@ -595,6 +663,7 @@ def main():
     parser.add_argument('--limit', type=int, help='number of records')
     parser.add_argument('--view', type=str, default='permis_urbanisme_vue', help='give licence view to call')
     parser.add_argument('--licence_id', type=str, help='reference of a licence')
+    parser.add_argument('--id', type=str, help='db id of a licence')
     parser.add_argument('--range', type=str, help="input slice, example : '5:10'")
     parser.add_argument('--ignore_cache', type=bool, nargs='?',
                         const=True, default=False, help='ignore mysql db local cache')
@@ -614,6 +683,7 @@ def main():
         limit=args.limit,
         range=args.range,
         licence_id=args.licence_id,
+        id=args.id,
         ignore_cache=args.ignore_cache,
         pg_ignore_cache=args.pg_ignore_cache,
         benchmarking=args.benchmarking,
