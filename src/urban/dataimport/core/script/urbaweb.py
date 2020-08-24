@@ -637,25 +637,30 @@ class ImportUrbaweb(BaseImport):
     def get_documents(self, licence, licence_children):
         # remove duplicates file (same title/description/path) from dirty input DB
         infos_documents = list(dict.fromkeys(licence.INFOS_DOCUMENTS.split("@")))
+        title_check = []
         for document in infos_documents:
             try:
                 document_dict = get_attachment_dict()
                 document_split = document.split("|")
                 if document_split[2]:
-                    document_dict["title"] = document_split[0]
-                    document_dict["description"] = document_split[1]
-                    document_dict["file"]["filename"] = get_filename_from_suffix_path(
-                        self.config['main']['documents_path'],
-                        document_split[2]
-                    )
-                    document_dict["file"]["data"] = get_file_data_from_suffix_path(
-                        self.config['main']['documents_path'],
-                        document_split[2]
-                    )
-                    if document_dict["file"]["filename"] and document_dict["file"]["filename"] != "":
-                        licence_children.append(document_dict)
+                    if document_split[0] in title_check:
+                        continue
                     else:
-                        self.licence_description.append({'Document non retrouvé': document})
+                        title_check.append(document_split[0])
+                        document_dict["title"] = document_split[0]
+                        document_dict["description"] = document_split[1]
+                        document_dict["file"]["filename"] = get_filename_from_suffix_path(
+                            self.config['main']['documents_path'],
+                            document_split[2]
+                        )
+                        document_dict["file"]["data"] = get_file_data_from_suffix_path(
+                            self.config['main']['documents_path'],
+                            document_split[2]
+                        )
+                        if document_dict["file"]["filename"] and document_dict["file"]["filename"] != "":
+                            licence_children.append(document_dict)
+                        else:
+                            self.licence_description.append({'Document non retrouvé': document})
             except Exception as e:
                 print(e)
 
