@@ -23,7 +23,7 @@ from urban.dataimport.core.mapping.urbaweb_mapping import division_mapping, even
 from urban.dataimport.core.mapping.urbaweb_mapping import portal_type_mapping
 from urban.dataimport.core.utils import BaseImport, StateManager, StateHandler, benchmark_decorator, \
     export_to_customer_json, represent_int, IterationError, ErrorToCsv, export_error_csv, \
-    get_file_data_from_suffix_path, get_filename_from_suffix_path
+    get_file_data_from_suffix_path, get_filename_from_suffix_path, html_escape
 from urban.dataimport.core.views.bestaddress_views import create_bestaddress_views
 from urban.dataimport.core.views.cadastral_views import create_cadastral_views
 from urban.dataimport.core.views.urbaweb_views import create_views, create_concat_views
@@ -158,8 +158,10 @@ class ImportUrbaweb(BaseImport):
             if hasattr(licence, "INFOS_DOCUMENTS") and licence.INFOS_DOCUMENTS:
                 self.get_documents(licence, licence_dict['__children__'])
         description = str(''.join(str(d) for d in self.licence_description))
+        description_data = "{} - {} {} {}".format(description, str(licence.NATURE_TITRE).replace("\n", " "), str(licence.NATURE_DETAILS).replace("\n", " "), html_escape(str(licence.REMARQUES).replace("\n", " ").replace("\t", " ").replace("\r", " ").replace("?", " ")))
+        description_data = description_data[:7899]  # upper length is refused TextField/Mimetype text/html.
         licence_dict['description'] = {
-            'data': "{}{} - {} {} {}{}".format("<p>", description, str(licence.NATURE_TITRE).replace("\n", " "), str(licence.NATURE_DETAILS).replace("\n", " "), str(licence.REMARQUES).replace("\n", " "), "</p>"),
+            'data': "<p>{}</p>".format(description_data),
             'content-type': 'text/html'
         }  # description must be the last licence set
         # self.validate_schema(licence_dict, 'GenericLicence')
