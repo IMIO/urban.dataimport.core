@@ -635,7 +635,9 @@ class ImportUrbaweb(BaseImport):
             self.licence_description.append({'Nombre de lots': licence.NB_LOT})
 
     def get_documents(self, licence, licence_children):
-        for document in licence.INFOS_DOCUMENTS.split("@"):
+        # remove duplicates file (same title/description/path) from dirty input DB
+        infos_documents = list(dict.fromkeys(licence.INFOS_DOCUMENTS.split("@")))
+        for document in infos_documents:
             try:
                 document_dict = get_attachment_dict()
                 document_split = document.split("|")
