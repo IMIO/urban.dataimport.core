@@ -284,9 +284,9 @@ class ImportUrbaweb(BaseImport):
     @benchmark_decorator
     def get_applicants(self, licence, licence_children, licence_dict):
         applicant_dict = get_applicant_dict()
-        applicants = licence.INFOS_DEMANDEURS
+        applicants = list(dict.fromkeys(licence.INFOS_DEMANDEURS.split("#")))
         try:
-            for applicant_infos in applicants.split("#"):
+            for applicant_infos in applicants:
                 applicant = applicant_infos.split("|")
                 applicant_dict['personTitle'] = title_types.get(applicant[0], "")
                 applicant_dict['name1'] = applicant[1]
