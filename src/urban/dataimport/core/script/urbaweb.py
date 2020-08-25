@@ -140,7 +140,7 @@ class ImportUrbaweb(BaseImport):
         licence_dict['usage'] = 'not_applicable'
         licence_dict['workLocations'] = self.get_work_locations(licence)
         self.get_organization(licence, licence_dict)
-        self.get_applicants(licence, licence_dict['__children__'])
+        self.get_applicants(licence, licence_dict['__children__'], licence_dict)
         self.get_parcels(licence, licence_dict['__children__'])
         self.get_events(licence, licence_dict)
         self.get_rubrics(licence, licence_dict)
@@ -282,7 +282,7 @@ class ImportUrbaweb(BaseImport):
         return work_locations_list
 
     @benchmark_decorator
-    def get_applicants(self, licence, licence_children):
+    def get_applicants(self, licence, licence_children, licence_dict):
         applicant_dict = get_applicant_dict()
         applicants = licence.INFOS_DEMANDEURS
         try:
@@ -297,7 +297,8 @@ class ImportUrbaweb(BaseImport):
                 applicant_dict['phone'] = applicant[6]
                 applicant_dict['gsm'] = applicant[7]
                 applicant_dict['email'] = applicant[8]
-
+                if licence_dict["@type"] in ['Division', 'UrbanCertificateOne', 'UrbanCertificateTwo', 'NotaryLetter']:
+                    applicant_dict['@type'] = 'Proprietary'
                 licence_children.append(applicant_dict)
         except Exception:
             print("debug applicant")
