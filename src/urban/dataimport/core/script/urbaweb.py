@@ -288,15 +288,15 @@ class ImportUrbaweb(BaseImport):
         try:
             for applicant_infos in applicants:
                 applicant = applicant_infos.split("|")
-                applicant_dict['personTitle'] = title_types.get(applicant[0], "")
-                applicant_dict['name1'] = applicant[1]
-                applicant_dict['name2'] = applicant[2]
-                applicant_dict['number'] = applicant[3]
-                applicant_dict['street'] = applicant[4]
-                applicant_dict['city'] = applicant[5]
-                applicant_dict['phone'] = applicant[6]
-                applicant_dict['gsm'] = applicant[7]
-                applicant_dict['email'] = applicant[8]
+                applicant_dict = {'personTitle': title_types.get(applicant[0], ""),
+                                  'name1': applicant[1],
+                                  'name2': applicant[2],
+                                  'number': applicant[3],
+                                  'street': applicant[4],
+                                  'city': applicant[5],
+                                  'phone': applicant[6],
+                                  'gsm': applicant[7],
+                                  'email': applicant[8]}
                 if licence_dict["@type"] in ['Division', 'UrbanCertificateOne', 'UrbanCertificateTwo', 'NotaryLetter']:
                     applicant_dict['@type'] = 'Proprietary'
                 licence_children.append(applicant_dict)
