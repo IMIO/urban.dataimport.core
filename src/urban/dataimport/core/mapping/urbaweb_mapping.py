@@ -20,18 +20,17 @@ portal_type_mapping = {
     4: 'UrbanCertificateTwo',
     5: 'PreliminaryNotice',
     6: 'EnvClassOne',
-    7: 'DeclarationImpetrant',  # ?
+    7: 'MiscDemand',  # DeclarationImpetrant
     8: 'NotaryLetter',
     9: 'Declaration',
     10: 'UniqueLicence',
     11: 'MiscDemand',
     16: 'ParcelOutLicence',
     17: 'EnvClassThree',
-    18: 'Infraction',  # ?
+    18: 'MiscDemand',  # Infraction
     19: 'MiscDemand',  # Permis Location
-    20: 'MiscDemand',  # Insalubrités logement
-    21: 'CODT_CommercialLicence',  # ?
-    22: 'RoadDecree',
+    21: 'MiscDemand',  # Insalubrités logement
+    22: 'CODT_CommercialLicence',
     23: 'CODT_BuildLicence',
     24: 'CODT_UrbanCertificateTwo',
     25: 'CODT_ParcelOutLicence',
