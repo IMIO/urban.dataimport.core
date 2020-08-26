@@ -276,8 +276,11 @@ def create_views(import_urbaweb):
                                   """
                                   )
     # Type 11 : Autres dossiers
+    # Type 7 : Déclaration Impétrants
+    # Type 18 : Infraction Urbanistique
     # Type 19 : Permis Location
-    # Type 20 : Insalubrité logement
+    # Type 21 : Insalubrité logement
+
     import_urbaweb.db.create_view("permis_autre_dossier_vue",
                                   """
                                     SELECT PERMIS.id,
@@ -319,7 +322,7 @@ def create_views(import_urbaweb):
                                     LEFT JOIN p_permis_autre_dossier AS PAD ON PAD.id = PERMIS.id
                                     LEFT JOIN c_organisme AS ORG ON PAD.organisme_fk = ORG.id
                                     LEFT JOIN get_document_infos AS PERMIS_DOCUMENTS ON PERMIS_DOCUMENTS.ID_PERMIS = PERMIS.id
-                                    WHERE PERMIS.type_permis_fk = 11 OR PERMIS.type_permis_fk = 20 OR PERMIS.type_permis_fk = 19;
+                                    WHERE PERMIS.type_permis_fk = 11 OR PERMIS.type_permis_fk = 7 OR PERMIS.type_permis_fk = 18 OR PERMIS.type_permis_fk = 19 OR PERMIS.type_permis_fk = 21;
                                   """
                                   )
 
