@@ -181,7 +181,11 @@ class ImportUrbaweb(BaseImport):
         if portal_type == 'MiscDemand':
             if licence.type_permis_fk == 11:
                 self.licence_description.append({'Demandes Diverses': "Autre Dossier"})
-            elif licence.type_permis_fk == 20:
+            elif licence.type_permis_fk == 7:
+                self.licence_description.append({'Demandes Diverses': "Déclaration Impétrants"})
+            elif licence.type_permis_fk == 18:
+                self.licence_description.append({'Demandes Diverses': "Infraction urbanistique"})
+            elif licence.type_permis_fk == 21:
                 self.licence_description.append({'Demandes Diverses': "Insalubrité Logement"})
             elif licence.type_permis_fk == 19:
                 self.licence_description.append({'Demandes Diverses': "Permis Location"})
