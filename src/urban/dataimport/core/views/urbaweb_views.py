@@ -335,7 +335,7 @@ def create_views(import_urbaweb):
                                     PERMIS.reference_urbanisme  AS REFERENCE_URB,
                                     PERMIS.statut_permis AS STATUT,
                                     PERMIS.parcelle_hors_commune AS PHC,
-                                    (IF(PE.environnement_classe_fk != 1, environnement_classe_fk -1,environnement_classe_fk)) AS CLASSE,
+                                    1 AS CLASSE,
                                     PERMIS.info_rue_d AS LOCALITE_RUE,
                                     PERMIS.numero  AS LOCALITE_NUM,
                                     LOCALITE.code_postal AS LOCALITE_CP,
@@ -362,7 +362,7 @@ def create_views(import_urbaweb):
                                     LEFT JOIN p_decision_environnement AS PE_DECISION ON PE.decision_environnement_fk = PE_DECISION.id
                                     LEFT JOIN get_rubrics AS RUBRICS ON RUBRICS.ID_PERMIS = PERMIS.id
                                     LEFT JOIN get_document_infos AS PERMIS_DOCUMENTS ON PERMIS_DOCUMENTS.ID_PERMIS = PERMIS.id
-                                    WHERE PERMIS.type_permis_fk = 6 AND (environnement_classe_fk = 1 OR environnement_classe_fk = 2);
+                                    WHERE PERMIS.type_permis_fk = 6 AND (environnement_classe_fk = 1 OR environnement_classe_fk = 2 OR environnement_classe_fk = 5);
                                   """
                                   )
     import_urbaweb.db.create_view("permis_env2_vue",
@@ -374,7 +374,7 @@ def create_views(import_urbaweb):
                                     PERMIS.reference_urbanisme  AS REFERENCE_URB,
                                     PERMIS.statut_permis AS STATUT,
                                     PERMIS.parcelle_hors_commune AS PHC,
-                                    (IF(PE.environnement_classe_fk != 1, environnement_classe_fk -1,environnement_classe_fk)) AS CLASSE,
+                                    2 AS CLASSE,
                                     PERMIS.info_rue_d AS LOCALITE_RUE,
                                     PERMIS.numero  AS LOCALITE_NUM,
                                     LOCALITE.code_postal AS LOCALITE_CP,
@@ -401,7 +401,7 @@ def create_views(import_urbaweb):
                                     LEFT JOIN p_decision_environnement AS PE_DECISION ON PE.decision_environnement_fk = PE_DECISION.id
                                     LEFT JOIN get_rubrics AS RUBRICS ON RUBRICS.ID_PERMIS = PERMIS.id
                                     LEFT JOIN get_document_infos AS PERMIS_DOCUMENTS ON PERMIS_DOCUMENTS.ID_PERMIS = PERMIS.id
-                                    WHERE PERMIS.type_permis_fk = 6 AND environnement_classe_fk = 3;
+                                    WHERE PERMIS.type_permis_fk = 6 AND (environnement_classe_fk = 3 OR environnement_classe_fk = 6);
                                   """
                                   )
     import_urbaweb.db.create_view("lettre_notariale_vue",
