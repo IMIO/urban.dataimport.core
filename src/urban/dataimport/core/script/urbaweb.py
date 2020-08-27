@@ -477,7 +477,8 @@ class ImportUrbaweb(BaseImport):
             event_dict['eventDate'] = licence.DATE_DEMANDE
         else:
             event_dict['eventDate'] = licence.DATE_RECEPISSE
-        licence_dict['__children__'].append(event_dict)
+        if self.verify_date_pattern.match(event_dict['eventDate']):
+            licence_dict['__children__'].append(event_dict)
 
     def get_not_receivable_event(self, licence, events_param, licence_dict):
         if licence.STATUT == 2:
