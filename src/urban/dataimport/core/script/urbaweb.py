@@ -581,12 +581,13 @@ class ImportUrbaweb(BaseImport):
         #         self.licence_description.append({'Précision décision': "Erreur encodage : Octroi par le FD"})
         # END CUSTOM
 
-        if licence_dict['portalType'] in ('BuildLicence'):
+        #  get decision date with four dates licencetype system (college/tutelle)
+        if licence_dict['portalType'] in ('BuildLicence', 'ParcelOutLicence', 'UniqueLicence', 'EnvClassOne', 'EnvClassTwo', 'EnvClassThree'):
             drt = licence.AUTORISATION_DATE_REFUS_TUTELLE
             dat = licence.AUTORISATION_DATE_AUTORISATION_TUTELLE
             drc = licence.AUTORISATION_DATE_REFUS_COLLEGE
             dac = licence.AUTORISATION_DATE_AUTORISATION_COLLEGE
-            if licence.DATE_DECISION_TUTELLE:
+            if hasattr(licence, "DATE_DECISION_TUTELLE") and licence.DATE_DECISION_TUTELLE:
                 event_dict['eventDate'] = licence.DATE_DECISION_TUTELLE
 
             elif drt or dat:

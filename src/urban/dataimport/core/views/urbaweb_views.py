@@ -218,6 +218,10 @@ def create_views(import_urbaweb):
                                     IFNULL(PERMIS.remarque_resume, '') AS REMARQUES,
                                     DEMANDEURS.CONCAT_DEMANDEUR AS INFOS_DEMANDEURS,
                                     IF(PARCELS.CONCAT_PARCELS = '1|.|0000/00#000', '', PARCELS.CONCAT_PARCELS) AS INFOS_PARCELLES,
+                                    PE3_DECISION.date_autorisation_college AS AUTORISATION_DATE_AUTORISATION_COLLEGE,
+                                    PE3_DECISION.date_refus_college AS AUTORISATION_DATE_REFUS_COLLEGE,                                           
+                                    PE3_DECISION.date_autorisation_tutelle AS AUTORISATION_DATE_AUTORISATION_TUTELLE,
+                                    PE3_DECISION.date_refus_tutelle AS AUTORISATION_DATE_REFUS_TUTELLE,
                                     RUBRICS.CONCAT_RUBRICS_CODE AS INFOS_RUBRIQUES,
                                     PERMIS_DOCUMENTS.DOCUMENTS AS INFOS_DOCUMENTS
                                     FROM p_permis AS PERMIS
@@ -351,6 +355,7 @@ def create_views(import_urbaweb):
                                     PE_DECISION.date_autorisation_college AS DATE_AUTORISATION_COLLEGE,
                                     PE_DECISION.date_autorisation_tutelle AS DATE_AUTORISATION_TUTELLE,
                                     PE_DECISION.date_refus_college AS DATE_REFUS_COLLEGE,
+                                    PE_DECISION.date_refus_tutelle AS DATE_REFUS_TUTELLE,
                                     RUBRICS.CONCAT_RUBRICS_CODE AS INFOS_RUBRIQUES,
                                     PERMIS_DOCUMENTS.DOCUMENTS AS INFOS_DOCUMENTS
                                     FROM p_permis AS PERMIS
@@ -390,6 +395,7 @@ def create_views(import_urbaweb):
                                     PE_DECISION.date_autorisation_college AS DATE_AUTORISATION_COLLEGE,
                                     PE_DECISION.date_autorisation_tutelle AS DATE_AUTORISATION_TUTELLE,
                                     PE_DECISION.date_refus_college AS DATE_REFUS_COLLEGE,
+                                    PE_DECISION.date_refus_tutelle AS DATE_REFUS_TUTELLE,
                                     RUBRICS.CONCAT_RUBRICS_CODE AS INFOS_RUBRIQUES,
                                     PERMIS_DOCUMENTS.DOCUMENTS AS INFOS_DOCUMENTS
                                     FROM p_permis AS PERMIS
