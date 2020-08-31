@@ -604,6 +604,16 @@ class ImportUrbaweb(BaseImport):
                     event_dict['eventDate'] = drc
                 else:
                     event_dict['eventDate'] = dac
+        elif licence_dict['portalType'] in ('Division', 'NotaryLetter'):
+            # get decision date with 2 'colleges' dates licencetype
+            drc = licence.AUTORISATION_DATE_REFUS_COLLEGE
+            dac = licence.AUTORISATION_DATE_AUTORISATION_COLLEGE
+            if drc and dac:
+                event_dict['eventDate'] = drc if drc > dac else dac
+            elif drc:
+                event_dict['eventDate'] = drc
+            else:
+                event_dict['eventDate'] = dac
 
         if event_dict['eventDate']:
             event_dict['decisionDate'] = event_dict['eventDate']
