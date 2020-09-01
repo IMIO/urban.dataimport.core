@@ -306,6 +306,10 @@ def create_views(import_urbaweb):
                                            PERMIS.remarque_resume AS REMARQUES,
                                            DEMANDEURS.CONCAT_DEMANDEUR  AS INFOS_DEMANDEURS,
                                            IF(PARCELS.CONCAT_PARCELS = '1|.|0000/00#000', '', PARCELS.CONCAT_PARCELS) AS INFOS_PARCELLES,
+                                           AUTORISATION.date_autorisation_college AS AUTORISATION_DATE_AUTORISATION_COLLEGE,
+                                           AUTORISATION.date_refus_college AS AUTORISATION_DATE_REFUS_COLLEGE,                                           
+                                           AUTORISATION.date_autorisation_tutelle AS AUTORISATION_DATE_AUTORISATION_TUTELLE,
+                                           AUTORISATION.date_refus_tutelle AS AUTORISATION_DATE_REFUS_TUTELLE,
                                            PERMIS_DOCUMENTS.DOCUMENTS AS INFOS_DOCUMENTS,
                                            ORG.civilite_fk AS ORG_TITLE_ID,
                                            ORG.nom AS ORG_NOM,
@@ -324,6 +328,7 @@ def create_views(import_urbaweb):
                                     LEFT JOIN c_localite AS LOCALITE ON PERMIS.localite_fk = LOCALITE.id
                                     LEFT JOIN c_nature AS NATURE ON PERMIS.nature_fk = NATURE.id
                                     LEFT JOIN p_permis_autre_dossier AS PAD ON PAD.id = PERMIS.id
+                                    LEFT JOIN p_autorisation AS AUTORISATION ON PAD.autorisation_fk = AUTORISATION.id
                                     LEFT JOIN c_organisme AS ORG ON PAD.organisme_fk = ORG.id
                                     LEFT JOIN get_document_infos AS PERMIS_DOCUMENTS ON PERMIS_DOCUMENTS.ID_PERMIS = PERMIS.id
                                     WHERE PERMIS.type_permis_fk = 11 OR PERMIS.type_permis_fk = 7 OR PERMIS.type_permis_fk = 18 OR PERMIS.type_permis_fk = 19 OR PERMIS.type_permis_fk = 21;
