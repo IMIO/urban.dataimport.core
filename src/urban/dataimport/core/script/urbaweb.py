@@ -613,7 +613,7 @@ class ImportUrbaweb(BaseImport):
                     event_dict['eventDate'] = drc
                 else:
                     event_dict['eventDate'] = dac
-        elif licence_dict['portalType'] in ('Division', 'NotaryLetter'):
+        elif licence_dict['portalType'] in ('Division', 'NotaryLetter', 'UrbanCertificateOne'):
             # get decision date with 2 'colleges' dates licencetype
             drc = licence.AUTORISATION_DATE_REFUS_COLLEGE
             dac = licence.AUTORISATION_DATE_AUTORISATION_COLLEGE
