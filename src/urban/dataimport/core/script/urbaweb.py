@@ -582,7 +582,16 @@ class ImportUrbaweb(BaseImport):
         # END CUSTOM
 
         #  get decision date with four dates licencetype system (college/tutelle)
-        if licence_dict['portalType'] in ('BuildLicence', 'ParcelOutLicence', 'UniqueLicence', 'EnvClassOne', 'EnvClassTwo', 'EnvClassThree', 'MiscDemand'):
+        if licence_dict['portalType'] in (
+                'BuildLicence',
+                'ParcelOutLicence',
+                'UniqueLicence',
+                'EnvClassOne',
+                'EnvClassTwo',
+                'EnvClassThree',
+                'Article127',
+                'MiscDemand'
+        ):
             drt = licence.AUTORISATION_DATE_REFUS_TUTELLE
             dat = licence.AUTORISATION_DATE_AUTORISATION_TUTELLE
             drc = licence.AUTORISATION_DATE_REFUS_COLLEGE
