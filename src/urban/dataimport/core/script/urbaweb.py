@@ -297,6 +297,7 @@ class ImportUrbaweb(BaseImport):
                 applicant_dict['name2'] = applicant[2]
                 applicant_dict['number'] = applicant[3]
                 applicant_dict['street'] = applicant[4]
+                applicant_dict['zipcode'] = applicant[9]
                 applicant_dict['city'] = applicant[5]
                 applicant_dict['phone'] = applicant[6]
                 applicant_dict['gsm'] = applicant[7]

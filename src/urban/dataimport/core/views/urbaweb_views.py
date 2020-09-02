@@ -265,7 +265,18 @@ def create_views(import_urbaweb):
                                     TRAVAUX.date_debut AS DEBUT_TRAVAUX,
                                     TRAVAUX.date_fin AS FIN_TRAVAUX,
                                     RUBRICS.CONCAT_RUBRICS_CODE AS INFOS_RUBRIQUES,
-                                    PERMIS_DOCUMENTS.DOCUMENTS AS INFOS_DOCUMENTS
+                                    PERMIS_DOCUMENTS.DOCUMENTS AS INFOS_DOCUMENTS,
+                                    ORG.civilite_fk AS ORG_TITLE_ID,
+                                    ORG.nom AS ORG_NOM,
+                                    ORG.prenom AS ORG_PRENOM,
+                                    ORG.rue AS ORG_RUE,
+                                    ORG.numero AS ORG_NUMERO,
+                                    ORG.code_postal AS ORG_CP,
+                                    ORG.localite AS ORG_LOCALITE,
+                                    ORG.telephone AS ORG_TEL,
+                                    ORG.gsm AS ORG_MOBILE,
+                                    ORG.mail AS ORG_MAIL,
+                                    ORG.type_list AS ORG_TYPE
                                     FROM p_permis AS PERMIS
                                     LEFT JOIN get_demandeurs AS DEMANDEURS ON DEMANDEURS.ID_PERMIS = PERMIS.id
                                     LEFT JOIN get_parcelles AS PARCELS ON PARCELS.ID_PERMIS = PERMIS.id
@@ -273,6 +284,7 @@ def create_views(import_urbaweb):
                                     LEFT JOIN c_nature AS NATURE ON PERMIS.nature_fk = NATURE.id
                                     LEFT JOIN p_permis_unique AS PUN ON PUN.id = PERMIS.id
                                     LEFT JOIN p_decision_unique AS PUN_DECISION ON PUN.decision_unique_fk = PUN_DECISION.id
+                                    LEFT JOIN c_organisme AS ORG ON PUN.organisme_fk = ORG.id
                                     LEFT JOIN get_rubrics_unique AS RUBRICS ON RUBRICS.ID_PERMIS = PERMIS.id
                                     LEFT JOIN get_document_infos AS PERMIS_DOCUMENTS ON PERMIS_DOCUMENTS.ID_PERMIS = PERMIS.id
                                     LEFT JOIN p_travaux AS TRAVAUX ON TRAVAUX.id = PUN.travaux_fk
@@ -930,7 +942,10 @@ def create_concat_views(import_urbaweb):
                                         `gsm`,
                                         '|',
                                         `demandeur`.
-                                        `mail`), '#', '')
+                                        `mail`,
+                                        '|',
+                                        `demandeur`.
+                                        `code_postal`), '#', '')
                                         SEPARATOR
                                         '#') AS
                                         `CONCAT_DEMANDEUR`
