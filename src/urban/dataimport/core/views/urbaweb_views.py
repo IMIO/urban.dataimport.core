@@ -657,7 +657,6 @@ def create_views(import_urbaweb):
                                            PERMIS.numero_permis_delivre AS REFERENCE,
                                            PERMIS.reference_urbanisme AS REFERENCE_URB,
                                            PERMIS.statut_permis AS STATUT,
-
                                            PERMIS.parcelle_hors_commune AS PHC,
                                            PERMIS.info_rue_d AS LOCALITE_RUE,
                                            PERMIS.numero AS LOCALITE_NUM,
@@ -671,6 +670,8 @@ def create_views(import_urbaweb):
                                            PERMIS.remarque_resume AS REMARQUES,
                                            DEMANDEURS.CONCAT_DEMANDEUR  AS INFOS_DEMANDEURS,
                                            IF(PARCELS.CONCAT_PARCELS = '1|.|0000/00#000', '', PARCELS.CONCAT_PARCELS) AS INFOS_PARCELLES,
+                                           AUTORISATION_CU.date_autorisation_college AS AUTORISATION_DATE_AUTORISATION_COLLEGE,
+                                           AUTORISATION_CU.date_refus_college AS AUTORISATION_DATE_REFUS_COLLEGE,
                                            PERMIS_DOCUMENTS.DOCUMENTS AS INFOS_DOCUMENTS,
                                            ORG.civilite_fk AS ORG_TITLE_ID,
                                            ORG.nom AS ORG_NOM,
@@ -689,6 +690,7 @@ def create_views(import_urbaweb):
                                     LEFT JOIN c_localite AS LOCALITE ON PERMIS.localite_fk = LOCALITE.id
                                     LEFT JOIN c_nature AS NATURE ON PERMIS.nature_fk = NATURE.id
                                     LEFT JOIN p_permis_certificat_urbanisme2 AS CU2 ON CU2.id = PERMIS.id
+                                    LEFT JOIN p_autorisation_cu AS AUTORISATION_CU ON AUTORISATION_CU.id = CU2.autorisation_cu_fk
                                     LEFT JOIN c_organisme AS ORG ON CU2.organisme_fk = ORG.id
                                     LEFT JOIN get_document_infos AS PERMIS_DOCUMENTS ON PERMIS_DOCUMENTS.ID_PERMIS = PERMIS.id
                                     WHERE PERMIS.type_permis_fk = 4;
