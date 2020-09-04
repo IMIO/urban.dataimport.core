@@ -179,7 +179,11 @@ class ImportUrbaweb(BaseImport):
         if portal_type == 'NotaryLetter' and licence.TYPE_DOSSIER == '1':
             portal_type = 'Division'
         if portal_type == 'MiscDemand':
-            if licence.type_permis_fk == 11:
+            # CUSTOM Soignies
+            if licence.id in (23264, 23347, 23425, 23426, 23525, 24307):
+                portal_type = 'IntegratedLicence'
+            # END CUSTOM
+            elif licence.type_permis_fk == 11:
                 self.licence_description.append({'Demandes Diverses': "Autre Dossier"})
             elif licence.type_permis_fk == 7:
                 self.licence_description.append({'Demandes Diverses': "Déclaration Impétrants"})
