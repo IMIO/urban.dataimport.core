@@ -80,7 +80,7 @@ main_licence_decision_event_id_mapping = {
     'UniqueLicence': 'delivrance-du-permis-octroi-ou-refus',
     'EnvClassThree': 'passage-college',
     'MiscDemand': 'deliberation-college',
-    'IntegratedLicence': 'deliberation-college',
+    'IntegratedLicence': 'delivrance-du-permis-octroi-ou-refus',
     'CODT_CommercialLicence': 'decision',
     'CODT_BuildLicence': 'delivrance-du-permis-octroi-ou-refus-codt',
     'CODT_UrbanCertificateTwo': 'delivrance-du-permis-octroi-ou-refus-codt',

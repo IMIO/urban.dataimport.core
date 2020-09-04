@@ -595,6 +595,7 @@ class ImportUrbaweb(BaseImport):
                 'EnvClassTwo',
                 'EnvClassThree',
                 'Article127',
+                'IntegratedLicence',
                 'MiscDemand'
         ):
             drt = licence.AUTORISATION_DATE_REFUS_TUTELLE
