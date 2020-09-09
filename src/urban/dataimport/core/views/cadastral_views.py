@@ -62,6 +62,14 @@ def create_cadastral_views(import_object):
                                         FROM parcels;
                                         """
                                         )
+    import_object.cadastral.create_view("cadastre_parcelles_old_vue",
+                                        """
+                                        SELECT
+                                            divcad AS division, section, primarynumber AS radical,
+                                            bisnumber AS bis, exponentletter AS exposant, exponentnumber AS puissance
+                                        FROM old_parcels;
+                                        """
+                                        )
     # import_object.cadastral.cadastre_parcelles_vue.set_index([
     #     'division',
     #     'section',

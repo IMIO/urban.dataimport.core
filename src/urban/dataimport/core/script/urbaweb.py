@@ -372,15 +372,49 @@ class ImportUrbaweb(BaseImport):
                                         self.licence_description.append({'objet': "Trop de résultats pour cette parcelle",
                                                                          'parcelle': parcels_dict['complete_name'],
                                                                          })
+                                    elif result_count == 0:
+                                        try:
+                                            parcelles_old_cadastrales = self.cadastral.cadastre_parcelles_old_vue
+                                            cadastral_parcels_old = parcelles_old_cadastrales[
+                                                (parcelles_old_cadastrales.division == int(division)) &
+                                                (parcelles_old_cadastrales.section == section) &
+                                                (parcelles_old_cadastrales.radical == int(radical)) &
+                                                ((parcelles_old_cadastrales.bis.isnull()) if not int(bis)
+                                                 else parcelles_old_cadastrales.bis == int(bis)) &
+                                                ((parcelles_old_cadastrales.exposant.isnull()) if not exposant
+                                                 else parcelles_old_cadastrales.exposant == exposant) &
+                                                ((parcelles_old_cadastrales.puissance.isnull()) if not int(puissance)
+                                                 else parcelles_old_cadastrales.puissance == puissance)
+                                                ]
+                                        except Exception as e:
+                                            print(e)
+
+                                        result_count_old = cadastral_parcels_old.shape[0]
+                                        # Looking for old parcels
+                                        if result_count_old == 1:
+                                            parcels_dict['outdated'] = 'True'
+                                            parcels_dict['is_official'] = 'True'
+                                            parcels_dict['division'] = str(cadastral_parcels_old.iloc[0]['division'])
+                                            parcels_dict['section'] = cadastral_parcels_old.iloc[0]['section']
+                                            parcels_dict['radical'] = str(int(cadastral_parcels_old.iloc[0]['radical']))
+                                            parcels_dict['bis'] = str(cadastral_parcels_old.iloc[0]['bis']) if cadastral_parcels_old.iloc[0]['bis'] else ""
+                                            parcels_dict['exposant'] = cadastral_parcels_old.iloc[0]['exposant']
+                                            parcels_dict['puissance'] = str(cadastral_parcels_old.iloc[0]['puissance']) if cadastral_parcels_old.iloc[0]['puissance'] else ""
+                                        elif result_count_old > 1:
+                                            self.parcel_errors.append(ErrorToCsv("parcels_errors",
+                                                                                 "Trop de résultats pour cette ancienne parcelle",
+                                                                                 licence.REFERENCE,
+                                                                                 parcels_dict['complete_name']))
+                                            self.licence_description.append(
+                                                {'objet': "Trop de résultats pour cette ancienne parcelle",
+                                                 'parcelle': parcels_dict['complete_name'],
+                                                 })
+                                        if result_count_old == 0:
+                                            self.licence_description.append(
+                                                {'objet': "Pas de résultat pour cette parcelle",
+                                                 'parcelle': parcels_dict['complete_name'],
+                                                 })
                                     else:
-                                        parcels_dict['outdated'] = 'False'
-                                        parcels_dict['is_official'] = 'False'
-                                        parcels_dict['division'] = str(int(division))
-                                        parcels_dict['section'] = section
-                                        parcels_dict['radical'] = str(int(radical))
-                                        parcels_dict['bis'] = str(int(bis))
-                                        parcels_dict['exposant'] = exposant
-                                        parcels_dict['puissance'] = str(int(puissance))
                                         self.licence_description.append({'objet': "Pas de résultat pour cette parcelle",
                                                                          'parcelle': parcels_dict['complete_name'],
                                                                          })
