@@ -31,9 +31,10 @@ from urban.dataimport.core.views.urbaweb_views import create_views, create_conca
 
 class ImportUrbaweb(BaseImport):
 
-    def __init__(self, config_file, view, limit=None, range=None, licence_id=None, id=None, ignore_cache=False, pg_ignore_cache=False, benchmarking=False, noop=False, iterate=False):
+    def __init__(self, config_file, view, views, limit=None, range=None, licence_id=None, id=None, ignore_cache=False, pg_ignore_cache=False, benchmarking=False, noop=False, iterate=False):
         print("INITIALIZING")
         self.view = view
+        self.views = views
         self.limit = limit
         self.range = range
         self.licence_id = licence_id
@@ -98,26 +99,31 @@ class ImportUrbaweb(BaseImport):
 
     @StateManager
     def extract_data(self):
-        folders = getattr(self.db, self.view)
-        if self.range:
-            folders = folders[int(self.range.split(':')[0]):int(self.range.split(':')[1])]
-        if self.limit:
-            folders = folders.head(self.limit)
-        if self.licence_id:
-            folders = folders[folders.REFERENCE == self.licence_id]
-        if self.id:
-            folders = folders[folders.id == int(self.id)]
-        bar = FillingSquaresBar('Processing licences', max=folders.shape[0])
-        for id, licence in folders.iterrows():
-            self.get_licence(id, licence)
-            bar.next()
-        bar.finish()
-        export_error_csv([self.parcel_errors, self.street_errors])
-        if self.iterate is True:
-            try:
-                self.validate_data(self.data, 'GenericLicence')
-            except Exception:
-                raise IterationError('Schema change during iterative process')
+        if not self.views:
+            extract_data_views = [self.view]
+        else:
+            extract_data_views = self.views
+        for extract_data_view in extract_data_views:
+            folders = getattr(self.db, extract_data_view)
+            if self.range:
+                folders = folders[int(self.range.split(':')[0]):int(self.range.split(':')[1])]
+            if self.limit:
+                folders = folders.head(self.limit)
+            if self.licence_id:
+                folders = folders[folders.REFERENCE == self.licence_id]
+            if self.id:
+                folders = folders[folders.id == int(self.id)]
+            bar = FillingSquaresBar('Processing licences for {}'.format(str(extract_data_view)), max=folders.shape[0])
+            for id, licence in folders.iterrows():
+                self.get_licence(id, licence)
+                bar.next()
+            bar.finish()
+            export_error_csv([self.parcel_errors, self.street_errors])
+            if self.iterate is True:
+                try:
+                    self.validate_data(self.data, 'GenericLicence')
+                except Exception:
+                    raise IterationError('Schema change during iterative process')
 
     @StateHandler('data', 'urbaweb_get_licence')
     def get_licence(self, id, licence):
@@ -737,6 +743,7 @@ def main():
     parser.add_argument('config_file', type=str, help='path to the config')
     parser.add_argument('--limit', type=int, help='number of records')
     parser.add_argument('--view', type=str, default='permis_urbanisme_vue', help='give licence view to call')
+    parser.add_argument('--views', nargs='+', default=[], help='give licence views list to call')
     parser.add_argument('--licence_id', type=str, help='reference of a licence')
     parser.add_argument('--id', type=str, help='db id of a licence')
     parser.add_argument('--range', type=str, help="input slice, example : '5:10'")
@@ -755,6 +762,7 @@ def main():
     ImportUrbaweb(
         args.config_file,
         view=args.view,
+        views=args.views,
         limit=args.limit,
         range=args.range,
         licence_id=args.licence_id,
