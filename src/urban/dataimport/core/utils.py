@@ -129,7 +129,7 @@ def export_error_csv(errors):
 
 
 def get_file_data_from_suffix_path(root_documents_path, suffix_path):
-    file_path = os.path.dirname("{}{}".format(root_documents_path, suffix_path))
+    file_path = os.path.dirname("{}/{}".format(root_documents_path, suffix_path))
     file_suffix = ntpath.basename(suffix_path)
     byte_content = ''
     for match_file in glob.glob(os.path.join(file_path, "{}{}".format(file_suffix, ".*"))):
@@ -142,7 +142,7 @@ def get_file_data_from_suffix_path(root_documents_path, suffix_path):
 
 
 def get_filename_from_suffix_path(root_documents_path, suffix_path):
-    file_path = os.path.dirname("{}{}".format(root_documents_path, suffix_path))
+    file_path = os.path.dirname("{}/{}".format(root_documents_path, suffix_path))
     file_suffix = ntpath.basename(suffix_path)
     for match_file in glob.glob(os.path.join(file_path, "{}{}".format(file_suffix, ".*"))):
         return ntpath.basename(match_file)

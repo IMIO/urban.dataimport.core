@@ -61,38 +61,22 @@ view_endpoint_mapping = {
 #     '06': 25078
 # }
 division_mapping = {
-    '01': 55040,
-    '02': 55402,
-    '03': 55028,
-    '04': 55044,
-    '05': 55006,
-    '06': 53058,
-    '07': 53017,
-    '08': 55018
+    '08': 25090,
+    '09': 25007,
+    '10': 25088,
+    '11': 25394
 }
 
 # title ids, to update for specific locality, by default b.l'a
 title_types = {
-    8: 'mister',
-    49: 'mister',
-    54: 'mister',
-    7: 'misters',
-    45: 'misters',
-    46: 'misters',
-    1: 'madam',
-    30: 'madam',
-    5: 'ladies',
-    41: 'ladies',
-    44: 'ladies',
-    38: 'madam',
-    9: 'madam_and_mister',
-    27: 'madam_and_mister',
-    50: 'madam_and_mister',
-    3: 'master',
-    39: 'master',
-    52: 'master',
-    40: 'masters',
-    4: 'masters',
+    1: 'mister',
+    2: 'madam',
+    3: 'madam_and_mister',
+    4: 'madam',
+    5: '',
+    6: '',
+    7: '',
+    9: '',
 }
 
 licence_status_mapping = {

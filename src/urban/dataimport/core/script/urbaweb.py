@@ -178,18 +178,18 @@ class ImportUrbaweb(BaseImport):
     @benchmark_decorator
     def get_portal_type(self, licence):
         portal_type = portal_type_mapping.get(licence.type_permis_fk, None)
-        if portal_type == 'BuildLicence' and licence.DIRECTIVE_AUTORITE_COMPETENTE in ('1', '2'):
-            portal_type = 'Article127'
+        # if portal_type == 'BuildLicence' and licence.DIRECTIVE_AUTORITE_COMPETENTE in ('1', '2'):
+        #     portal_type = 'Article127'
         if portal_type == 'EnvClassOne' and licence.CLASSE == 2:
             portal_type = 'EnvClassTwo'
         if portal_type == 'NotaryLetter' and licence.TYPE_DOSSIER == '1':
             portal_type = 'Division'
         if portal_type == 'MiscDemand':
             # CUSTOM Soignies
-            if licence.id in (23264, 23347, 23425, 23426, 23525, 24307):
-                portal_type = 'IntegratedLicence'
+            # if licence.id in (23264, 23347, 23425, 23426, 23525, 24307):
+            #     portal_type = 'IntegratedLicence'
             # END CUSTOM
-            elif licence.type_permis_fk == 11:
+            if licence.type_permis_fk == 11:
                 self.licence_description.append({'Demandes Diverses': "Autre Dossier"})
             elif licence.type_permis_fk == 7:
                 self.licence_description.append({'Demandes Diverses': "Déclaration Impétrants"})
@@ -714,7 +714,7 @@ class ImportUrbaweb(BaseImport):
             try:
                 document_dict = get_attachment_dict()
                 document_split = document.split("|")
-                if document_split[2]:
+                if document_split[0]:
                     if document_split[0] in title_check:
                         continue
                     else:
@@ -723,11 +723,11 @@ class ImportUrbaweb(BaseImport):
                         document_dict["description"] = document_split[1]
                         document_dict["file"]["filename"] = get_filename_from_suffix_path(
                             self.config['main']['documents_path'],
-                            document_split[2]
+                            document_split[0]
                         )
                         document_dict["file"]["data"] = get_file_data_from_suffix_path(
                             self.config['main']['documents_path'],
-                            document_split[2]
+                            document_split[0]
                         )
                         if document_dict["file"]["filename"] and document_dict["file"]["filename"] != "":
                             licence_children.append(document_dict)
