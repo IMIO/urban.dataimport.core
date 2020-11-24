@@ -110,7 +110,7 @@ class ImportUrbaweb(BaseImport):
             if self.limit:
                 folders = folders.head(self.limit)
             if self.licence_id:
-                folders = folders[folders.REFERENCE == self.licence_id]
+                folders = folders[folders.REFERENCE_TECH == self.licence_id]
             if self.id:
                 folders = folders[folders.id == int(self.id)]
             bar = FillingSquaresBar('Processing licences for {}'.format(str(extract_data_view)), max=folders.shape[0])
@@ -133,14 +133,7 @@ class ImportUrbaweb(BaseImport):
         if not licence_dict['portalType']:
             return
         licence_dict["@type"] = licence_dict["portalType"]
-        if licence.REFERENCE_TECH == 0 and licence.REFERENCE:
-            ref = licence.REFERENCE
-        elif licence.REFERENCE_TECH and licence.REFERENCE_TECH != 0:
-            ref = licence.REFERENCE_TECH
-        else:
-            ref = 'inconnue'
-
-        licence_dict['reference'] = "{}/{}".format(licence.id, ref)
+        licence_dict['reference'] = licence.REFERENCE_TECH
         # licence_dict['Title'] = "{} {}".format(licence_dict['reference'], licence.NATURE_TITRE)
         licence_dict['licenceSubject'] = licence.NATURE_TITRE
         licence_dict['usage'] = 'not_applicable'
@@ -217,20 +210,20 @@ class ImportUrbaweb(BaseImport):
             urbaweb_street = re.sub(r' St ', ' Saint-', urbaweb_street).strip()
             urbaweb_street = re.sub(r' Ste ', ' Sainte-', urbaweb_street).strip()
 
-            # TODO custom SOIG : to remove
-            urbaweb_street = re.sub(r'Chemin Biamont', 'Chemin de Biamont', urbaweb_street).strip()
-            if licence.LOCALITE_LABEL in 'Neufvilles':
-                urbaweb_street = re.sub(r'Rue Reine De Hongrie', 'Rue Reine de Hongrie', urbaweb_street).strip()
-            elif licence.LOCALITE_LABEL in 'Casteau(Soignies)':
-                urbaweb_street = re.sub(r'Rue Reine De Hongrie', 'Rue Reine  de Hongrie', urbaweb_street).strip()
-            elif licence.LOCALITE_LABEL in 'Thieusies':
-                urbaweb_street = re.sub(r'Rue Reine De Hongrie', 'Rue  Reine de Hongrie', urbaweb_street).strip()
-            urbaweb_street = re.sub(r"Place d' Horrues", "Place d'Horrues", urbaweb_street).strip()
-            urbaweb_street = re.sub(r"Square de Savoye", "Square Eugène de Savoye", urbaweb_street).strip()
-            urbaweb_street = re.sub(r"Rue de l' Agace", "Rue de l'Agace", urbaweb_street).strip()
-            urbaweb_street = re.sub(r"Rue Mouligneau", "Rue du Mouligneau", urbaweb_street).strip()
-            urbaweb_street = re.sub(r"boul. John Fitzgerald Kennedy", "Boulevard J.F.Kennedy", urbaweb_street).strip()
-            urbaweb_street = re.sub(r"Chemin de Williaupont", "Chemin de Willaupont", urbaweb_street).strip()
+            # # TODO custom SOIG : to remove
+            # urbaweb_street = re.sub(r'Chemin Biamont', 'Chemin de Biamont', urbaweb_street).strip()
+            # if licence.LOCALITE_LABEL in 'Neufvilles':
+            #     urbaweb_street = re.sub(r'Rue Reine De Hongrie', 'Rue Reine de Hongrie', urbaweb_street).strip()
+            # elif licence.LOCALITE_LABEL in 'Casteau(Soignies)':
+            #     urbaweb_street = re.sub(r'Rue Reine De Hongrie', 'Rue Reine  de Hongrie', urbaweb_street).strip()
+            # elif licence.LOCALITE_LABEL in 'Thieusies':
+            #     urbaweb_street = re.sub(r'Rue Reine De Hongrie', 'Rue  Reine de Hongrie', urbaweb_street).strip()
+            # urbaweb_street = re.sub(r"Place d' Horrues", "Place d'Horrues", urbaweb_street).strip()
+            # urbaweb_street = re.sub(r"Square de Savoye", "Square Eugène de Savoye", urbaweb_street).strip()
+            # urbaweb_street = re.sub(r"Rue de l' Agace", "Rue de l'Agace", urbaweb_street).strip()
+            # urbaweb_street = re.sub(r"Rue Mouligneau", "Rue du Mouligneau", urbaweb_street).strip()
+            # urbaweb_street = re.sub(r"boul. John Fitzgerald Kennedy", "Boulevard J.F.Kennedy", urbaweb_street).strip()
+            # urbaweb_street = re.sub(r"Chemin de Williaupont", "Chemin de Willaupont", urbaweb_street).strip()
 
             # End custom code
 
@@ -617,6 +610,10 @@ class ImportUrbaweb(BaseImport):
             import ipdb; ipdb.set_trace() # TODO REMOVE BREAKPOINT
             print("unknown status")
 
+        # CUSTOM
+        if licence_dict['wf_state'] == 'refuse':
+            licence_dict['reference'] = "R/{}".format(licence_dict['reference'])
+        # END CUSTOM
         # CUSTOM encoding error for example drt, dat, drc, dac
         # custom SOIG
         # if licence_dict['portalType'] == "Declaration":
@@ -669,6 +666,11 @@ class ImportUrbaweb(BaseImport):
                 event_dict['eventDate'] = drc
             else:
                 event_dict['eventDate'] = dac
+        elif licence_dict['portalType'] in ('Declaration'):
+            if licence.RECEVABILITE_DATE_AUTORISATION_COLLEGE:
+                event_dict['eventDate'] = licence.RECEVABILITE_DATE_AUTORISATION_COLLEGE
+            elif licence.RECEVABILITE_DATE_IRRECEVABLE:
+                event_dict['eventDate'] = licence.RECEVABILITE_DATE_IRRECEVABLE
 
         if event_dict['eventDate']:
             event_dict['decisionDate'] = event_dict['eventDate']
