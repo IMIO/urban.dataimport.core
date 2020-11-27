@@ -210,21 +210,20 @@ class ImportUrbaweb(BaseImport):
             urbaweb_street = re.sub(r' St ', ' Saint-', urbaweb_street).strip()
             urbaweb_street = re.sub(r' Ste ', ' Sainte-', urbaweb_street).strip()
 
-            # # TODO custom SOIG : to remove
-            # urbaweb_street = re.sub(r'Chemin Biamont', 'Chemin de Biamont', urbaweb_street).strip()
-            # if licence.LOCALITE_LABEL in 'Neufvilles':
-            #     urbaweb_street = re.sub(r'Rue Reine De Hongrie', 'Rue Reine de Hongrie', urbaweb_street).strip()
-            # elif licence.LOCALITE_LABEL in 'Casteau(Soignies)':
-            #     urbaweb_street = re.sub(r'Rue Reine De Hongrie', 'Rue Reine  de Hongrie', urbaweb_street).strip()
-            # elif licence.LOCALITE_LABEL in 'Thieusies':
-            #     urbaweb_street = re.sub(r'Rue Reine De Hongrie', 'Rue  Reine de Hongrie', urbaweb_street).strip()
-            # urbaweb_street = re.sub(r"Place d' Horrues", "Place d'Horrues", urbaweb_street).strip()
-            # urbaweb_street = re.sub(r"Square de Savoye", "Square Eugène de Savoye", urbaweb_street).strip()
-            # urbaweb_street = re.sub(r"Rue de l' Agace", "Rue de l'Agace", urbaweb_street).strip()
-            # urbaweb_street = re.sub(r"Rue Mouligneau", "Rue du Mouligneau", urbaweb_street).strip()
-            # urbaweb_street = re.sub(r"boul. John Fitzgerald Kennedy", "Boulevard J.F.Kennedy", urbaweb_street).strip()
-            # urbaweb_street = re.sub(r"Chemin de Williaupont", "Chemin de Willaupont", urbaweb_street).strip()
-
+            # # TODO custom REB. : to remove
+            urbaweb_street = re.sub(r'Maïeur', 'Maieur', urbaweb_street).strip()
+            urbaweb_street = re.sub(r'Basse Franchise', 'Basse-Franchise', urbaweb_street).strip()
+            urbaweb_street = re.sub(r'Chemin Caufou', 'Chemin du Caufou', urbaweb_street).strip()
+            urbaweb_street = re.sub(r'Grand Place', 'Grand-Place', urbaweb_street).strip()
+            urbaweb_street = re.sub(r'Petit-Bruxelles', 'Petit Bruxelles', urbaweb_street).strip()
+            urbaweb_street = re.sub(r'Sainte-Renelde', 'Sainte Renelde', urbaweb_street).strip()
+            urbaweb_street = re.sub(r'Maréchal-Ferrant', 'Maréchal Ferrant', urbaweb_street).strip()
+            # if LOCALITE_NUM is empty, this number is maybe in street second part
+            if not licence.LOCALITE_NUM and ',' in urbaweb_street:
+                street_num = urbaweb_street.split(',')[1].replace(" - 0","")
+                if any(char.isdigit() for char in street_num):
+                    licence.LOCALITE_NUM = street_num.strip()
+            urbaweb_street = re.sub(r',.*', '', urbaweb_street).strip()
             # End custom code
 
             df_ba_vue = self.bestaddress.bestaddress_vue
@@ -246,7 +245,7 @@ class ImportUrbaweb(BaseImport):
                     if bestaddress_streets.shape[0] == 0:
                         self.street_errors.append(ErrorToCsv("street_errors",
                                                              "Pas de résultat pour cette rue",
-                                                             licence.REFERENCE,
+                                                             licence.REFERENCE_TECH,
                                                              "rue : {} n°: {} cp: {} localité: {}"
                                                              .format(licence.LOCALITE_RUE,
                                                                      licence.LOCALITE_NUM,
@@ -271,7 +270,7 @@ class ImportUrbaweb(BaseImport):
             elif result_count > 1:
                 self.street_errors.append(ErrorToCsv("street_errors",
                                                      "Plus d'un seul résultat pour cette rue",
-                                                     licence.REFERENCE,
+                                                     licence.REFERENCE_TECH,
                                                      "rue : {} n°: {} cp: {} localité: {}"
                                                      .format(licence.LOCALITE_RUE,
                                                              licence.LOCALITE_NUM,
@@ -323,7 +322,6 @@ class ImportUrbaweb(BaseImport):
                     division_num = parcels_args[0]
                     section = parcels_args[1]
                     radical_bis_exp_puissance = parcels_args[2]
-
                     # re.match('^[A-Z]?$' single uppercase standard character
                     if division_num and section and radical_bis_exp_puissance and re.match('^[A-Z]?$', section.upper().replace(' ', '')):
                         # capakey without division and section is 11 character long.
@@ -366,7 +364,7 @@ class ImportUrbaweb(BaseImport):
                                     elif result_count > 1:
                                         self.parcel_errors.append(ErrorToCsv("parcels_errors",
                                                                              "Trop de résultats pour cette parcelle",
-                                                                             licence.REFERENCE,
+                                                                             licence.REFERENCE_TECH,
                                                                              parcels_dict['complete_name']))
                                         self.licence_description.append({'objet': "Trop de résultats pour cette parcelle",
                                                                          'parcelle': parcels_dict['complete_name'],
@@ -402,7 +400,7 @@ class ImportUrbaweb(BaseImport):
                                         elif result_count_old > 1:
                                             self.parcel_errors.append(ErrorToCsv("parcels_errors",
                                                                                  "Trop de résultats pour cette ancienne parcelle",
-                                                                                 licence.REFERENCE,
+                                                                                 licence.REFERENCE_TECH,
                                                                                  parcels_dict['complete_name']))
                                             self.licence_description.append(
                                                 {'objet': "Trop de résultats pour cette ancienne parcelle",
@@ -420,7 +418,7 @@ class ImportUrbaweb(BaseImport):
                                 else:
                                     self.parcel_errors.append(ErrorToCsv("parcels_errors",
                                                                          "Parcelle incomplète ou non valide",
-                                                                         licence.REFERENCE,
+                                                                         licence.REFERENCE_TECH,
                                                                          parcels_dict['complete_name']))
                                     self.licence_description.append({'objet': "Parcelle incomplète ou non valide",
                                                                      'parcelle': parcels_dict['complete_name'],
@@ -428,7 +426,7 @@ class ImportUrbaweb(BaseImport):
                             else:
                                 self.parcel_errors.append(ErrorToCsv("parcels_errors",
                                                                      "Parcelle incomplète ou non valide",
-                                                                     licence.REFERENCE,
+                                                                     licence.REFERENCE_TECH,
                                                                      parcels_dict['complete_name']))
                                 self.licence_description.append({'objet': "Parcelle incomplète ou non valide",
                                                                  'parcelle': parcels_dict['complete_name'],
@@ -436,7 +434,7 @@ class ImportUrbaweb(BaseImport):
                         else:
                             self.parcel_errors.append(ErrorToCsv("parcels_errors",
                                                                  "Parcelle incomplète ou non valide",
-                                                                 licence.REFERENCE,
+                                                                 licence.REFERENCE_TECH,
                                                                  parcels_dict['complete_name']))
                             self.licence_description.append({'objet': "Parcelle incomplète ou non valide",
                                                              'parcelle': parcels_dict['complete_name'],
@@ -444,7 +442,7 @@ class ImportUrbaweb(BaseImport):
                     else:
                         self.parcel_errors.append(ErrorToCsv("parcels_errors",
                                                              "Parcelle incomplète ou non valide",
-                                                             licence.REFERENCE,
+                                                             licence.REFERENCE_TECH,
                                                              parcels_dict['complete_name']))
                         self.licence_description.append({'objet': "Parcelle incomplète ou non valide",
                                                          'parcelle': parcels_dict['complete_name'],
