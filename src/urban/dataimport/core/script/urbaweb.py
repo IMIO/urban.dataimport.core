@@ -346,7 +346,7 @@ class ImportUrbaweb(BaseImport):
                                             ((parcelles_cadastrales.exposant.isnull()) if not exposant
                                              else parcelles_cadastrales.exposant == exposant) &
                                             ((parcelles_cadastrales.puissance.isnull()) if not int(puissance)
-                                             else parcelles_cadastrales.puissance == puissance)
+                                             else parcelles_cadastrales.puissance == str(int(puissance)))
                                             ]
                                     except Exception as e:
                                         print(e)
