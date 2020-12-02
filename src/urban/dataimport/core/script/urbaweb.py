@@ -31,7 +31,8 @@ from urban.dataimport.core.views.urbaweb_views import create_views, create_conca
 
 class ImportUrbaweb(BaseImport):
 
-    def __init__(self, config_file, view, views, limit=None, range=None, licence_id=None, id=None, ignore_cache=False, pg_ignore_cache=False, benchmarking=False, noop=False, iterate=False):
+    def __init__(self, config_file, view, views, limit=None, range=None, licence_id=None, id=None, ignore_cache=False,
+                 pg_ignore_cache=False, benchmarking=False, noop=False, iterate=False):
         print("INITIALIZING")
         self.view = view
         self.views = views
@@ -92,7 +93,8 @@ class ImportUrbaweb(BaseImport):
         if not self.noop and error is None:
             with open("{0}.{1}".format(self.config['main']['output_path'], "json"), 'w') as output_file:
                 json.dump(self.data, output_file, cls=DateTimeEncoder)
-            if not(self.config['main']['with_attachments']) or (self.config['main']['with_attachments'] and self.config['main']['with_attachments'] != 'True'):
+            if not (self.config['main']['with_attachments']) or (
+                    self.config['main']['with_attachments'] and self.config['main']['with_attachments'] != 'True'):
                 export_to_customer_json(self)
         print("-- {0} folders extracted --".format(len(self.data)))
         print("--- Total Duration --- %s seconds ---" % (time.time() - self.start_time))
@@ -157,13 +159,34 @@ class ImportUrbaweb(BaseImport):
             if hasattr(licence, "INFOS_DOCUMENTS") and licence.INFOS_DOCUMENTS:
                 self.get_documents(licence, licence_dict['__children__'])
         description = str(''.join(str(d) for d in self.licence_description))
-        description_data = "{} - {} {} {}".format(description, str(licence.NATURE_TITRE).replace("\n", " "), str(licence.NATURE_DETAILS).replace("\n", " "), html_escape(str(licence.REMARQUES).replace("\n", " ").replace("\t", " ").replace("\r", " ").replace("?", " ")))
+        description_data = "{} - {} {} {}".format(description, str(licence.NATURE_TITRE).replace("\n", " "),
+                                                  str(licence.NATURE_DETAILS).replace("\n", " "), html_escape(
+                str(licence.REMARQUES).replace("\n", " ").replace("\t", " ").replace("\r", " ").replace("?", " ")))
         description_data = description_data[:7899]  # upper length is refused TextField/Mimetype text/html.
         licence_dict['description'] = {
             'data': "<p>{}</p>".format(description_data),
             'content-type': 'text/html'
         }  # description must be the last licence set
         # self.validate_schema(licence_dict, 'GenericLicence')
+
+        # Avoid reference duplicates
+        if licence_dict['reference'] in ('1977/R/04',
+                                         '1981/R/08',
+                                         '1999/B/114',
+                                         '2005/Q/52',
+                                         '2006/B/97',
+                                         '2006/Q/06',
+                                         '2007/R/97',
+                                         '2008/R/11',
+                                         '2008/S/45',
+                                         '2010/Q/13',
+                                         '2010/Q/24',
+                                         '2012/B/88',
+                                         '2012/Q/89',
+                                         '2012/R/90'
+                                         ):
+            licence_dict['reference'] = "{}/{}".format(licence.id, licence_dict['reference'])
+
         request_dict = licence_dict
 
         return request_dict
@@ -220,7 +243,7 @@ class ImportUrbaweb(BaseImport):
             urbaweb_street = re.sub(r'Maréchal-Ferrant', 'Maréchal Ferrant', urbaweb_street).strip()
             # if LOCALITE_NUM is empty, this number is maybe in street second part
             if not licence.LOCALITE_NUM and ',' in urbaweb_street:
-                street_num = urbaweb_street.split(',')[1].replace(" - 0","")
+                street_num = urbaweb_street.split(',')[1].replace(" - 0", "")
                 if any(char.isdigit() for char in street_num):
                     licence.LOCALITE_NUM = street_num.strip()
             urbaweb_street = re.sub(r',.*', '', urbaweb_street).strip()
@@ -232,7 +255,8 @@ class ImportUrbaweb(BaseImport):
             ]
             if bestaddress_streets.shape[0] == 0:
                 # second chance without street number
-                urbaweb_street_without_digits = ''.join([letter for letter in urbaweb_street if not letter.isdigit()]).strip()
+                urbaweb_street_without_digits = ''.join(
+                    [letter for letter in urbaweb_street if not letter.isdigit()]).strip()
                 bestaddress_streets = df_ba_vue[
                     (df_ba_vue.street == urbaweb_street_without_digits)
                 ]
@@ -262,7 +286,8 @@ class ImportUrbaweb(BaseImport):
             result_count = bestaddress_streets.shape[0]
             if result_count == 1:
                 work_locations_dict['street'] = bestaddress_streets.iloc[0]['street']
-                work_locations_dict['bestaddress_key'] = str(bestaddress_streets.iloc[0]['key']) if str(bestaddress_streets.iloc[0]['key']) not in ('7044037', '7008904', '7017260', '7011944') else ""
+                work_locations_dict['bestaddress_key'] = str(bestaddress_streets.iloc[0]['key']) if str(
+                    bestaddress_streets.iloc[0]['key']) not in ('7044037', '7008904', '7017260', '7011944') else ""
                 work_locations_dict['number'] = str(unidecode.unidecode(licence.LOCALITE_NUM))
                 work_locations_dict['zipcode'] = bestaddress_streets.iloc[0]['zip']
 
@@ -323,7 +348,9 @@ class ImportUrbaweb(BaseImport):
                     section = parcels_args[1]
                     radical_bis_exp_puissance = parcels_args[2]
                     # re.match('^[A-Z]?$' single uppercase standard character
-                    if division_num and section and radical_bis_exp_puissance and re.match('^[A-Z]?$', section.upper().replace(' ', '')):
+                    if division_num and section and radical_bis_exp_puissance and re.match('^[A-Z]?$',
+                                                                                           section.upper().replace(' ',
+                                                                                                                   '')):
                         # capakey without division and section is 11 character long.
                         section = section.upper()
                         if len(radical_bis_exp_puissance) == 11:
@@ -358,17 +385,20 @@ class ImportUrbaweb(BaseImport):
                                         parcels_dict['division'] = str(cadastral_parcels.iloc[0]['division'])
                                         parcels_dict['section'] = cadastral_parcels.iloc[0]['section']
                                         parcels_dict['radical'] = str(int(cadastral_parcels.iloc[0]['radical']))
-                                        parcels_dict['bis'] = str(cadastral_parcels.iloc[0]['bis']) if cadastral_parcels.iloc[0]['bis'] else ""
+                                        parcels_dict['bis'] = str(cadastral_parcels.iloc[0]['bis']) if \
+                                        cadastral_parcels.iloc[0]['bis'] else ""
                                         parcels_dict['exposant'] = cadastral_parcels.iloc[0]['exposant']
-                                        parcels_dict['puissance'] = str(cadastral_parcels.iloc[0]['puissance']) if cadastral_parcels.iloc[0]['puissance'] else ""
+                                        parcels_dict['puissance'] = str(cadastral_parcels.iloc[0]['puissance']) if \
+                                        cadastral_parcels.iloc[0]['puissance'] else ""
                                     elif result_count > 1:
                                         self.parcel_errors.append(ErrorToCsv("parcels_errors",
                                                                              "Trop de résultats pour cette parcelle",
                                                                              licence.REFERENCE_TECH,
                                                                              parcels_dict['complete_name']))
-                                        self.licence_description.append({'objet': "Trop de résultats pour cette parcelle",
-                                                                         'parcelle': parcels_dict['complete_name'],
-                                                                         })
+                                        self.licence_description.append(
+                                            {'objet': "Trop de résultats pour cette parcelle",
+                                             'parcelle': parcels_dict['complete_name'],
+                                             })
                                     elif result_count == 0:
                                         try:
                                             parcelles_old_cadastrales = self.cadastral.cadastre_parcelles_old_vue
@@ -394,9 +424,12 @@ class ImportUrbaweb(BaseImport):
                                             parcels_dict['division'] = str(cadastral_parcels_old.iloc[0]['division'])
                                             parcels_dict['section'] = cadastral_parcels_old.iloc[0]['section']
                                             parcels_dict['radical'] = str(int(cadastral_parcels_old.iloc[0]['radical']))
-                                            parcels_dict['bis'] = str(cadastral_parcels_old.iloc[0]['bis']) if cadastral_parcels_old.iloc[0]['bis'] else ""
+                                            parcels_dict['bis'] = str(cadastral_parcels_old.iloc[0]['bis']) if \
+                                            cadastral_parcels_old.iloc[0]['bis'] else ""
                                             parcels_dict['exposant'] = cadastral_parcels_old.iloc[0]['exposant']
-                                            parcels_dict['puissance'] = str(cadastral_parcels_old.iloc[0]['puissance']) if cadastral_parcels_old.iloc[0]['puissance'] else ""
+                                            parcels_dict['puissance'] = str(
+                                                cadastral_parcels_old.iloc[0]['puissance']) if \
+                                            cadastral_parcels_old.iloc[0]['puissance'] else ""
                                         elif result_count_old > 1:
                                             self.parcel_errors.append(ErrorToCsv("parcels_errors",
                                                                                  "Trop de résultats pour cette ancienne parcelle",
@@ -473,11 +506,11 @@ class ImportUrbaweb(BaseImport):
                 organization_dict['email'] = licence.ORG_MAIL
 
                 if licence.ORG_TYPE == 'ARCHITECTE' or \
-                   licence.ORG_TYPE == 'ARCHITECTE|DEMANDEUR_CU' or \
-                   licence.ORG_TYPE == 'DEMANDEUR_CU' or \
-                   licence.ORG_TYPE == 'AUTEUR_ETUDE' or \
-                   licence.ORG_TYPE == 'CONTACT_PEB' or \
-                   licence.ORG_TYPE == 'BUREAU':
+                        licence.ORG_TYPE == 'ARCHITECTE|DEMANDEUR_CU' or \
+                        licence.ORG_TYPE == 'DEMANDEUR_CU' or \
+                        licence.ORG_TYPE == 'AUTEUR_ETUDE' or \
+                        licence.ORG_TYPE == 'CONTACT_PEB' or \
+                        licence.ORG_TYPE == 'BUREAU':
                     organization_dict['@type'] = 'Architect'
                     licence_dict['architects'].append(organization_dict)
                 elif licence.ORG_TYPE == 'NOTAIRE':
@@ -488,7 +521,8 @@ class ImportUrbaweb(BaseImport):
                     licence_dict['geometricians'].append(organization_dict)
 
         # Geometrician is mandatory for parceloutlicence type in Urban
-        if licence_dict['portalType'] in ('ParcelOutLicence', 'CODT_ParcelOutLicence') and len(licence_dict['geometricians']) == 0:
+        if licence_dict['portalType'] in ('ParcelOutLicence', 'CODT_ParcelOutLicence') and len(
+                licence_dict['geometricians']) == 0:
             organization_dict['@type'] = 'Geometrician'
             organization_dict['name1'] = "Géomètre par défaut"
             organization_dict['name2'] = "Géomètre par défaut"
@@ -558,7 +592,8 @@ class ImportUrbaweb(BaseImport):
         elif licence.STATUT == 7:
             # event_dict['decision'] = main_licence_decision_mapping['OctroiCollege']
             licence_dict['wf_state'] = 'accept'
-            self.licence_description.append({'Précision décision': "Autorisation Collège, retrait puis nouvelle autorisation"})
+            self.licence_description.append(
+                {'Précision décision': "Autorisation Collège, retrait puis nouvelle autorisation"})
         elif licence.STATUT == 8:
             # event_dict['decision'] = main_licence_decision_mapping['Irrecevable_2xI']
             licence_dict['wf_state'] = 'refuse'
@@ -605,7 +640,8 @@ class ImportUrbaweb(BaseImport):
                 En cours ou non déterminé
             """
         else:
-            import ipdb; ipdb.set_trace() # TODO REMOVE BREAKPOINT
+            import ipdb;
+            ipdb.set_trace()  # TODO REMOVE BREAKPOINT
             print("unknown status")
 
         # CUSTOM
@@ -684,11 +720,13 @@ class ImportUrbaweb(BaseImport):
             licence_dict['wf_state'] = ''
 
         # Divison has a specific WF and hasn't 'refuse' transition
-        if licence_dict['portalType'] == 'Division' and (licence_dict['wf_state'] == 'refuse' or licence_dict['wf_state'] == 'retire'):
+        if licence_dict['portalType'] == 'Division' and (
+                licence_dict['wf_state'] == 'refuse' or licence_dict['wf_state'] == 'retire'):
             licence_dict['wf_state'] = 'nonapplicable'
 
         if event_dict['eventDate'] and event_dict['decisionDate']:
-            if self.verify_date_pattern.match(event_dict['eventDate']) and self.verify_date_pattern.match(event_dict['decisionDate']):
+            if self.verify_date_pattern.match(event_dict['eventDate']) and self.verify_date_pattern.match(
+                    event_dict['decisionDate']):
                 licence_dict['__children__'].append(event_dict)
 
     def get_rubrics(self, licence, licence_dict):
