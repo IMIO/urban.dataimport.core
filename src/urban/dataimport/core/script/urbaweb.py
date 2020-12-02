@@ -183,7 +183,9 @@ class ImportUrbaweb(BaseImport):
                                          '2010/Q/24',
                                          '2012/B/88',
                                          '2012/Q/89',
-                                         '2012/R/90'
+                                         '2012/R/90',
+                                         'L/191/Q/4',
+                                         'DUP/2012/B/05'
                                          ):
             licence_dict['reference'] = "{}/{}".format(licence.id, licence_dict['reference'])
 
@@ -386,10 +388,10 @@ class ImportUrbaweb(BaseImport):
                                         parcels_dict['section'] = cadastral_parcels.iloc[0]['section']
                                         parcels_dict['radical'] = str(int(cadastral_parcels.iloc[0]['radical']))
                                         parcels_dict['bis'] = str(cadastral_parcels.iloc[0]['bis']) if \
-                                        cadastral_parcels.iloc[0]['bis'] else ""
+                                            cadastral_parcels.iloc[0]['bis'] else ""
                                         parcels_dict['exposant'] = cadastral_parcels.iloc[0]['exposant']
                                         parcels_dict['puissance'] = str(cadastral_parcels.iloc[0]['puissance']) if \
-                                        cadastral_parcels.iloc[0]['puissance'] else ""
+                                            cadastral_parcels.iloc[0]['puissance'] else ""
                                     elif result_count > 1:
                                         self.parcel_errors.append(ErrorToCsv("parcels_errors",
                                                                              "Trop de résultats pour cette parcelle",
@@ -425,11 +427,11 @@ class ImportUrbaweb(BaseImport):
                                             parcels_dict['section'] = cadastral_parcels_old.iloc[0]['section']
                                             parcels_dict['radical'] = str(int(cadastral_parcels_old.iloc[0]['radical']))
                                             parcels_dict['bis'] = str(cadastral_parcels_old.iloc[0]['bis']) if \
-                                            cadastral_parcels_old.iloc[0]['bis'] else ""
+                                                cadastral_parcels_old.iloc[0]['bis'] else ""
                                             parcels_dict['exposant'] = cadastral_parcels_old.iloc[0]['exposant']
                                             parcels_dict['puissance'] = str(
                                                 cadastral_parcels_old.iloc[0]['puissance']) if \
-                                            cadastral_parcels_old.iloc[0]['puissance'] else ""
+                                                cadastral_parcels_old.iloc[0]['puissance'] else ""
                                         elif result_count_old > 1:
                                             self.parcel_errors.append(ErrorToCsv("parcels_errors",
                                                                                  "Trop de résultats pour cette ancienne parcelle",
