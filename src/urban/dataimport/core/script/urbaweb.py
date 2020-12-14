@@ -19,7 +19,7 @@ from urban.dataimport.core.json import get_licence_dict, get_work_locations_dict
 from urban.dataimport.core.mapping.main_mapping import main_licence_decision_event_id_mapping, \
     main_licence_deposit_event_id_mapping, main_licence_not_receivable_event_id_mapping
 from urban.dataimport.core.mapping.urbaweb_mapping import division_mapping, events_types, \
-    title_types
+    title_types, division_number_mapping
 from urban.dataimport.core.mapping.urbaweb_mapping import portal_type_mapping
 from urban.dataimport.core.utils import BaseImport, StateManager, StateHandler, benchmark_decorator, \
     export_to_customer_json, represent_int, IterationError, ErrorToCsv, export_error_csv, \
@@ -394,7 +394,7 @@ class ImportUrbaweb(BaseImport):
                                                                              parcels_dict['complete_name']))
                                         self.licence_description.append(
                                             {'objet': "Trop de résultats pour cette parcelle",
-                                             'parcelle': self.replace_division_id_by_division_code(
+                                             'parcelle': self.replace_division_id_by_division_number(
                                                  parcels_dict['complete_name']),
                                              })
                                     elif result_count == 0:
@@ -435,18 +435,18 @@ class ImportUrbaweb(BaseImport):
                                                                                  parcels_dict['complete_name']))
                                             self.licence_description.append(
                                                 {'objet': "Trop de résultats pour cette ancienne parcelle",
-                                                 'parcelle': self.replace_division_id_by_division_code(
+                                                 'parcelle': self.replace_division_id_by_division_number(
                                                      parcels_dict['complete_name']),
                                                  })
                                         if result_count_old == 0:
                                             self.licence_description.append(
                                                 {'objet': "Pas de résultat pour cette parcelle",
-                                                 'parcelle': self.replace_division_id_by_division_code(
+                                                 'parcelle': self.replace_division_id_by_division_number(
                                                      parcels_dict['complete_name']),
                                                  })
                                     else:
                                         self.licence_description.append({'objet': "Pas de résultat pour cette parcelle",
-                                                                         'parcelle': self.replace_division_id_by_division_code(
+                                                                         'parcelle': self.replace_division_id_by_division_number(
                                                                              parcels_dict['complete_name']),
                                                                          })
                                 else:
@@ -455,7 +455,7 @@ class ImportUrbaweb(BaseImport):
                                                                          licence.REFERENCE_TECH,
                                                                          parcels_dict['complete_name']))
                                     self.licence_description.append({'objet': "Parcelle incomplète ou non valide",
-                                                                     'parcelle': self.replace_division_id_by_division_code(
+                                                                     'parcelle': self.replace_division_id_by_division_number(
                                                                          parcels_dict['complete_name']),
                                                                      })
                             else:
@@ -464,7 +464,7 @@ class ImportUrbaweb(BaseImport):
                                                                      licence.REFERENCE_TECH,
                                                                      parcels_dict['complete_name']))
                                 self.licence_description.append({'objet': "Parcelle incomplète ou non valide",
-                                                                 'parcelle': self.replace_division_id_by_division_code(
+                                                                 'parcelle': self.replace_division_id_by_division_number(
                                                                      parcels_dict['complete_name']),
                                                                  })
                         else:
@@ -473,7 +473,7 @@ class ImportUrbaweb(BaseImport):
                                                                  licence.REFERENCE_TECH,
                                                                  parcels_dict['complete_name']))
                             self.licence_description.append({'objet': "Parcelle incomplète ou non valide",
-                                                             'parcelle': self.replace_division_id_by_division_code(
+                                                             'parcelle': self.replace_division_id_by_division_number(
                                                                  parcels_dict['complete_name']),
                                                              })
                     else:
@@ -482,7 +482,7 @@ class ImportUrbaweb(BaseImport):
                                                              licence.REFERENCE_TECH,
                                                              parcels_dict['complete_name']))
                         self.licence_description.append({'objet': "Parcelle incomplète ou non valide",
-                                                         'parcelle': self.replace_division_id_by_division_code(
+                                                         'parcelle': self.replace_division_id_by_division_number(
                                                              parcels_dict['complete_name']),
                                                          })
                     if parcels_dict['division'] and parcels_dict['section']:
@@ -779,15 +779,15 @@ class ImportUrbaweb(BaseImport):
             except Exception as e:
                 print(e)
 
-    def replace_division_id_by_division_code(self, parcel):
+    def replace_division_id_by_division_number(self, parcel):
         """
         Return real division code from id for description error message
         """
         if '|' in parcel and len(parcel.split("|")) == 3:
             split_parcel = parcel.split("|")
-            code_division = division_mapping.get('{0:02d}'.format(int(split_parcel[0])), None)
-            if code_division:
-                parcel_out = "{}|{}|{}".format(code_division, split_parcel[1], split_parcel[2])
+            division_number = division_number_mapping.get('{0:02d}'.format(int(split_parcel[0])), None)
+            if division_number:
+                parcel_out = "{}|{}|{}".format(division_number, split_parcel[1], split_parcel[2])
                 return parcel_out
             else:
                 print("invalid division id or incomplete division mapping table")

@@ -67,6 +67,13 @@ division_mapping = {
     '11': 25394
 }
 
+division_number_mapping = {
+    '08': 1,
+    '09': 2,
+    '10': 3,
+    '11': 4
+}
+
 # title ids, to update for specific locality, by default b.l'a
 title_types = {
     1: 'mister',
