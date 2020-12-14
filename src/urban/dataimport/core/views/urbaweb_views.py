@@ -223,7 +223,7 @@ def create_views(import_urbaweb):
                                     LEFT JOIN p_decision_environnement_classe3 AS PE3_DECISION ON PE3.decision_environnement_fk = PE3_DECISION.id
                                     LEFT JOIN get_rubrics_cl3 AS RUBRICS ON RUBRICS.ID_PERMIS = PERMIS.id
                                     LEFT JOIN get_document_infos AS PERMIS_DOCUMENTS ON PERMIS_DOCUMENTS.ID_PERMIS = PERMIS.id
-                                    WHERE PERMIS.type_permis_fk = 17 AND PERMIS.numero_permis NOT IN ('2017/classe3/02', '2017/classe3/03', '2017/classe3/04', '2017/classe3/06');
+                                    WHERE PERMIS.type_permis_fk = 17 AND PERMIS.numero_permis NOT IN ('2017/classe3/01', '2017/classe3/02', '2017/classe3/03', '2017/classe3/04', '2017/classe3/06');
                                   """
                                   )
 
