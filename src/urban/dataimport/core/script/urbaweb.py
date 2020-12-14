@@ -161,6 +161,13 @@ class ImportUrbaweb(BaseImport):
             work_end_date = datetime.strptime(licence.FIN_TRAVAUX, '%Y-%m-%d').strftime('%d/%m/%Y')
             self.licence_description.append({'Fin des travaux': work_end_date})
 
+        # CUSTOM REBECQ.
+        if licence_dict['reference'] == '1922/Q/36':
+            licence_dict['reference'] = '1992/Q/36'
+
+        if licence_dict['reference'].startswith('1') and "/" in licence_dict['reference'] and len(licence_dict['reference'].split("/")[0]) == 3 and licence_dict['reference'].split("/")[0].isdigit():
+            licence_dict['reference'] = "19{}".format(licence_dict['reference'][1:])
+            # print("référence initiale: {} / référence avec la bonne année : {}".format(licence.REFERENCE_TECH, licence_dict['reference']))
         if licence_dict['reference'] in self.duplicates_list:
             self.duplicates_count[licence_dict['reference']] = self.duplicates_count[licence_dict['reference']] + 1
             # print("Duplicate reference: {} / Duplicate iteration : {}".format(licence_dict['reference'],
@@ -169,6 +176,7 @@ class ImportUrbaweb(BaseImport):
             licence_dict['reference'] = "{}/{}".format(self.duplicates_count[licence_dict['reference']],
                                                        licence_dict['reference'])
             self.licence_description.append({"Référence en doublon, identifiant d'import permis: ": licence.id})
+        # END CUSTOM.
 
         if self.config['main']['with_attachments'] and self.config['main']['with_attachments'] == 'True':
             if hasattr(licence, "INFOS_DOCUMENTS") and licence.INFOS_DOCUMENTS:
