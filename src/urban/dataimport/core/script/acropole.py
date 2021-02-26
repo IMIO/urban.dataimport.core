@@ -142,7 +142,7 @@ class ImportAcropole(BaseImport):
         licence_dict['licenceSubject'] = licence.DOSSIER_OBJETFR
         licence_dict['usage'] = 'not_applicable'
         licence_dict['workLocations'] = self.get_work_locations(licence, licence_dict)
-        # self.get_applicants(licence, licence_dict['__children__'])
+        self.get_applicants(licence, licence_dict['__children__'])
         self.get_parcels(licence, licence_dict['__children__'])
         self.get_events(licence, licence_dict)
         description = str(''.join(str(d) for d in self.licence_description))
@@ -324,22 +324,22 @@ class ImportAcropole(BaseImport):
 
     @benchmark_decorator
     def get_applicants(self, licence, licence_children):
-        applicants = self.db.dossier_personne_vue[
-            (self.db.dossier_personne_vue.WRKDOSSIER_ID == licence.WRKDOSSIER_ID) &
-            (self.db.dossier_personne_vue.K2KND_ID == -204)]
-        for id, applicant in applicants.iterrows():
-            applicant_dict = get_applicant_dict()
-            applicant_dict['personTitle'] = title_types.get(applicant.CPSN_TYPE, '')
-            applicant_dict['name1'] = applicant.CPSN_NOM
-            applicant_dict['name2'] = applicant.CPSN_PRENOM
-            applicant_dict['email'] = applicant.CPSN_EMAIL
-            applicant_dict['phone'] = applicant.CPSN_TEL1
-            applicant_dict['gsm'] = applicant.CPSN_GSM
-            applicant_dict['fax'] = applicant.CPSN_FAX
-            applicant_dict['street'] = applicant.CLOC_ADRESSE
-            applicant_dict['zipcode'] = applicant.CLOC_ZIP
-            applicant_dict['city'] = applicant.CLOC_LOCALITE
-            licence_children.append(applicant_dict)
+        if licence.CONCAT_DEMANDEURS:
+            for applicant in licence.CONCAT_DEMANDEURS.split('#'):
+                applicant_dict = get_applicant_dict()
+                applicant_list = applicant.split('|')
+                applicant_dict['name1'] = applicant_list[0]
+                applicant_dict['name2'] = applicant_list[1]
+                applicant_dict['street'] = applicant_list[2]
+                applicant_dict['zipcode'] = applicant_list[3]
+                applicant_dict['city'] = applicant_list[4]
+                applicant_dict['personTitle'] = title_types.get(applicant_list[5], '')
+                applicant_dict['phone'] = applicant_list[6]
+                applicant_dict['fax'] = applicant_list[7]
+                applicant_dict['gsm'] = applicant_list[8]
+                applicant_dict['email'] = applicant_list[9]
+
+                licence_children.append(applicant_dict)
 
     @benchmark_decorator
     def get_parcels(self, licence, licence_children):
