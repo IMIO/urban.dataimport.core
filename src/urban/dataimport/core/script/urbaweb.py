@@ -83,7 +83,6 @@ class ImportUrbaweb(BaseImport):
                                 '2007/R/97', '2008/R/11', '2008/S/45', '2010/Q/13', '2010/Q/24', '2012/B/88',
                                 '2012/Q/89', '2012/R/90', 'L/191/Q/4', 'DUP/2012/B/05', '1981/R/17', '1999/R/51']
         self.duplicates_count = dict(zip(self.duplicates_list, [0] * len(self.duplicates_list)))
-        self.ignored_references = ['2017/Purb/001', '2017/Purb/002', '2017/classe3/03', '2017/classe3/04', '2017/classe3/06']
         print("INITIALIZATION COMPLETED")
 
     def execute(self):
