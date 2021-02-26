@@ -4,18 +4,18 @@ events_types = {
             'etape_ids': (-65091, -55774, -48189, -46732, -42670, -33521),
             'param_ids': (),
         },
-        'completefolder': {
-            'etape_ids': (-42831, -63928, -66924, -33526),
-            'param_ids': (),
-        },
-        'incompletefolder': {
-            'etape_ids': (-33547, -42845),
-            'param_ids': (),
-        },
-        'sendtofd': {
-            'etape_ids': (-43482, -63977, -33553),
-            'param_ids': (),
-        },
+        # 'completefolder': {
+        #     'etape_ids': (-42831, -63928, -66924, -33526),
+        #     'param_ids': (),
+        # },
+        # 'incompletefolder': {
+        #     'etape_ids': (-33547, -42845),
+        #     'param_ids': (),
+        # },
+        # 'sendtofd': {
+        #     'etape_ids': (-43482, -63977, -33553),
+        #     'param_ids': (),
+        # },
         # 'sendtoapplicant': {
         #     'etape_ids': (-63981, -33551, -43468),
         #     'param_ids': (),
@@ -38,20 +38,40 @@ events_types = {
 main_state_id_mapping = [0, 1]
 
 portal_type_mapping = {
-    -67348: 'EnvClassTwo',
+    -67348: 'EnvClassOne',
     -62737: 'ParcelOutLicence',
+    -58199: '',  # to complete or ignore
+    -57728: 'EnvClassOne',
     -53925: 'UniqueLicence',
+    -52990: '',  # to complete or ignore
     -49306: 'Article127',
     -46623: 'EnvClassThree',
     -42575: 'BuildLicence',
-    -37624: 'EnvClassTwo',
-    -36624: '',  # infractions, not yet implemented
+    -37624: 'EnvClassOne',
+    -36624: 'MiscDemand',  # infractions
     -34766: 'NotaryLetter',
     -32669: 'BuildLicence',  # ?
+    -28278: '',  # to complete or ignore
+    -26124: 'ParcelOutLicence',
     -25638: 'MiscDemand',
+    -20646: 'Article127',
+    -19184: 'EnvClassTwo',
+    -17277: 'BuildLicence',
     -15200: 'Declaration',
     -14333: 'MiscDemand',  # reclamations
     -14179: 'Division',
+    -13467: 'MiscDemand',  # infractions
+    -11889: '',  # to complete or ignore
+    -10362: 'MiscDemand',  # demande de principe
+    -10200: '',  # to complete or ignore
+    -7812: '',  # to complete or ignore
+    -6523: '',  # to complete or ignore
+    -5976: 'EnvClassThree',
+    -5753: 'NotaryLetter',
+    -4775: '',  # to complete or ignore
+    -3575: '',  # to complete or ignore
+    -1972: '',  # to complete or ignore
+    -1014: '',  # to complete or ignore
 }
 
 # urbmessagestatus table
@@ -268,7 +288,20 @@ title_types = {
 
 # custom to the locality
 division_mapping = {
-    '01': '52022',
-    '02': '52023',
-    '03': '52038',
+    '01': '62096',
+    '02': '62352',
+    '03': '62353',
+    '04': '62354',
+    '05': '62355',
+    '06': '62356',
+    '07': '62357',
+    '08': '62358',
+    '09': '62058',
+    '10': '62342',
+    '11': '62343',
+    '12': '62019',
+}
+
+decision_label_mapping = {
+    '': '',
 }

@@ -19,7 +19,7 @@ from urban.dataimport.core.json import DateTimeEncoder, get_applicant_dict, get_
 from urban.dataimport.core.mapping.main_mapping import main_licence_deposit_event_id_mapping, \
     main_licence_decision_event_id_mapping
 from urban.dataimport.core.utils import parse_cadastral_reference, benchmark_decorator, BaseImport, \
-    export_to_customer_json, represent_int
+    export_to_customer_json, represent_int, ErrorToCsv, export_error_csv
 from urban.dataimport.core.utils import StateManager
 from urban.dataimport.core.utils import StateHandler
 from urban.dataimport.core.utils import IterationError
@@ -74,6 +74,8 @@ class ImportAcropole(BaseImport):
         create_views(self)
         create_cadastral_views(self)
         create_bestaddress_views(self, config['main']['locality'])
+        self.street_errors = []
+        self.parcel_errors = []
         print("INITIALIZATION COMPLETED")
 
     def execute(self):
@@ -113,6 +115,7 @@ class ImportAcropole(BaseImport):
             self.get_licence(id, licence)
             bar.next()
         bar.finish()
+        export_error_csv([self.parcel_errors, self.street_errors])
         if self.iterate is True:
             try:
                 self.validate_data(self.data, 'GenericLicence')
@@ -138,7 +141,7 @@ class ImportAcropole(BaseImport):
         # licence_dict['referenceDGATLP'] = licence.DOSSIER_REFURB and licence.DOSSIER_REFURB or ''
         licence_dict['licenceSubject'] = licence.DOSSIER_OBJETFR
         licence_dict['usage'] = 'not_applicable'
-        licence_dict['workLocations'] = self.get_work_locations(licence)
+        licence_dict['workLocations'] = self.get_work_locations(licence, licence_dict)
         # self.get_applicants(licence, licence_dict['__children__'])
         self.get_parcels(licence, licence_dict['__children__'])
         self.get_events(licence, licence_dict)
@@ -185,7 +188,7 @@ class ImportAcropole(BaseImport):
                 return inquiry_value.iloc[0]['PARAM_VALUE']
 
     @benchmark_decorator
-    def get_work_locations(self, licence):
+    def get_work_locations(self, licence, licence_dict):
         work_locations_list = []
         work_locations_dict = get_work_locations_dict()
         if licence.CONCAT_ADRESSES and licence.CONCAT_ADRESSES.replace("@", "").replace("|", ""):
@@ -198,6 +201,60 @@ class ImportAcropole(BaseImport):
                 if street:
                     # remove parentheses and its content
                     acropole_street = re.sub(r'\([^)]*\)', '', street).strip()
+                    acropole_street = re.sub(r'^allée ', 'Allée ', acropole_street).strip()
+                    acropole_street = re.sub(r'^Av[.]', 'Avenue', acropole_street).strip()
+                    acropole_street = re.sub(r'^avenue ', 'Avenue ', acropole_street).strip()
+                    acropole_street = re.sub(r'^boulevard ', 'Boulevard ', acropole_street).strip()
+                    acropole_street = re.sub(r'^chaussée ', 'Chaussée ', acropole_street).strip()
+                    acropole_street = re.sub(r'^cour ', 'Cour ', acropole_street).strip()
+                    acropole_street = re.sub(r'^esplanade ', 'Esplanade ', acropole_street).strip()
+                    acropole_street = re.sub(r'^square ', 'Square ', acropole_street).strip()
+                    acropole_street = re.sub(r'^quai ', 'Quai ', acropole_street).strip()
+                    acropole_street = re.sub(r'^Pl[.]', 'Place', acropole_street).strip()
+                    acropole_street = re.sub(r'^Pl ', 'Place ', acropole_street).strip()
+                    acropole_street = re.sub(r'^place ', 'Place ', acropole_street).strip()
+                    acropole_street = re.sub(r'^voie ', 'Voie ', acropole_street).strip()
+                    acropole_street = re.sub(r'^Voie du Pahis', 'voie du Pahis', acropole_street).strip()  # Exception
+                    acropole_street = re.sub(r'^rue ', 'Rue ', acropole_street).strip()
+                    acropole_street = re.sub(r'^route ', 'Route ', acropole_street).strip()
+                    acropole_street = re.sub(r' St ', ' Saint-', acropole_street).strip()
+                    acropole_street = re.sub(r' Ste ', ' Sainte-', acropole_street).strip()
+
+                    acropole_street = re.sub(r'Avenue Delporte', 'Avenue H. Delporte', acropole_street).strip()
+                    acropole_street = re.sub(r'Rue de Lexhy', 'Rue Arnold de Lexhy', acropole_street).strip()
+                    acropole_street = re.sub(r'Rue Dossogne', 'Rue J. Dossogne', acropole_street).strip()
+                    acropole_street = re.sub(r'Rue Depas', 'Rue Jean Depas', acropole_street).strip()
+                    acropole_street = re.sub(r'Rue des Champs du Mont', 'Rue Champs du Mont', acropole_street).strip()
+                    acropole_street = re.sub(r'Rue Salengro', 'Rue Roger Salengro', acropole_street).strip()
+                    acropole_street = re.sub(r'Rue Smeets', 'Rue A. Smeets', acropole_street).strip()
+                    acropole_street = re.sub(r'Rue Sualems', 'Rue R. Sualems', acropole_street).strip()
+                    acropole_street = re.sub(r'Rue Roosevelt', 'Rue Franklin Roosevelt', acropole_street).strip()
+                    acropole_street = re.sub(r'Rue Royer', 'Rue Emile Royer', acropole_street).strip()
+                    acropole_street = re.sub(r'Rue Servet', 'Rue Michael Servet', acropole_street).strip()
+                    acropole_street = re.sub(r'Rue Sualem', 'Rue R. Sualem', acropole_street).strip()
+                    acropole_street = re.sub(r'Rue Wettinck', 'Rue J. Wettinck', acropole_street).strip()
+                    acropole_street = re.sub(r'Rue Louis', 'Rue J. Louis', acropole_street).strip()
+                    acropole_street = re.sub(r'Rue Marcotty', 'Rue T. Marcotty', acropole_street).strip()
+                    acropole_street = re.sub(r'Rue Messager', 'Rue du Messager', acropole_street).strip()
+                    acropole_street = re.sub(r'Rue Nicolay', 'Rue Ferdinand Nicolay', acropole_street).strip()
+                    acropole_street = re.sub(r'Rue Puit-Marie', 'Rue Puit Marie', acropole_street).strip()
+                    acropole_street = re.sub(r'Rue Raick', 'Rue Alexandre Raick', acropole_street).strip()
+                    acropole_street = re.sub(r'Rue Renard', 'Rue André Renard', acropole_street).strip()
+                    acropole_street = re.sub(r'Quai Destrée', 'Quai Jules Destrée', acropole_street).strip()
+                    acropole_street = re.sub(r'Rue Blum', 'Rue Léon Blum', acropole_street).strip()
+                    acropole_street = re.sub(r'Rue Bruno', 'Rue Gordano Bruno', acropole_street).strip()
+                    acropole_street = re.sub(r'Rue Bois Saint-Jean', 'Rue du Bois Saint-Jean', acropole_street).strip()
+                    acropole_street = re.sub(r'Rue Bougnet', 'Rue E. Bougnet', acropole_street).strip()
+                    acropole_street = re.sub(r'Rue Baivy', 'Rue Gustave Baivy', acropole_street).strip()
+                    acropole_street = re.sub(r'Rue de Stappe', 'Rue des Stappes', acropole_street).strip()
+                    acropole_street = re.sub(r'Rue del Rodje Cinse', 'Rue dèl Rodje Cinse', acropole_street).strip()
+                    acropole_street = re.sub(r'Rue Delbrouck', 'Rue R. Delbrouck', acropole_street).strip()
+                    acropole_street = re.sub(r'Rue Deloye', 'Rue S. Deloye', acropole_street).strip()
+                    acropole_street = re.sub(r'Rue Delville', 'Rue Antonin Delville', acropole_street).strip()
+                    acropole_street = re.sub(r'Rue des Petits Sarts', 'Rue des Petits-Sarts', acropole_street).strip()
+                    acropole_street = re.sub(r'Rue des Bas-Sarts', 'Rue des Bas Sarts', acropole_street).strip()
+                    acropole_street = re.sub(r'Rue de Brouckère', 'Rue L. De Brouckère', acropole_street).strip()
+                    acropole_street = re.sub(r'Rue Janson', 'Rue Paul Janson', acropole_street).strip()
                     # remove unnecessary characters
                     acropole_street = acropole_street.replace(",", " ").strip().replace("?", " ").strip()
                     bestaddress_streets = self.bestaddress.bestaddress_vue[
@@ -216,6 +273,14 @@ class ImportAcropole(BaseImport):
                                 (self.bestaddress.bestaddress_vue.street == acropole_street_without_last_char.strip())
                             ]
                             if bestaddress_streets.shape[0] == 0:
+                                self.street_errors.append(ErrorToCsv("street_errors",
+                                                                     "Pas de résultat pour cette rue",
+                                                                     licence_dict['reference'],
+                                                                     "rue : {} n°: {} cp: {} localité: {}"
+                                                                     .format(street,
+                                                                             number,
+                                                                             zipcode,
+                                                                             city)))
                                 self.licence_description.append({'objet': "Pas de résultat pour cette rue",
                                                                  'rue': street,
                                                                  'n°': number,
@@ -244,6 +309,14 @@ class ImportAcropole(BaseImport):
                                                          'code postal': zipcode,
                                                          'localité': city
                                                          })
+                        self.street_errors.append(ErrorToCsv("street_errors",
+                                                             "Plus d'un seul résultat pour cette rue",
+                                                             licence_dict['reference'],
+                                                             "rue : {} n°: {} cp: {} localité: {}"
+                                                             .format(street,
+                                                                     number,
+                                                                     zipcode,
+                                                                     city)))
                 if work_locations_dict['street'] or work_locations_dict['number']:
                     work_locations_list.append(work_locations_dict)
 
@@ -288,7 +361,7 @@ class ImportAcropole(BaseImport):
                             division = division_mapping.get(division_code, None)
                             parcelles_cadastrales = self.cadastral.cadastre_parcelles_vue
                             cadastral_parcels = parcelles_cadastrales[
-                                (parcelles_cadastrales.division == division) &
+                                (parcelles_cadastrales.division == int(division)) &
                                 (parcelles_cadastrales.section == section) &
                                 (parcelles_cadastrales.radical == int(radical)) &
                                 ((parcelles_cadastrales.bis.isnull()) if not int(bis)
@@ -296,8 +369,8 @@ class ImportAcropole(BaseImport):
                                 ((parcelles_cadastrales.exposant.isnull()) if not exposant
                                  else parcelles_cadastrales.exposant == exposant) &
                                 ((parcelles_cadastrales.puissance.isnull()) if not int(puissance)
-                                 else parcelles_cadastrales.puissance == puissance)
-                            ]
+                                 else parcelles_cadastrales.puissance == str(int(puissance)))
+                                ]
 
                             result_count = cadastral_parcels.shape[0]
                             if result_count == 1:
