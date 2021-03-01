@@ -139,7 +139,8 @@ class ImportAcropole(BaseImport):
         #     licence_dict['investigationReasons'] = [investigation_reasons]
         licence_dict['reference'] = "{}/{}".format(licence.WRKDOSSIER_ID, licence.DOSSIER_NUMERO)
         # licence_dict['referenceDGATLP'] = licence.DOSSIER_REFURB and licence.DOSSIER_REFURB or ''
-        licence_dict['licenceSubject'] = licence.DOSSIER_OBJETFR
+        licenceSubject = licence.DOSSIER_OBJETFR or licence.DETAILS
+        licence_dict['licenceSubject'] = licenceSubject
         licence_dict['usage'] = 'not_applicable'
         licence_dict['workLocations'] = self.get_work_locations(licence, licence_dict)
         self.get_applicants(licence, licence_dict['__children__'])
@@ -296,12 +297,12 @@ class ImportAcropole(BaseImport):
                         work_locations_dict['number'] = str(unidecode.unidecode(number))
                         work_locations_dict['zipcode'] = bestaddress_streets.iloc[0]['zip']
                         work_locations_dict['locality'] = bestaddress_streets.iloc[0]['entity']
-                        self.licence_description.append({'objet': "Rue trouvée",
-                                                         'rue': street,
-                                                         'n°': number,
-                                                         'code postal': zipcode,
-                                                         'localité': city
-                                                         })
+                        # self.licence_description.append({'objet': "Rue trouvée",
+                        #                                  'rue': street,
+                        #                                  'n°': number,
+                        #                                  'code postal': zipcode,
+                        #                                  'localité': city
+                        #                                  })
                     elif result_count > 1:
                         self.licence_description.append({'objet': "Plus d'un seul résultat pour cette rue",
                                                          'rue': street,
