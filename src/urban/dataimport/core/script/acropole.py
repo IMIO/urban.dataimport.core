@@ -147,7 +147,7 @@ class ImportAcropole(BaseImport):
         licence_dict['workLocations'] = self.get_work_locations(licence, licence_dict)
         self.get_organization(licence, licence_dict)
         self.get_applicants(licence, licence_dict['__children__'])
-        self.get_parcels(licence, licence_dict['__children__'])
+        self.get_parcels(licence, licence_dict)
         self.get_events(licence, licence_dict)
         description = str(''.join(str(d) for d in self.licence_description))
         licence_dict['description'] = {
@@ -346,79 +346,134 @@ class ImportAcropole(BaseImport):
                 licence_children.append(applicant_dict)
 
     @benchmark_decorator
-    def get_parcels(self, licence, licence_children):
+    def get_parcels(self, licence, licence_dict):
         parcels = licence.CONCAT_PARCELS
         if parcels:
-            for parcel in parcels.split("@"):
-                parcels_dict = get_parcel_dict()
-                parcels_dict['complete_name'] = parcel
-                parcels_args = parse_cadastral_reference(parcel)
-                division_code = parcels_args[0]
-                section = parcels_args[1] if parcels_args[1] else ''
-                radical = parcels_args[2] if parcels_args[2] else 0
-                bis = parcels_args[3] if parcels_args[3] else 0
-                exposant = parcels_args[4] if parcels_args[4] else ''
-                puissance = parcels_args[5] if parcels_args[5] else 0
-                if division_code and section and radical:
-                    if represent_int(puissance) and int(puissance) < 100:
-                        if represent_int(radical) and represent_int(bis) and represent_int(puissance):
-                            division = division_mapping.get(division_code, None)
-                            parcelles_cadastrales = self.cadastral.cadastre_parcelles_vue
-                            cadastral_parcels = parcelles_cadastrales[
-                                (parcelles_cadastrales.division == int(division)) &
-                                (parcelles_cadastrales.section == section) &
-                                (parcelles_cadastrales.radical == int(radical)) &
-                                ((parcelles_cadastrales.bis.isnull()) if not int(bis)
-                                 else parcelles_cadastrales.bis == int(bis)) &
-                                ((parcelles_cadastrales.exposant.isnull()) if not exposant
-                                 else parcelles_cadastrales.exposant == exposant) &
-                                ((parcelles_cadastrales.puissance.isnull()) if not int(puissance)
-                                 else parcelles_cadastrales.puissance == str(int(puissance)))
-                                ]
+            try:
+                for parcel in parcels.split("@"):
+                    parcels_dict = get_parcel_dict()
+                    parcels_dict['complete_name'] = parcel
+                    parcels_args = parse_cadastral_reference(parcel)
+                    division_code = parcels_args[0]
+                    section = parcels_args[1] if parcels_args[1] else ''
+                    radical = parcels_args[2] if parcels_args[2] else 0
+                    bis = parcels_args[3] if parcels_args[3] else 0
+                    exposant = parcels_args[4] if parcels_args[4] else ''
+                    puissance = parcels_args[5] if parcels_args[5] else 0
+                    if division_code and section and radical:
+                        if represent_int(puissance) and int(puissance) < 100:
+                            if represent_int(radical) and represent_int(bis) and represent_int(puissance):
+                                division = division_mapping.get(division_code, None)
+                                parcelles_cadastrales = self.cadastral.cadastre_parcelles_vue
+                                cadastral_parcels = parcelles_cadastrales[
+                                    (parcelles_cadastrales.division == int(division)) &
+                                    (parcelles_cadastrales.section == section) &
+                                    (parcelles_cadastrales.radical == int(radical)) &
+                                    ((parcelles_cadastrales.bis.isnull()) if not int(bis)
+                                     else parcelles_cadastrales.bis == int(bis)) &
+                                    ((parcelles_cadastrales.exposant.isnull()) if not exposant
+                                     else parcelles_cadastrales.exposant == exposant) &
+                                    ((parcelles_cadastrales.puissance.isnull()) if not int(puissance)
+                                     else parcelles_cadastrales.puissance == str(int(puissance)))
+                                    ]
 
-                            result_count = cadastral_parcels.shape[0]
-                            if result_count == 1:
-                                parcels_dict['outdated'] = 'False'
-                                parcels_dict['is_official'] = 'True'
-                                parcels_dict['division'] = str(cadastral_parcels.iloc[0]['division'])
-                                parcels_dict['section'] = cadastral_parcels.iloc[0]['section']
-                                parcels_dict['radical'] = str(cadastral_parcels.iloc[0]['radical'])
-                                parcels_dict['bis'] = str(cadastral_parcels.iloc[0]['bis']) if cadastral_parcels.iloc[0]['bis'] else ""
-                                parcels_dict['exposant'] = cadastral_parcels.iloc[0]['exposant']
-                                parcels_dict['puissance'] = str(cadastral_parcels.iloc[0]['puissance']) if cadastral_parcels.iloc[0]['puissance'] else ""
-                                self.licence_description.append({'objet': "Parcelle trouvée",
-                                                                 'parcelle': parcel,
-                                                                 })
-                            elif result_count > 1:
-                                self.licence_description.append({'objet': "Trop de résultats pour cette parcelle",
-                                                                 'parcelle': parcel,
-                                                                 })
+                                result_count = cadastral_parcels.shape[0]
+                                if result_count == 1:
+                                    parcels_dict['outdated'] = 'False'
+                                    parcels_dict['is_official'] = 'True'
+                                    parcels_dict['division'] = str(cadastral_parcels.iloc[0]['division'])
+                                    parcels_dict['section'] = cadastral_parcels.iloc[0]['section']
+                                    parcels_dict['radical'] = str(cadastral_parcels.iloc[0]['radical'])
+                                    parcels_dict['bis'] = str(cadastral_parcels.iloc[0]['bis']) if cadastral_parcels.iloc[0]['bis'] else ""
+                                    parcels_dict['exposant'] = cadastral_parcels.iloc[0]['exposant']
+                                    parcels_dict['puissance'] = str(cadastral_parcels.iloc[0]['puissance']) if cadastral_parcels.iloc[0]['puissance'] else ""
+                                    # self.licence_description.append({'objet': "Parcelle trouvée",
+                                    #                                  'parcelle': parcel,
+                                    #                                  })
+                                elif result_count > 1:
+                                    self.parcel_errors.append(ErrorToCsv("parcels_errors",
+                                                                         "Trop de résultats pour cette parcelle",
+                                                                         licence_dict['reference'],
+                                                                         parcels_dict['complete_name']))
+                                    self.licence_description.append({'objet': "Trop de résultats pour cette parcelle",
+                                                                     'parcelle': parcels_dict['complete_name'],
+                                                                     })
+                                elif result_count == 0:
+                                    try:
+                                        parcelles_old_cadastrales = self.cadastral.cadastre_parcelles_old_vue
+                                        cadastral_parcels_old = parcelles_old_cadastrales[
+                                            (parcelles_old_cadastrales.division == int(division)) &
+                                            (parcelles_old_cadastrales.section == section) &
+                                            (parcelles_old_cadastrales.radical == int(radical)) &
+                                            ((parcelles_old_cadastrales.bis.isnull()) if not int(bis)
+                                             else parcelles_old_cadastrales.bis == int(bis)) &
+                                            ((parcelles_old_cadastrales.exposant.isnull()) if not exposant
+                                             else parcelles_old_cadastrales.exposant == exposant) &
+                                            ((parcelles_old_cadastrales.puissance.isnull()) if not int(puissance)
+                                             else parcelles_old_cadastrales.puissance == str(int(puissance)))
+                                            ]
+                                    except Exception as e:
+                                        print(e)
+
+                                    result_count_old = cadastral_parcels_old.shape[0]
+                                    # Looking for old parcels
+                                    if result_count_old == 1:
+                                        parcels_dict['outdated'] = 'True'
+                                        parcels_dict['is_official'] = 'True'
+                                        parcels_dict['division'] = str(cadastral_parcels_old.iloc[0]['division'])
+                                        parcels_dict['section'] = cadastral_parcels_old.iloc[0]['section']
+                                        parcels_dict['radical'] = str(int(cadastral_parcels_old.iloc[0]['radical']))
+                                        parcels_dict['bis'] = str(cadastral_parcels_old.iloc[0]['bis']) if \
+                                        cadastral_parcels_old.iloc[0]['bis'] else ""
+                                        parcels_dict['exposant'] = cadastral_parcels_old.iloc[0]['exposant']
+                                        parcels_dict['puissance'] = str(cadastral_parcels_old.iloc[0]['puissance']) if \
+                                        cadastral_parcels_old.iloc[0]['puissance'] else ""
+                                    elif result_count_old > 1:
+                                        self.parcel_errors.append(ErrorToCsv("parcels_errors",
+                                                                             "Trop de résultats pour cette ancienne parcelle",
+                                                                             licence_dict['reference'],
+                                                                             parcels_dict['complete_name']))
+                                        self.licence_description.append(
+                                            {'objet': "Trop de résultats pour cette ancienne parcelle",
+                                             'parcelle': parcels_dict['complete_name'],
+                                             })
+                                    if result_count_old == 0:
+                                        self.licence_description.append(
+                                            {'objet': "Pas de résultat pour cette parcelle",
+                                             'parcelle': parcels_dict['complete_name'],
+                                             })
+                                else:
+                                    self.licence_description.append({'objet': "Pas de résultat pour cette parcelle",
+                                                                     'parcelle': parcels_dict['complete_name'],
+                                                                     })
                             else:
-                                parcels_dict['outdated'] = 'False'
-                                parcels_dict['is_official'] = 'False'
-                                parcels_dict['division'] = str(division)
-                                parcels_dict['section'] = section
-                                parcels_dict['radical'] = str(int(radical))
-                                parcels_dict['bis'] = str(int(bis))
-                                parcels_dict['exposant'] = exposant
-                                parcels_dict['puissance'] = str(int(puissance))
-                                self.licence_description.append({'objet': "Pas de résultat pour cette parcelle",
+                                self.parcel_errors.append(ErrorToCsv("parcels_errors",
+                                                                     "Parcelle incomplète ou non valide",
+                                                                     licence_dict['reference'],
+                                                                     parcels_dict['complete_name']))
+                                self.licence_description.append({'objet': "Parcelle incomplète ou non valide",
                                                                  'parcelle': parcels_dict['complete_name'],
                                                                  })
                         else:
+                            self.parcel_errors.append(ErrorToCsv("parcels_errors",
+                                                                 "Parcelle incomplète ou non valide",
+                                                                 licence_dict['reference'],
+                                                                 parcels_dict['complete_name']))
                             self.licence_description.append({'objet': "Parcelle incomplète ou non valide",
-                                                             'parcelle': parcel,
+                                                             'parcelle': parcels_dict['complete_name'],
                                                              })
                     else:
+                        self.parcel_errors.append(ErrorToCsv("parcels_errors",
+                                                             "Parcelle incomplète ou non valide",
+                                                             licence_dict['reference'],
+                                                             parcels_dict['complete_name']))
                         self.licence_description.append({'objet': "Parcelle incomplète ou non valide",
                                                          'parcelle': parcels_dict['complete_name'],
                                                          })
-                else:
-                    self.licence_description.append({'objet': "Parcelle incomplète ou non valide",
-                                                     'parcelle': parcels_dict['complete_name'],
-                                                     })
-                if parcels_dict['division'] and parcels_dict['section']:
-                    licence_children.append(parcels_dict)
+                    if parcels_dict['division'] and parcels_dict['section']:
+                        licence_dict['__children__'].append(parcels_dict)
+            except Exception as e:
+                print(e)
 
     @benchmark_decorator
     def get_organization(self, licence, licence_dict):
