@@ -15,7 +15,7 @@ import time
 import unidecode
 
 from urban.dataimport.core.json import DateTimeEncoder, get_applicant_dict, get_event_dict, get_licence_dict, \
-    get_parcel_dict, get_work_locations_dict
+    get_parcel_dict, get_work_locations_dict, get_organization_dict
 from urban.dataimport.core.mapping.main_mapping import main_licence_deposit_event_id_mapping, \
     main_licence_decision_event_id_mapping
 from urban.dataimport.core.utils import parse_cadastral_reference, benchmark_decorator, BaseImport, \
@@ -141,6 +141,8 @@ class ImportAcropole(BaseImport):
         # licence_dict['referenceDGATLP'] = licence.DOSSIER_REFURB and licence.DOSSIER_REFURB or ''
         licenceSubject = licence.DOSSIER_OBJETFR or licence.DETAILS
         licence_dict['licenceSubject'] = licenceSubject
+        if licence.DOSSIER_REFCOM:
+            self.licence_description.append({'REFERENCE COM': licence.DOSSIER_REFCOM})
         licence_dict['usage'] = 'not_applicable'
         licence_dict['workLocations'] = self.get_work_locations(licence, licence_dict)
         self.get_applicants(licence, licence_dict['__children__'])
@@ -416,6 +418,51 @@ class ImportAcropole(BaseImport):
                                                      })
                 if parcels_dict['division'] and parcels_dict['section']:
                     licence_children.append(parcels_dict)
+
+    @benchmark_decorator
+    def get_organization(self, licence, licence_dict):
+        organization_dict = get_organization_dict()
+
+        # if hasattr(licence, 'ORG_NOM') and licence.ORG_NOM:
+        #     check_org_name = licence.ORG_NOM.replace("/", "").replace("-", "").replace(".", "").replace(" ", "")
+        #     if check_org_name:
+        #         organization_dict['personTitle'] = title_types.get(licence.ORG_TITLE_ID, "")
+        #         organization_dict['name1'] = licence.ORG_NOM
+        #         organization_dict['name1'] = organization_dict['name1'].replace("/", "").replace(".", " ")
+        #         organization_dict['name2'] = licence.ORG_PRENOM
+        #         organization_dict['name2'] = organization_dict['name2'].replace("/", "").replace(".", " ")
+        #         organization_dict['number'] = unidecode.unidecode(licence.ORG_NUMERO)
+        #         organization_dict['street'] = licence.ORG_RUE
+        #         organization_dict['zipcode'] = str(int(licence.ORG_CP))
+        #         organization_dict['city'] = licence.ORG_LOCALITE
+        #         organization_dict['phone'] = licence.ORG_TEL
+        #         organization_dict['gsm'] = licence.ORG_MOBILE
+        #         organization_dict['email'] = licence.ORG_MAIL
+        #
+        #         if licence.ORG_TYPE == 'ARCHITECTE' or \
+        #            licence.ORG_TYPE == 'ARCHITECTE|DEMANDEUR_CU' or \
+        #            licence.ORG_TYPE == 'DEMANDEUR_CU' or \
+        #            licence.ORG_TYPE == 'AUTEUR_ETUDE' or \
+        #            licence.ORG_TYPE == 'CONTACT_PEB' or \
+        #            licence.ORG_TYPE == 'BUREAU':
+        #             organization_dict['@type'] = 'Architect'
+        #             licence_dict['architects'].append(organization_dict)
+        #         elif licence.ORG_TYPE == 'NOTAIRE':
+        #             organization_dict['@type'] = 'Notary'
+        #             licence_dict['notaries'].append(organization_dict)
+        #         elif licence.ORG_TYPE == 'GEOMETRE':
+        #             organization_dict['@type'] = 'Geometrician'
+        #             licence_dict['geometricians'].append(organization_dict)
+
+        # Geometrician is mandatory for parceloutlicence type in Urban
+        if licence_dict['portalType'] in ('ParcelOutLicence', 'CODT_ParcelOutLicence') and len(licence_dict['geometricians']) == 0:
+            organization_dict['@type'] = 'Geometrician'
+            organization_dict['name1'] = "Géomètre par défaut"
+            organization_dict['name2'] = "Géomètre par défaut"
+            organization_dict['zipcode'] = "1000"
+            organization_dict['city'] = "Ville"
+            licence_dict['geometricians'].append(organization_dict)
+
 
     @benchmark_decorator
     def get_events(self, licence, licence_dict):
