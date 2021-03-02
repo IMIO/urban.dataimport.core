@@ -145,6 +145,7 @@ class ImportAcropole(BaseImport):
             self.licence_description.append({'REFERENCE COM': licence.DOSSIER_REFCOM})
         licence_dict['usage'] = 'not_applicable'
         licence_dict['workLocations'] = self.get_work_locations(licence, licence_dict)
+        self.get_organization(licence, licence_dict)
         self.get_applicants(licence, licence_dict['__children__'])
         self.get_parcels(licence, licence_dict['__children__'])
         self.get_events(licence, licence_dict)
