@@ -15,11 +15,11 @@ import time
 import unidecode
 
 from urban.dataimport.core.json import DateTimeEncoder, get_applicant_dict, get_event_dict, get_licence_dict, \
-    get_parcel_dict, get_work_locations_dict
+    get_parcel_dict, get_work_locations_dict, get_organization_dict
 from urban.dataimport.core.mapping.main_mapping import main_licence_deposit_event_id_mapping, \
     main_licence_decision_event_id_mapping
 from urban.dataimport.core.utils import parse_cadastral_reference, benchmark_decorator, BaseImport, \
-    export_to_customer_json, represent_int
+    export_to_customer_json, represent_int, ErrorToCsv, export_error_csv
 from urban.dataimport.core.utils import StateManager
 from urban.dataimport.core.utils import StateHandler
 from urban.dataimport.core.utils import IterationError
@@ -74,6 +74,8 @@ class ImportAcropole(BaseImport):
         create_views(self)
         create_cadastral_views(self)
         create_bestaddress_views(self, config['main']['locality'])
+        self.street_errors = []
+        self.parcel_errors = []
         print("INITIALIZATION COMPLETED")
 
     def execute(self):
@@ -113,6 +115,7 @@ class ImportAcropole(BaseImport):
             self.get_licence(id, licence)
             bar.next()
         bar.finish()
+        export_error_csv([self.parcel_errors, self.street_errors])
         if self.iterate is True:
             try:
                 self.validate_data(self.data, 'GenericLicence')
@@ -136,11 +139,15 @@ class ImportAcropole(BaseImport):
         #     licence_dict['investigationReasons'] = [investigation_reasons]
         licence_dict['reference'] = "{}/{}".format(licence.WRKDOSSIER_ID, licence.DOSSIER_NUMERO)
         # licence_dict['referenceDGATLP'] = licence.DOSSIER_REFURB and licence.DOSSIER_REFURB or ''
-        licence_dict['licenceSubject'] = licence.DOSSIER_OBJETFR
+        licenceSubject = licence.DOSSIER_OBJETFR or licence.DETAILS
+        licence_dict['licenceSubject'] = licenceSubject
+        if licence.DOSSIER_REFCOM:
+            self.licence_description.append({'REFERENCE COM': licence.DOSSIER_REFCOM})
         licence_dict['usage'] = 'not_applicable'
-        licence_dict['workLocations'] = self.get_work_locations(licence)
-        # self.get_applicants(licence, licence_dict['__children__'])
-        self.get_parcels(licence, licence_dict['__children__'])
+        licence_dict['workLocations'] = self.get_work_locations(licence, licence_dict)
+        self.get_organization(licence, licence_dict)
+        self.get_applicants(licence, licence_dict['__children__'])
+        self.get_parcels(licence, licence_dict)
         self.get_events(licence, licence_dict)
         description = str(''.join(str(d) for d in self.licence_description))
         licence_dict['description'] = {
@@ -185,7 +192,7 @@ class ImportAcropole(BaseImport):
                 return inquiry_value.iloc[0]['PARAM_VALUE']
 
     @benchmark_decorator
-    def get_work_locations(self, licence):
+    def get_work_locations(self, licence, licence_dict):
         work_locations_list = []
         work_locations_dict = get_work_locations_dict()
         if licence.CONCAT_ADRESSES and licence.CONCAT_ADRESSES.replace("@", "").replace("|", ""):
@@ -198,6 +205,60 @@ class ImportAcropole(BaseImport):
                 if street:
                     # remove parentheses and its content
                     acropole_street = re.sub(r'\([^)]*\)', '', street).strip()
+                    acropole_street = re.sub(r'^allée ', 'Allée ', acropole_street).strip()
+                    acropole_street = re.sub(r'^Av[.]', 'Avenue', acropole_street).strip()
+                    acropole_street = re.sub(r'^avenue ', 'Avenue ', acropole_street).strip()
+                    acropole_street = re.sub(r'^boulevard ', 'Boulevard ', acropole_street).strip()
+                    acropole_street = re.sub(r'^chaussée ', 'Chaussée ', acropole_street).strip()
+                    acropole_street = re.sub(r'^cour ', 'Cour ', acropole_street).strip()
+                    acropole_street = re.sub(r'^esplanade ', 'Esplanade ', acropole_street).strip()
+                    acropole_street = re.sub(r'^square ', 'Square ', acropole_street).strip()
+                    acropole_street = re.sub(r'^quai ', 'Quai ', acropole_street).strip()
+                    acropole_street = re.sub(r'^Pl[.]', 'Place', acropole_street).strip()
+                    acropole_street = re.sub(r'^Pl ', 'Place ', acropole_street).strip()
+                    acropole_street = re.sub(r'^place ', 'Place ', acropole_street).strip()
+                    acropole_street = re.sub(r'^voie ', 'Voie ', acropole_street).strip()
+                    acropole_street = re.sub(r'^Voie du Pahis', 'voie du Pahis', acropole_street).strip()  # Exception
+                    acropole_street = re.sub(r'^rue ', 'Rue ', acropole_street).strip()
+                    acropole_street = re.sub(r'^route ', 'Route ', acropole_street).strip()
+                    acropole_street = re.sub(r' St ', ' Saint-', acropole_street).strip()
+                    acropole_street = re.sub(r' Ste ', ' Sainte-', acropole_street).strip()
+
+                    acropole_street = re.sub(r'Avenue Delporte', 'Avenue H. Delporte', acropole_street).strip()
+                    acropole_street = re.sub(r'Rue de Lexhy', 'Rue Arnold de Lexhy', acropole_street).strip()
+                    acropole_street = re.sub(r'Rue Dossogne', 'Rue J. Dossogne', acropole_street).strip()
+                    acropole_street = re.sub(r'Rue Depas', 'Rue Jean Depas', acropole_street).strip()
+                    acropole_street = re.sub(r'Rue des Champs du Mont', 'Rue Champs du Mont', acropole_street).strip()
+                    acropole_street = re.sub(r'Rue Salengro', 'Rue Roger Salengro', acropole_street).strip()
+                    acropole_street = re.sub(r'Rue Smeets', 'Rue A. Smeets', acropole_street).strip()
+                    acropole_street = re.sub(r'Rue Sualems', 'Rue R. Sualems', acropole_street).strip()
+                    acropole_street = re.sub(r'Rue Roosevelt', 'Rue Franklin Roosevelt', acropole_street).strip()
+                    acropole_street = re.sub(r'Rue Royer', 'Rue Emile Royer', acropole_street).strip()
+                    acropole_street = re.sub(r'Rue Servet', 'Rue Michael Servet', acropole_street).strip()
+                    acropole_street = re.sub(r'Rue Sualem', 'Rue R. Sualem', acropole_street).strip()
+                    acropole_street = re.sub(r'Rue Wettinck', 'Rue J. Wettinck', acropole_street).strip()
+                    acropole_street = re.sub(r'Rue Louis', 'Rue J. Louis', acropole_street).strip()
+                    acropole_street = re.sub(r'Rue Marcotty', 'Rue T. Marcotty', acropole_street).strip()
+                    acropole_street = re.sub(r'Rue Messager', 'Rue du Messager', acropole_street).strip()
+                    acropole_street = re.sub(r'Rue Nicolay', 'Rue Ferdinand Nicolay', acropole_street).strip()
+                    acropole_street = re.sub(r'Rue Puit-Marie', 'Rue Puit Marie', acropole_street).strip()
+                    acropole_street = re.sub(r'Rue Raick', 'Rue Alexandre Raick', acropole_street).strip()
+                    acropole_street = re.sub(r'Rue Renard', 'Rue André Renard', acropole_street).strip()
+                    acropole_street = re.sub(r'Quai Destrée', 'Quai Jules Destrée', acropole_street).strip()
+                    acropole_street = re.sub(r'Rue Blum', 'Rue Léon Blum', acropole_street).strip()
+                    acropole_street = re.sub(r'Rue Bruno', 'Rue Gordano Bruno', acropole_street).strip()
+                    acropole_street = re.sub(r'Rue Bois Saint-Jean', 'Rue du Bois Saint-Jean', acropole_street).strip()
+                    acropole_street = re.sub(r'Rue Bougnet', 'Rue E. Bougnet', acropole_street).strip()
+                    acropole_street = re.sub(r'Rue Baivy', 'Rue Gustave Baivy', acropole_street).strip()
+                    acropole_street = re.sub(r'Rue de Stappe', 'Rue des Stappes', acropole_street).strip()
+                    acropole_street = re.sub(r'Rue del Rodje Cinse', 'Rue dèl Rodje Cinse', acropole_street).strip()
+                    acropole_street = re.sub(r'Rue Delbrouck', 'Rue R. Delbrouck', acropole_street).strip()
+                    acropole_street = re.sub(r'Rue Deloye', 'Rue S. Deloye', acropole_street).strip()
+                    acropole_street = re.sub(r'Rue Delville', 'Rue Antonin Delville', acropole_street).strip()
+                    acropole_street = re.sub(r'Rue des Petits Sarts', 'Rue des Petits-Sarts', acropole_street).strip()
+                    acropole_street = re.sub(r'Rue des Bas-Sarts', 'Rue des Bas Sarts', acropole_street).strip()
+                    acropole_street = re.sub(r'Rue de Brouckère', 'Rue L. De Brouckère', acropole_street).strip()
+                    acropole_street = re.sub(r'Rue Janson', 'Rue Paul Janson', acropole_street).strip()
                     # remove unnecessary characters
                     acropole_street = acropole_street.replace(",", " ").strip().replace("?", " ").strip()
                     bestaddress_streets = self.bestaddress.bestaddress_vue[
@@ -216,6 +277,14 @@ class ImportAcropole(BaseImport):
                                 (self.bestaddress.bestaddress_vue.street == acropole_street_without_last_char.strip())
                             ]
                             if bestaddress_streets.shape[0] == 0:
+                                self.street_errors.append(ErrorToCsv("street_errors",
+                                                                     "Pas de résultat pour cette rue",
+                                                                     licence_dict['reference'],
+                                                                     "rue : {} n°: {} cp: {} localité: {}"
+                                                                     .format(street,
+                                                                             number,
+                                                                             zipcode,
+                                                                             city)))
                                 self.licence_description.append({'objet': "Pas de résultat pour cette rue",
                                                                  'rue': street,
                                                                  'n°': number,
@@ -231,12 +300,12 @@ class ImportAcropole(BaseImport):
                         work_locations_dict['number'] = str(unidecode.unidecode(number))
                         work_locations_dict['zipcode'] = bestaddress_streets.iloc[0]['zip']
                         work_locations_dict['locality'] = bestaddress_streets.iloc[0]['entity']
-                        self.licence_description.append({'objet': "Rue trouvée",
-                                                         'rue': street,
-                                                         'n°': number,
-                                                         'code postal': zipcode,
-                                                         'localité': city
-                                                         })
+                        # self.licence_description.append({'objet': "Rue trouvée",
+                        #                                  'rue': street,
+                        #                                  'n°': number,
+                        #                                  'code postal': zipcode,
+                        #                                  'localité': city
+                        #                                  })
                     elif result_count > 1:
                         self.licence_description.append({'objet': "Plus d'un seul résultat pour cette rue",
                                                          'rue': street,
@@ -244,6 +313,14 @@ class ImportAcropole(BaseImport):
                                                          'code postal': zipcode,
                                                          'localité': city
                                                          })
+                        self.street_errors.append(ErrorToCsv("street_errors",
+                                                             "Plus d'un seul résultat pour cette rue",
+                                                             licence_dict['reference'],
+                                                             "rue : {} n°: {} cp: {} localité: {}"
+                                                             .format(street,
+                                                                     number,
+                                                                     zipcode,
+                                                                     city)))
                 if work_locations_dict['street'] or work_locations_dict['number']:
                     work_locations_list.append(work_locations_dict)
 
@@ -251,97 +328,197 @@ class ImportAcropole(BaseImport):
 
     @benchmark_decorator
     def get_applicants(self, licence, licence_children):
-        applicants = self.db.dossier_personne_vue[
-            (self.db.dossier_personne_vue.WRKDOSSIER_ID == licence.WRKDOSSIER_ID) &
-            (self.db.dossier_personne_vue.K2KND_ID == -204)]
-        for id, applicant in applicants.iterrows():
-            applicant_dict = get_applicant_dict()
-            applicant_dict['personTitle'] = title_types.get(applicant.CPSN_TYPE, '')
-            applicant_dict['name1'] = applicant.CPSN_NOM
-            applicant_dict['name2'] = applicant.CPSN_PRENOM
-            applicant_dict['email'] = applicant.CPSN_EMAIL
-            applicant_dict['phone'] = applicant.CPSN_TEL1
-            applicant_dict['gsm'] = applicant.CPSN_GSM
-            applicant_dict['fax'] = applicant.CPSN_FAX
-            applicant_dict['street'] = applicant.CLOC_ADRESSE
-            applicant_dict['zipcode'] = applicant.CLOC_ZIP
-            applicant_dict['city'] = applicant.CLOC_LOCALITE
-            licence_children.append(applicant_dict)
+        if licence.CONCAT_DEMANDEURS:
+            for applicant in licence.CONCAT_DEMANDEURS.split('#'):
+                applicant_dict = get_applicant_dict()
+                applicant_list = applicant.split('|')
+                applicant_dict['name1'] = applicant_list[0]
+                applicant_dict['name2'] = applicant_list[1]
+                applicant_dict['street'] = applicant_list[2]
+                applicant_dict['zipcode'] = applicant_list[3]
+                applicant_dict['city'] = applicant_list[4]
+                applicant_dict['personTitle'] = title_types.get(applicant_list[5], '')
+                applicant_dict['phone'] = applicant_list[6]
+                applicant_dict['fax'] = applicant_list[7]
+                applicant_dict['gsm'] = applicant_list[8]
+                applicant_dict['email'] = applicant_list[9]
+
+                licence_children.append(applicant_dict)
 
     @benchmark_decorator
-    def get_parcels(self, licence, licence_children):
+    def get_parcels(self, licence, licence_dict):
         parcels = licence.CONCAT_PARCELS
         if parcels:
-            for parcel in parcels.split("@"):
-                parcels_dict = get_parcel_dict()
-                parcels_dict['complete_name'] = parcel
-                parcels_args = parse_cadastral_reference(parcel)
-                division_code = parcels_args[0]
-                section = parcels_args[1] if parcels_args[1] else ''
-                radical = parcels_args[2] if parcels_args[2] else 0
-                bis = parcels_args[3] if parcels_args[3] else 0
-                exposant = parcels_args[4] if parcels_args[4] else ''
-                puissance = parcels_args[5] if parcels_args[5] else 0
-                if division_code and section and radical:
-                    if represent_int(puissance) and int(puissance) < 100:
-                        if represent_int(radical) and represent_int(bis) and represent_int(puissance):
-                            division = division_mapping.get(division_code, None)
-                            parcelles_cadastrales = self.cadastral.cadastre_parcelles_vue
-                            cadastral_parcels = parcelles_cadastrales[
-                                (parcelles_cadastrales.division == division) &
-                                (parcelles_cadastrales.section == section) &
-                                (parcelles_cadastrales.radical == int(radical)) &
-                                ((parcelles_cadastrales.bis.isnull()) if not int(bis)
-                                 else parcelles_cadastrales.bis == int(bis)) &
-                                ((parcelles_cadastrales.exposant.isnull()) if not exposant
-                                 else parcelles_cadastrales.exposant == exposant) &
-                                ((parcelles_cadastrales.puissance.isnull()) if not int(puissance)
-                                 else parcelles_cadastrales.puissance == puissance)
-                            ]
+            try:
+                for parcel in parcels.split("@"):
+                    parcels_dict = get_parcel_dict()
+                    parcels_dict['complete_name'] = parcel
+                    parcels_args = parse_cadastral_reference(parcel)
+                    division_code = parcels_args[0]
+                    section = parcels_args[1] if parcels_args[1] else ''
+                    radical = parcels_args[2] if parcels_args[2] else 0
+                    bis = parcels_args[3] if parcels_args[3] else 0
+                    exposant = parcels_args[4] if parcels_args[4] else ''
+                    puissance = parcels_args[5] if parcels_args[5] else 0
+                    if division_code and section and radical:
+                        if represent_int(puissance) and int(puissance) < 100:
+                            if represent_int(radical) and represent_int(bis) and represent_int(puissance):
+                                division = division_mapping.get(division_code, None)
+                                parcelles_cadastrales = self.cadastral.cadastre_parcelles_vue
+                                cadastral_parcels = parcelles_cadastrales[
+                                    (parcelles_cadastrales.division == int(division)) &
+                                    (parcelles_cadastrales.section == section) &
+                                    (parcelles_cadastrales.radical == int(radical)) &
+                                    ((parcelles_cadastrales.bis.isnull()) if not int(bis)
+                                     else parcelles_cadastrales.bis == int(bis)) &
+                                    ((parcelles_cadastrales.exposant.isnull()) if not exposant
+                                     else parcelles_cadastrales.exposant == exposant) &
+                                    ((parcelles_cadastrales.puissance.isnull()) if not int(puissance)
+                                     else parcelles_cadastrales.puissance == str(int(puissance)))
+                                    ]
 
-                            result_count = cadastral_parcels.shape[0]
-                            if result_count == 1:
-                                parcels_dict['outdated'] = 'False'
-                                parcels_dict['is_official'] = 'True'
-                                parcels_dict['division'] = str(cadastral_parcels.iloc[0]['division'])
-                                parcels_dict['section'] = cadastral_parcels.iloc[0]['section']
-                                parcels_dict['radical'] = str(cadastral_parcels.iloc[0]['radical'])
-                                parcels_dict['bis'] = str(cadastral_parcels.iloc[0]['bis']) if cadastral_parcels.iloc[0]['bis'] else ""
-                                parcels_dict['exposant'] = cadastral_parcels.iloc[0]['exposant']
-                                parcels_dict['puissance'] = str(cadastral_parcels.iloc[0]['puissance']) if cadastral_parcels.iloc[0]['puissance'] else ""
-                                self.licence_description.append({'objet': "Parcelle trouvée",
-                                                                 'parcelle': parcel,
-                                                                 })
-                            elif result_count > 1:
-                                self.licence_description.append({'objet': "Trop de résultats pour cette parcelle",
-                                                                 'parcelle': parcel,
-                                                                 })
+                                result_count = cadastral_parcels.shape[0]
+                                if result_count == 1:
+                                    parcels_dict['outdated'] = 'False'
+                                    parcels_dict['is_official'] = 'True'
+                                    parcels_dict['division'] = str(cadastral_parcels.iloc[0]['division'])
+                                    parcels_dict['section'] = cadastral_parcels.iloc[0]['section']
+                                    parcels_dict['radical'] = str(cadastral_parcels.iloc[0]['radical'])
+                                    parcels_dict['bis'] = str(cadastral_parcels.iloc[0]['bis']) if cadastral_parcels.iloc[0]['bis'] else ""
+                                    parcels_dict['exposant'] = cadastral_parcels.iloc[0]['exposant']
+                                    parcels_dict['puissance'] = str(cadastral_parcels.iloc[0]['puissance']) if cadastral_parcels.iloc[0]['puissance'] else ""
+                                    # self.licence_description.append({'objet': "Parcelle trouvée",
+                                    #                                  'parcelle': parcel,
+                                    #                                  })
+                                elif result_count > 1:
+                                    self.parcel_errors.append(ErrorToCsv("parcels_errors",
+                                                                         "Trop de résultats pour cette parcelle",
+                                                                         licence_dict['reference'],
+                                                                         parcels_dict['complete_name']))
+                                    self.licence_description.append({'objet': "Trop de résultats pour cette parcelle",
+                                                                     'parcelle': parcels_dict['complete_name'],
+                                                                     })
+                                elif result_count == 0:
+                                    try:
+                                        parcelles_old_cadastrales = self.cadastral.cadastre_parcelles_old_vue
+                                        cadastral_parcels_old = parcelles_old_cadastrales[
+                                            (parcelles_old_cadastrales.division == int(division)) &
+                                            (parcelles_old_cadastrales.section == section) &
+                                            (parcelles_old_cadastrales.radical == int(radical)) &
+                                            ((parcelles_old_cadastrales.bis.isnull()) if not int(bis)
+                                             else parcelles_old_cadastrales.bis == int(bis)) &
+                                            ((parcelles_old_cadastrales.exposant.isnull()) if not exposant
+                                             else parcelles_old_cadastrales.exposant == exposant) &
+                                            ((parcelles_old_cadastrales.puissance.isnull()) if not int(puissance)
+                                             else parcelles_old_cadastrales.puissance == str(int(puissance)))
+                                            ]
+                                    except Exception as e:
+                                        print(e)
+
+                                    result_count_old = cadastral_parcels_old.shape[0]
+                                    # Looking for old parcels
+                                    if result_count_old == 1:
+                                        parcels_dict['outdated'] = 'True'
+                                        parcels_dict['is_official'] = 'True'
+                                        parcels_dict['division'] = str(cadastral_parcels_old.iloc[0]['division'])
+                                        parcels_dict['section'] = cadastral_parcels_old.iloc[0]['section']
+                                        parcels_dict['radical'] = str(int(cadastral_parcels_old.iloc[0]['radical']))
+                                        parcels_dict['bis'] = str(cadastral_parcels_old.iloc[0]['bis']) if \
+                                        cadastral_parcels_old.iloc[0]['bis'] else ""
+                                        parcels_dict['exposant'] = cadastral_parcels_old.iloc[0]['exposant']
+                                        parcels_dict['puissance'] = str(cadastral_parcels_old.iloc[0]['puissance']) if \
+                                        cadastral_parcels_old.iloc[0]['puissance'] else ""
+                                    elif result_count_old > 1:
+                                        self.parcel_errors.append(ErrorToCsv("parcels_errors",
+                                                                             "Trop de résultats pour cette ancienne parcelle",
+                                                                             licence_dict['reference'],
+                                                                             parcels_dict['complete_name']))
+                                        self.licence_description.append(
+                                            {'objet': "Trop de résultats pour cette ancienne parcelle",
+                                             'parcelle': parcels_dict['complete_name'],
+                                             })
+                                    if result_count_old == 0:
+                                        self.licence_description.append(
+                                            {'objet': "Pas de résultat pour cette parcelle",
+                                             'parcelle': parcels_dict['complete_name'],
+                                             })
+                                else:
+                                    self.licence_description.append({'objet': "Pas de résultat pour cette parcelle",
+                                                                     'parcelle': parcels_dict['complete_name'],
+                                                                     })
                             else:
-                                parcels_dict['outdated'] = 'False'
-                                parcels_dict['is_official'] = 'False'
-                                parcels_dict['division'] = str(division)
-                                parcels_dict['section'] = section
-                                parcels_dict['radical'] = str(int(radical))
-                                parcels_dict['bis'] = str(int(bis))
-                                parcels_dict['exposant'] = exposant
-                                parcels_dict['puissance'] = str(int(puissance))
-                                self.licence_description.append({'objet': "Pas de résultat pour cette parcelle",
+                                self.parcel_errors.append(ErrorToCsv("parcels_errors",
+                                                                     "Parcelle incomplète ou non valide",
+                                                                     licence_dict['reference'],
+                                                                     parcels_dict['complete_name']))
+                                self.licence_description.append({'objet': "Parcelle incomplète ou non valide",
                                                                  'parcelle': parcels_dict['complete_name'],
                                                                  })
                         else:
+                            self.parcel_errors.append(ErrorToCsv("parcels_errors",
+                                                                 "Parcelle incomplète ou non valide",
+                                                                 licence_dict['reference'],
+                                                                 parcels_dict['complete_name']))
                             self.licence_description.append({'objet': "Parcelle incomplète ou non valide",
-                                                             'parcelle': parcel,
+                                                             'parcelle': parcels_dict['complete_name'],
                                                              })
                     else:
+                        self.parcel_errors.append(ErrorToCsv("parcels_errors",
+                                                             "Parcelle incomplète ou non valide",
+                                                             licence_dict['reference'],
+                                                             parcels_dict['complete_name']))
                         self.licence_description.append({'objet': "Parcelle incomplète ou non valide",
                                                          'parcelle': parcels_dict['complete_name'],
                                                          })
-                else:
-                    self.licence_description.append({'objet': "Parcelle incomplète ou non valide",
-                                                     'parcelle': parcels_dict['complete_name'],
-                                                     })
-                if parcels_dict['division'] and parcels_dict['section']:
-                    licence_children.append(parcels_dict)
+                    if parcels_dict['division'] and parcels_dict['section']:
+                        licence_dict['__children__'].append(parcels_dict)
+            except Exception as e:
+                print(e)
+
+    @benchmark_decorator
+    def get_organization(self, licence, licence_dict):
+        organization_dict = get_organization_dict()
+
+        # if hasattr(licence, 'ORG_NOM') and licence.ORG_NOM:
+        #     check_org_name = licence.ORG_NOM.replace("/", "").replace("-", "").replace(".", "").replace(" ", "")
+        #     if check_org_name:
+        #         organization_dict['personTitle'] = title_types.get(licence.ORG_TITLE_ID, "")
+        #         organization_dict['name1'] = licence.ORG_NOM
+        #         organization_dict['name1'] = organization_dict['name1'].replace("/", "").replace(".", " ")
+        #         organization_dict['name2'] = licence.ORG_PRENOM
+        #         organization_dict['name2'] = organization_dict['name2'].replace("/", "").replace(".", " ")
+        #         organization_dict['number'] = unidecode.unidecode(licence.ORG_NUMERO)
+        #         organization_dict['street'] = licence.ORG_RUE
+        #         organization_dict['zipcode'] = str(int(licence.ORG_CP))
+        #         organization_dict['city'] = licence.ORG_LOCALITE
+        #         organization_dict['phone'] = licence.ORG_TEL
+        #         organization_dict['gsm'] = licence.ORG_MOBILE
+        #         organization_dict['email'] = licence.ORG_MAIL
+        #
+        #         if licence.ORG_TYPE == 'ARCHITECTE' or \
+        #            licence.ORG_TYPE == 'ARCHITECTE|DEMANDEUR_CU' or \
+        #            licence.ORG_TYPE == 'DEMANDEUR_CU' or \
+        #            licence.ORG_TYPE == 'AUTEUR_ETUDE' or \
+        #            licence.ORG_TYPE == 'CONTACT_PEB' or \
+        #            licence.ORG_TYPE == 'BUREAU':
+        #             organization_dict['@type'] = 'Architect'
+        #             licence_dict['architects'].append(organization_dict)
+        #         elif licence.ORG_TYPE == 'NOTAIRE':
+        #             organization_dict['@type'] = 'Notary'
+        #             licence_dict['notaries'].append(organization_dict)
+        #         elif licence.ORG_TYPE == 'GEOMETRE':
+        #             organization_dict['@type'] = 'Geometrician'
+        #             licence_dict['geometricians'].append(organization_dict)
+
+        # Geometrician is mandatory for parceloutlicence type in Urban
+        if licence_dict['portalType'] in ('ParcelOutLicence', 'CODT_ParcelOutLicence') and len(licence_dict['geometricians']) == 0:
+            organization_dict['@type'] = 'Geometrician'
+            organization_dict['name1'] = "Géomètre par défaut"
+            organization_dict['name2'] = "Géomètre par défaut"
+            organization_dict['zipcode'] = "1000"
+            organization_dict['city'] = "Ville"
+            licence_dict['geometricians'].append(organization_dict)
+
 
     @benchmark_decorator
     def get_events(self, licence, licence_dict):
