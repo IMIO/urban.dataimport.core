@@ -61,17 +61,25 @@ portal_type_mapping = {
     -14333: 'MiscDemand',  # reclamations
     -14179: 'Division',
     -13467: 'MiscDemand',  # infractions
-    -11889: '',  # to complete or ignore
+    -11889: 'BuildLicence',  # to complete or ignore
     -10362: 'MiscDemand',  # demande de principe
-    -10200: '',  # to complete or ignore
-    -7812: '',  # to complete or ignore
-    -6523: '',  # to complete or ignore
+    -10200: 'MiscDemand',  # to complete or ignore
+    -9614: 'MiscDemand',  # to complete or ignore
+    -7812: 'Article127',  # to complete or ignore
+    -6523: 'EnvClassOne',  # to complete or ignore
     -5976: 'EnvClassThree',
     -5753: 'NotaryLetter',
     -4775: '',  # to complete or ignore
-    -3575: '',  # to complete or ignore
-    -1972: '',  # to complete or ignore
-    -1014: '',  # to complete or ignore
+    -3575: 'EnvClassTwo',  # to complete or ignore
+    -2982: 'UrbanCertificateOne',  # to complete or ignore
+    -1972: 'ParcelOutLicence',  # to complete or ignore
+    -1014: 'BuildLicence',  # to complete or ignore
+    466601: 'BuildLicence',  # to complete or ignore
+    512744: 'UrbanCertificateOne',  # to complete or ignore
+    513065: 'UrbanCertificateTwo',  # to complete or ignore
+    513305: 'NotaryLetter',  # to complete or ignore
+    516507: 'BuildLicence',  # to complete or ignore
+    519282: 'ParcelOutLicence',  # to complete or ignore
 }
 
 # urbmessagestatus table
