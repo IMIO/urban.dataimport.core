@@ -22,7 +22,7 @@ def create_concat_views(import_acropole):
                                   """
                                     SELECT
                                       DOSSIER.WRKDOSSIER_ID,
-                                      GROUP_CONCAT(CONCAT_WS("",PERSONNE.CPSN_NOM, '|',
+                                      GROUP_CONCAT(CONCAT_WS("",REPLACE(PERSONNE.CPSN_NOM,'#',' '), '|',
                                                                 PERSONNE.CPSN_PRENOM, '|', 
                                                                 ADRESSE_PERSONNE.CLOC_ADRESSE, '|',
                                                                 ADRESSE_PERSONNE.CLOC_ZIP, '|', 
