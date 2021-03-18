@@ -3,6 +3,7 @@ import re
 
 from progress.bar import FillingSquaresBar
 from sqlalchemy import create_engine
+from sqlalchemy.pool import StaticPool
 from urban.dataimport.core import utils
 from urban.dataimport.core.db import LazyDB
 from urban.dataimport.core.mapping.acropole_mapping import events_types, portal_type_mapping, \
@@ -47,7 +48,8 @@ class ImportAcropole(BaseImport):
         self.view = view
         self.licence_id = licence_id
         self.search_old_parcels = config['main']['search_old_parcels']
-        engine = create_engine('mysql://{user}:{password}@{host}:{port}'.format(**config._sections['database']))
+        engine = create_engine('mysql://{user}:{password}@{host}:{port}'.format(**config._sections['database']),
+                               poolclass=StaticPool)
         connection = engine.connect()
         self.db = LazyDB(
             connection,
@@ -55,7 +57,7 @@ class ImportAcropole(BaseImport):
             ignore_cache=ignore_cache,
         )
         engine_cadastral = create_engine('postgresql://{user}:{password}@{host}:{port}'.format(
-            **config._sections['cadastral_database']))
+            **config._sections['cadastral_database']), poolclass=StaticPool)
         connection_cadastral = engine_cadastral.connect()
         self.cadastral = LazyDB(
             connection_cadastral,
@@ -63,7 +65,7 @@ class ImportAcropole(BaseImport):
             ignore_cache=ignore_cache,
         )
         engine_bestaddress = create_engine('postgresql://{user}:{password}@{host}:{port}'.format(
-            **config._sections['bestaddress_database']))
+            **config._sections['bestaddress_database']), poolclass=StaticPool)
         connection_bestaddress = engine_bestaddress.connect()
         self.bestaddress = LazyDB(
             connection_bestaddress,
@@ -137,12 +139,13 @@ class ImportAcropole(BaseImport):
         # investigation_reasons = self.get_inquiry_values(licence, 'investigationReasons')
         # if investigation_reasons:
         #     licence_dict['investigationReasons'] = [investigation_reasons]
-        licence_dict['reference'] = "{}/{}".format(licence.WRKDOSSIER_ID, licence.DOSSIER_NUMERO)
+        licence_dict['reference'] = licence.REFERENCE_URBAN
+        # print(licence.REFERENCE_URBAN)
         # licence_dict['referenceDGATLP'] = licence.DOSSIER_REFURB and licence.DOSSIER_REFURB or ''
-        licenceSubject = licence.DOSSIER_OBJETFR or licence.DETAILS
+        licenceSubject = licence.OBJET_URBAN or licence.DETAILS
         licence_dict['licenceSubject'] = licenceSubject
-        if licence.DOSSIER_REFCOM:
-            self.licence_description.append({'REFERENCE COM': licence.DOSSIER_REFCOM})
+        if licence.OBSERVATIONS_URBAN:
+            self.licence_description.append({'Observations': licence.OBSERVATIONS_URBAN})
         licence_dict['usage'] = 'not_applicable'
         licence_dict['workLocations'] = self.get_work_locations(licence, licence_dict)
         self.get_organization(licence, licence_dict)
@@ -161,7 +164,7 @@ class ImportAcropole(BaseImport):
 
     @benchmark_decorator
     def get_portal_type(self, licence):
-        portal_type = portal_type_mapping.get(licence.DOSSIER_TDOSSIERID, None)
+        portal_type = portal_type_mapping.get(licence.PROCEDURE_URBAN, None)
         # if portal_type == 'UrbanCertificateOne' and licence.DOSSIER_TYPEIDENT == 'CU2':
         #     portal_type = 'UrbanCertificateTwo'
         return portal_type
@@ -363,6 +366,8 @@ class ImportAcropole(BaseImport):
                     if division_code and section and radical:
                         if represent_int(puissance) and int(puissance) < 100:
                             if represent_int(radical) and represent_int(bis) and represent_int(puissance):
+                                if len(division_code) == 1:
+                                    division_code = '0{}'.format(division_code)
                                 division = division_mapping.get(division_code, None)
                                 parcelles_cadastrales = self.cadastral.cadastre_parcelles_vue
                                 cadastral_parcels = parcelles_cadastrales[
@@ -533,10 +538,8 @@ class ImportAcropole(BaseImport):
         event_dict['type'] = 'recepisse'
         event_dict['event_id'] = main_licence_deposit_event_id_mapping[licence_dict['portalType']]
         event_dict['eventPortalType'] = 'UrbanEvent'
-        if licence.DOSSIER_DATEDEPART:
-            event_dict['eventDate'] = str(licence.DOSSIER_DATEDEPART)[0:10]
-        elif licence.DOSSIER_DATEDEPOT:
-            event_dict['eventDate'] = str(licence.DOSSIER_DATEDEPOT)[0:10]
+        if licence.DATE_DEPOT_URBAN and licence.DATE_DEPOT_URBAN != 'NULL':
+            event_dict['eventDate'] = str(licence.DATE_DEPOT_URBAN)[0:10]
         else:
             return
         licence_dict['__children__'].append(event_dict)
@@ -581,9 +584,9 @@ class ImportAcropole(BaseImport):
         event_dict['title'] = 'Événement décisionnel'
         event_dict['event_id'] = main_licence_decision_event_id_mapping[licence_dict['portalType']]
 
-        licence_dict['wf_state'] = state_mapping.get(licence.DOSSIER_OCTROI)
-        if licence_dict['wf_state']:
-            self.licence_description.append({'Précision décision': decision_label_mapping.get(licence_dict['wf_state'])})
+        licence_dict['wf_state'] = state_mapping.get(licence.STATUT_URBAN)
+        # if licence_dict['wf_state']:
+        #     self.licence_description.append({'Précision décision': decision_label_mapping.get(licence_dict['wf_state'])})
 
         # CODT licences need a transition
         if licence_dict['portalType'].startswith("CODT_") and licence_dict['wf_state']:
@@ -595,9 +598,9 @@ class ImportAcropole(BaseImport):
                     licence_dict['wf_transition'] = 'retired'
                 licence_dict['wf_state'] = ''
 
-        if licence.DOSSIER_DATEDELIV:
-            event_dict['eventDate'] = str(licence.DOSSIER_DATEDELIV)[0:10]
-            event_dict['decisionDate'] = str(licence.DOSSIER_DATEDELIV)[0:10]
+        if licence.DATE_DECISION_URBAN and licence.DATE_DECISION_URBAN != 'NULL':
+            event_dict['eventDate'] = str(licence.DATE_DECISION_URBAN)[0:10]
+            event_dict['decisionDate'] = str(licence.DATE_DECISION_URBAN)[0:10]
             licence_dict['__children__'].append(event_dict)
 
 

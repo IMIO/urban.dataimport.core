@@ -43,6 +43,7 @@ main_licence_deposit_event_id_mapping = {
     'Division': 'depot-de-la-demande',
     'Article127': 'depot-de-la-demande',
     'EnvClassTwo': 'depot-de-la-demande',
+    'EnvClassBordering': 'depot-de-la-demande',
 }
 
 main_licence_not_receivable_event_id_mapping = {
@@ -73,7 +74,7 @@ main_licence_decision_event_id_mapping = {
     'ParcelOutLicence': 'delivrance-du-permis-octroi-ou-refus',
     'UrbanCertificateOne': 'octroi-cu1',
     'UrbanCertificateTwo': 'octroi-cu2',
-    'PreliminaryNotice': '',
+    'PreliminaryNotice': 'passage-college',
     'EnvClassOne': 'decision',
     'NotaryLetter': 'octroi-lettre-notaire',
     'Declaration': 'deliberation-college',
@@ -89,6 +90,7 @@ main_licence_decision_event_id_mapping = {
     'Division': 'decision-octroi-refus',
     'Article127': 'delivrance-du-permis-octroi-ou-refus',
     'EnvClassTwo': 'decision',
+    'EnvClassBordering': 'decision',
 }
 
 
@@ -113,5 +115,6 @@ main_portal_type_workflow_mapping = {
     'Division': 'urbandivision_workflow',
     'Article127': 'urban_licence_workflow',
     'EnvClassTwo': 'urban_licence_workflow',
+    'EnvClassBordering': 'urban_licence_workflow',
 }
 

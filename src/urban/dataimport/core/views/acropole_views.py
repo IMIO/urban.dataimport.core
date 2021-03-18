@@ -133,13 +133,22 @@ def create_views(import_acropole):
                                       DETAILS,
                                       CONCAT_PARCELS,
                                       CONCAT_DEMANDEURS,
-                                      CONCAT_ADRESSES
+                                      CONCAT_ADRESSES,
+                                      CUSTOM.PROCEDURE_URBAN AS PROCEDURE_URBAN,
+                                      CUSTOM.REFERENCE_URBAN AS REFERENCE_URBAN,
+                                      CUSTOM.OBSERVATIONS_URBAN AS OBSERVATIONS_URBAN,
+                                      CUSTOM.OBJET_URBAN AS OBJET_URBAN,
+                                      CUSTOM.DATE_DEPOT_URBAN AS DATE_DEPOT_URBAN,
+                                      CUSTOM.DATE_DECISION_URBAN AS DATE_DECISION_URBAN,
+                                      CUSTOM.STATUT_URBAN AS STATUT_URBAN
                                     FROM
                                       wrkdossier AS DOSSIER
                                       LEFT JOIN get_details AS DETAILS ON DETAILS.WRKDOSSIER_ID = DOSSIER.WRKDOSSIER_ID
                                       LEFT JOIN get_parcelles AS PARCELLES ON PARCELLES.WRKDOSSIER_ID = DOSSIER.WRKDOSSIER_ID
                                       LEFT JOIN get_demandeurs AS APPLICANT ON APPLICANT.WRKDOSSIER_ID = DOSSIER.WRKDOSSIER_ID
-                                      LEFT JOIN get_adresses AS WORKLOCATIONS ON WORKLOCATIONS.WRKDOSSIER_ID = DOSSIER.WRKDOSSIER_ID;
+                                      LEFT JOIN get_adresses AS WORKLOCATIONS ON WORKLOCATIONS.WRKDOSSIER_ID = DOSSIER.WRKDOSSIER_ID
+                                      LEFT JOIN custom AS CUSTOM ON CUSTOM.ID = DOSSIER.WRKDOSSIER_ID
+                                      WHERE CUSTOM.PROCEDURE_URBAN <> 'A SUPPRIMER';
                                   """
                                   )
     import_acropole.db.create_view("BuildLicence_vue",

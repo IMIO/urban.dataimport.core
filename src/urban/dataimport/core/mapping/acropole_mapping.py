@@ -38,97 +38,27 @@ events_types = {
 main_state_id_mapping = [0, 1]
 
 portal_type_mapping = {
-    -67348: 'EnvClassOne',
-    -62737: 'ParcelOutLicence',
-    -58199: '',  # to complete or ignore
-    -57728: 'EnvClassOne',
-    -53925: 'UniqueLicence',
-    -52990: '',  # to complete or ignore
-    -49306: 'Article127',
-    -46623: 'EnvClassThree',
-    -42575: 'BuildLicence',
-    -37624: 'EnvClassOne',
-    -36624: 'MiscDemand',  # infractions
-    -34766: 'NotaryLetter',
-    -32669: 'BuildLicence',  # ?
-    -28278: '',  # to complete or ignore
-    -26124: 'ParcelOutLicence',
-    -25638: 'MiscDemand',
-    -20646: 'Article127',
-    -19184: 'EnvClassTwo',
-    -17277: 'BuildLicence',
-    -15200: 'Declaration',
-    -14333: 'MiscDemand',  # reclamations
-    -14179: 'Division',
-    -13467: 'MiscDemand',  # infractions
-    -11889: '',  # to complete or ignore
-    -10362: 'MiscDemand',  # demande de principe
-    -10200: '',  # to complete or ignore
-    -7812: '',  # to complete or ignore
-    -6523: '',  # to complete or ignore
-    -5976: 'EnvClassThree',
-    -5753: 'NotaryLetter',
-    -4775: '',  # to complete or ignore
-    -3575: '',  # to complete or ignore
-    -1972: '',  # to complete or ignore
-    -1014: '',  # to complete or ignore
+    'Article 127': 'Article127',
+    'Déclaration': 'Declaration',
+    'Déclaration environnementale': 'EnvClassThree',
+    "Demande d'avis préalable": 'PreliminaryNotice',
+    'Demandes diverses': 'MiscDemand',
+    'Division': 'Division',
+    'Lettre de notaire': 'NotaryLetter',
+    "Permis d'environnement classe 1": 'EnvClassOne',
+    "Permis d'environnement classe 2": 'EnvClassTwo',
+    "Permis d'environnement limitrophes": 'EnvClassBordering',
+    "Permis d'urbanisation": 'ParcelOutLicence',
+    "Permis d'urbanisme": 'BuildLicence',
+    "Permis unique": 'UniqueLicence',
 }
 
 # urbmessagestatus table
 state_mapping = {
-    -58: 'refuse',  # demande irrecevable
-    -50: 'refuse',  # refusé
-    -49: 'accept',  # octroyé
-    -48: 'refuse',  # Permis refusé suite levée suspension
-    -47: 'accept',  # Permis octroyé suite levée suspension
-    -46: 'retire',  # annulation du permis
-    -45: 'retire',  # Annulation du permis suite décision du Gvt
-    -44: 'refuse',  # Modif. refusée suite décision confirmée
-    -43: 'refuse',  # Permis refusé suite décision confirmée
-    -42: 'accept',  # Octroi cond. suite décision confirmée
-    -41: 'accept',  # Modif. octroyée suite décision confirmée
-    -40: 'accept',  # Permis octroyé suite décision confirmée
-    -39: 'refuse',  # Demande rejetée
-    -38: 'refuse',  # Révision refusée par FT
-    -37: 'refuse',  # Révision refusée par le collège
-    -36: 'accept',  # Révision octroyée par FT
-    -35: 'accept',  # Révision octroyée par le collège
-    -34: 'refuse',  # RS vaut refus : refusé ?
-    -33: 'retire',  # clôturé donc annulé ? pas de statut
-    -32: 'accept',  # RS vaut octroi : octroyé ?
-    -31: 'accept',  # déclaration recevable par défaut
-    -30: 'accept',  # déclaration recevable sans condition complémentaire
-    -29: '',        # recours, état en cours ?
-    -28: '',        # introduction d'un recours, état en cours ?
-    -27: 'accept',  # recevable avec condition complémentaire
-    -26: 'accept',  # octroi conditionnel
-    -25: 'refuse',  # Permis refusé par le FT/FD
-    -24: 'accept',  # Octroi partiel du permis par le FT/FD
-    -23: 'accept',  # octroyé par le FT
-    -22: 'refuse',  # Pas décision recours - Refusé
-    -21: 'accept',  # Pas décision recours - Octroyé
-    -20: '',        # recours en cours
-    -19: 'retire',  # périmé
-    -18: 'refuse',  # refusé par le collège
-    -17: 'refuse',  # refus par le FT
-    -16: 'accept',  # octroyé partiellement par le FT
-    -15: 'accept',  # octroyé par le FT
-    -14: 'accept',  # octroi partiel
-    -13: 'retire',  # suspendu
-    -12: 'accept',  # délivré
-    -11: 'retire',  # retiré
-    -10: 'retire',  # annulé
-    -9: '',         # état inconnu
-    -8: 'refuse',   # irrecevable
-    -7: 'accept',   # recevable
-    -6: 'accept',   # octroyé sur recours
-    -5: 'refuse',   # refusé
-    -4: 'retire',   # suspendu
-    -3: '',         # en cours
-    -2: 'retire',   # abandonné
-    -1: '',         # en cours
-    0: 'refuse',    # refusé
-    1: 'accept',    # octroyé
+    'Annulé / Abandonné': 'retire',   # abandonné
+    'En cours': '',         # en cours
+    'Refusé': 'refuse',    # refusé
+    'Accepté' : 'accept',    # octroyé
 }
 
 accepted_main_label_mapping = {
