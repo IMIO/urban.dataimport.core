@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import re
 
+from datetime import datetime
 from progress.bar import FillingSquaresBar
 from sqlalchemy import create_engine
 from sqlalchemy.pool import StaticPool
@@ -539,7 +540,8 @@ class ImportAcropole(BaseImport):
         event_dict['event_id'] = main_licence_deposit_event_id_mapping[licence_dict['portalType']]
         event_dict['eventPortalType'] = 'UrbanEvent'
         if licence.DATE_DEPOT_URBAN and licence.DATE_DEPOT_URBAN != 'NULL':
-            event_dict['eventDate'] = str(licence.DATE_DEPOT_URBAN)[0:10]
+            event_format_date = datetime.strptime(str(licence.DATE_DEPOT_URBAN)[0:10], '%d/%m/%Y').strftime('%Y-%m-%d')
+            event_dict['eventDate'] = event_format_date
         else:
             return
         licence_dict['__children__'].append(event_dict)
@@ -599,8 +601,9 @@ class ImportAcropole(BaseImport):
                 licence_dict['wf_state'] = ''
 
         if licence.DATE_DECISION_URBAN and licence.DATE_DECISION_URBAN != 'NULL':
-            event_dict['eventDate'] = str(licence.DATE_DECISION_URBAN)[0:10]
-            event_dict['decisionDate'] = str(licence.DATE_DECISION_URBAN)[0:10]
+            event_format_date = datetime.strptime(str(licence.DATE_DECISION_URBAN)[0:10], '%d/%m/%Y').strftime('%Y-%m-%d')
+            event_dict['eventDate'] = event_format_date
+            event_dict['decisionDate'] = event_format_date
             licence_dict['__children__'].append(event_dict)
 
 
