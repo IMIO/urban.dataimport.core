@@ -111,7 +111,7 @@ class ImportAcropole(BaseImport):
         if self.limit:
             folders = folders.head(self.limit)
         if self.licence_id:
-            folders = folders[folders.DOSSIER_NUMERO == self.licence_id]
+            folders = folders[folders.REFERENCE_URBAN == self.licence_id]
 
         bar = FillingSquaresBar('Processing licences', max=folders.shape[0])
         for id, licence in folders.iterrows():
@@ -150,6 +150,7 @@ class ImportAcropole(BaseImport):
         licence_dict['usage'] = 'not_applicable'
         licence_dict['workLocations'] = self.get_work_locations(licence, licence_dict)
         self.get_organization(licence, licence_dict)
+
         self.get_applicants(licence, licence_dict['__children__'])
         self.get_parcels(licence, licence_dict)
         self.get_events(licence, licence_dict)
@@ -301,7 +302,7 @@ class ImportAcropole(BaseImport):
                     if result_count == 1:
                         work_locations_dict['street'] = bestaddress_streets.iloc[0]['street']
                         work_locations_dict['bestaddress_key'] = str(bestaddress_streets.iloc[0]['key'])  # if str(bestaddress_streets.iloc[0]['key']) not in ('7044037', '7008904') else ""
-                        work_locations_dict['number'] = str(unidecode.unidecode(number))
+                        work_locations_dict['number'] = str(number)
                         work_locations_dict['zipcode'] = bestaddress_streets.iloc[0]['zip']
                         work_locations_dict['locality'] = bestaddress_streets.iloc[0]['entity']
                         # self.licence_description.append({'objet': "Rue trouvée",
