@@ -302,7 +302,8 @@ class ImportAcropole(BaseImport):
                     if result_count == 1:
                         work_locations_dict['street'] = bestaddress_streets.iloc[0]['street']
                         work_locations_dict['bestaddress_key'] = str(bestaddress_streets.iloc[0]['key'])  # if str(bestaddress_streets.iloc[0]['key']) not in ('7044037', '7008904') else ""
-                        work_locations_dict['number'] = str(number)
+                        number = str(unidecode.unidecode(number.replace("n°","num. ").replace("à","au")))
+                        work_locations_dict['number'] = number
                         work_locations_dict['zipcode'] = bestaddress_streets.iloc[0]['zip']
                         work_locations_dict['locality'] = bestaddress_streets.iloc[0]['entity']
                         # self.licence_description.append({'objet': "Rue trouvée",
