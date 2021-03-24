@@ -58,7 +58,8 @@ def create_cadastral_views(import_object):
                                         """
                                         SELECT
                                             divcad AS division, section, primarynumber AS radical,
-                                            bisnumber AS bis, exponentletter AS exposant, exponentnumber AS puissance
+                                            bisnumber AS bis, exponentletter AS exposant, exponentnumber AS puissance,
+                                            capakey
                                         FROM parcels;
                                         """
                                         )
@@ -66,7 +67,8 @@ def create_cadastral_views(import_object):
                                         """
                                         SELECT
                                             divcad AS division, section, primarynumber AS radical,
-                                            bisnumber AS bis, exponentletter AS exposant, exponentnumber AS puissance
+                                            bisnumber AS bis, exponentletter AS exposant, exponentnumber AS puissance,
+                                            capakey
                                         FROM old_parcels;
                                         """
                                         )
