@@ -148,7 +148,9 @@ class ImportAcropole(BaseImport):
         if licence.OBSERVATIONS_URBAN:
             self.licence_description.append({'Observations': licence.OBSERVATIONS_URBAN})
         if licence.CONCAT_REMARQUES:
-            self.licence_description.append({'Remarques': "{}{}".format("<br>", licence.CONCAT_REMARQUES.replace("|", "<br>"))})
+            date_regex = r"(\d{2}/\d{2}/\d{4})"
+            remarque = re.sub(date_regex, "{}{}".format("<br>", r"\1"), licence.CONCAT_REMARQUES)
+            self.licence_description.append({'<br>Remarques': remarque.replace("|", "<br>")})
         licence_dict['usage'] = 'not_applicable'
         licence_dict['workLocations'] = self.get_work_locations(licence, licence_dict)
         self.get_organization(licence, licence_dict)
