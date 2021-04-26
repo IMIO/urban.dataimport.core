@@ -3,6 +3,7 @@ import re
 
 from progress.bar import FillingSquaresBar
 from sqlalchemy import create_engine
+from sqlalchemy.pool import StaticPool
 from urban.dataimport.core import utils
 from urban.dataimport.core.db import LazyDB
 from urban.dataimport.core.mapping.acropole_mapping import events_types, portal_type_mapping, \
@@ -19,7 +20,7 @@ from urban.dataimport.core.json import DateTimeEncoder, get_applicant_dict, get_
 from urban.dataimport.core.mapping.main_mapping import main_licence_deposit_event_id_mapping, \
     main_licence_decision_event_id_mapping
 from urban.dataimport.core.utils import parse_cadastral_reference, benchmark_decorator, BaseImport, \
-    export_to_customer_json, represent_int, ErrorToCsv, export_error_csv
+    export_to_customer_json, represent_int, ErrorToCsv, export_error_csv, safe_unicode
 from urban.dataimport.core.utils import StateManager
 from urban.dataimport.core.utils import StateHandler
 from urban.dataimport.core.utils import IterationError
@@ -47,7 +48,7 @@ class ImportAcropole(BaseImport):
         self.view = view
         self.licence_id = licence_id
         self.search_old_parcels = config['main']['search_old_parcels']
-        engine = create_engine('mysql://{user}:{password}@{host}:{port}'.format(**config._sections['database']))
+        engine = create_engine('mysql://{user}:{password}@{host}:{port}'.format(**config._sections['database']), poolclass=StaticPool)
         connection = engine.connect()
         self.db = LazyDB(
             connection,
@@ -55,7 +56,7 @@ class ImportAcropole(BaseImport):
             ignore_cache=ignore_cache,
         )
         engine_cadastral = create_engine('postgresql://{user}:{password}@{host}:{port}'.format(
-            **config._sections['cadastral_database']))
+            **config._sections['cadastral_database']), poolclass=StaticPool)
         connection_cadastral = engine_cadastral.connect()
         self.cadastral = LazyDB(
             connection_cadastral,
@@ -63,7 +64,7 @@ class ImportAcropole(BaseImport):
             ignore_cache=ignore_cache,
         )
         engine_bestaddress = create_engine('postgresql://{user}:{password}@{host}:{port}'.format(
-            **config._sections['bestaddress_database']))
+            **config._sections['bestaddress_database']), poolclass=StaticPool)
         connection_bestaddress = engine_bestaddress.connect()
         self.bestaddress = LazyDB(
             connection_bestaddress,
@@ -143,6 +144,16 @@ class ImportAcropole(BaseImport):
         licence_dict['licenceSubject'] = licenceSubject
         if licence.DOSSIER_REFCOM:
             self.licence_description.append({'REFERENCE COM': licence.DOSSIER_REFCOM})
+        if licence.CONCAT_REMARQUES:
+            cleaned_remarques = ""
+            for rem in licence.CONCAT_REMARQUES.split("|"):
+                cleaned_remarques += "{}{}".format('|', rem)
+            if cleaned_remarques:
+                if cleaned_remarques[0] == '|':
+                    cleaned_remarques = cleaned_remarques[1:]
+                date_regex = r"(\d{2}/\d{2}/\d{4})"
+                remarque = re.sub(date_regex, "{}{}".format("<br>", r"\1"), cleaned_remarques)
+                self.licence_description.append({'<br>Remarques': remarque.replace("|", "<br>")})
         licence_dict['usage'] = 'not_applicable'
         licence_dict['workLocations'] = self.get_work_locations(licence, licence_dict)
         self.get_organization(licence, licence_dict)
@@ -297,7 +308,7 @@ class ImportAcropole(BaseImport):
                     if result_count == 1:
                         work_locations_dict['street'] = bestaddress_streets.iloc[0]['street']
                         work_locations_dict['bestaddress_key'] = str(bestaddress_streets.iloc[0]['key'])  # if str(bestaddress_streets.iloc[0]['key']) not in ('7044037', '7008904') else ""
-                        work_locations_dict['number'] = str(unidecode.unidecode(number))
+                        work_locations_dict['number'] = safe_unicode(number)
                         work_locations_dict['zipcode'] = bestaddress_streets.iloc[0]['zip']
                         work_locations_dict['locality'] = bestaddress_streets.iloc[0]['entity']
                         # self.licence_description.append({'objet': "Rue trouvée",
@@ -361,24 +372,38 @@ class ImportAcropole(BaseImport):
                     exposant = parcels_args[4] if parcels_args[4] else ''
                     puissance = parcels_args[5] if parcels_args[5] else 0
                     if division_code and section and radical:
-                        if represent_int(puissance) and int(puissance) < 100:
+                        if represent_int(puissance) and int(puissance) < 10000:
                             if represent_int(radical) and represent_int(bis) and represent_int(puissance):
+                                if len(division_code) == 1:
+                                    division_code = '0{}'.format(division_code)
                                 division = division_mapping.get(division_code, None)
+                                capakey = '{0:05d}{1}{2:04d}/{3:02d}{4}{5:03d}'.format(
+                                    int(division),
+                                    section,
+                                    int(radical),
+                                    int(bis),
+                                    exposant,
+                                    int(puissance),
+                                )
+                                if capakey and len(capakey) != 17:
+                                    print("capakey ko: {}".format(capakey))
                                 parcelles_cadastrales = self.cadastral.cadastre_parcelles_vue
                                 cadastral_parcels = parcelles_cadastrales[
-                                    (parcelles_cadastrales.division == int(division)) &
-                                    (parcelles_cadastrales.section == section) &
-                                    (parcelles_cadastrales.radical == int(radical)) &
-                                    ((parcelles_cadastrales.bis.isnull()) if not int(bis)
-                                     else parcelles_cadastrales.bis == int(bis)) &
-                                    ((parcelles_cadastrales.exposant.isnull()) if not exposant
-                                     else parcelles_cadastrales.exposant == exposant) &
-                                    ((parcelles_cadastrales.puissance.isnull()) if not int(puissance)
-                                     else parcelles_cadastrales.puissance == str(int(puissance)))
-                                    ]
-
+                                    (parcelles_cadastrales.capakey == capakey)
+                                ]
+                                # cadastral_parcels = parcelles_cadastrales[
+                                #     (parcelles_cadastrales.division == int(division)) &
+                                #     (parcelles_cadastrales.section == section) &
+                                #     (parcelles_cadastrales.radical == int(radical)) &
+                                #     ((parcelles_cadastrales.bis.isnull()) if not int(bis)
+                                #      else parcelles_cadastrales.bis == int(bis)) &
+                                #     ((parcelles_cadastrales.exposant.isnull()) if not exposant
+                                #      else parcelles_cadastrales.exposant == exposant) &
+                                #     ((parcelles_cadastrales.puissance.isnull()) if not int(puissance)
+                                #      else parcelles_cadastrales.puissance == str(int(puissance)))
+                                #     ]
                                 result_count = cadastral_parcels.shape[0]
-                                if result_count == 1:
+                                if result_count >= 1:
                                     parcels_dict['outdated'] = 'False'
                                     parcels_dict['is_official'] = 'True'
                                     parcels_dict['division'] = str(cadastral_parcels.iloc[0]['division'])
@@ -390,34 +415,18 @@ class ImportAcropole(BaseImport):
                                     # self.licence_description.append({'objet': "Parcelle trouvée",
                                     #                                  'parcelle': parcel,
                                     #                                  })
-                                elif result_count > 1:
-                                    self.parcel_errors.append(ErrorToCsv("parcels_errors",
-                                                                         "Trop de résultats pour cette parcelle",
-                                                                         licence_dict['reference'],
-                                                                         parcels_dict['complete_name']))
-                                    self.licence_description.append({'objet': "Trop de résultats pour cette parcelle",
-                                                                     'parcelle': parcels_dict['complete_name'],
-                                                                     })
                                 elif result_count == 0:
                                     try:
                                         parcelles_old_cadastrales = self.cadastral.cadastre_parcelles_old_vue
                                         cadastral_parcels_old = parcelles_old_cadastrales[
-                                            (parcelles_old_cadastrales.division == int(division)) &
-                                            (parcelles_old_cadastrales.section == section) &
-                                            (parcelles_old_cadastrales.radical == int(radical)) &
-                                            ((parcelles_old_cadastrales.bis.isnull()) if not int(bis)
-                                             else parcelles_old_cadastrales.bis == int(bis)) &
-                                            ((parcelles_old_cadastrales.exposant.isnull()) if not exposant
-                                             else parcelles_old_cadastrales.exposant == exposant) &
-                                            ((parcelles_old_cadastrales.puissance.isnull()) if not int(puissance)
-                                             else parcelles_old_cadastrales.puissance == str(int(puissance)))
-                                            ]
+                                            (parcelles_old_cadastrales.capakey == capakey)
+                                        ]
                                     except Exception as e:
                                         print(e)
 
                                     result_count_old = cadastral_parcels_old.shape[0]
                                     # Looking for old parcels
-                                    if result_count_old == 1:
+                                    if result_count_old >= 1:
                                         parcels_dict['outdated'] = 'True'
                                         parcels_dict['is_official'] = 'True'
                                         parcels_dict['division'] = str(cadastral_parcels_old.iloc[0]['division'])
@@ -428,15 +437,6 @@ class ImportAcropole(BaseImport):
                                         parcels_dict['exposant'] = cadastral_parcels_old.iloc[0]['exposant']
                                         parcels_dict['puissance'] = str(cadastral_parcels_old.iloc[0]['puissance']) if \
                                         cadastral_parcels_old.iloc[0]['puissance'] else ""
-                                    elif result_count_old > 1:
-                                        self.parcel_errors.append(ErrorToCsv("parcels_errors",
-                                                                             "Trop de résultats pour cette ancienne parcelle",
-                                                                             licence_dict['reference'],
-                                                                             parcels_dict['complete_name']))
-                                        self.licence_description.append(
-                                            {'objet': "Trop de résultats pour cette ancienne parcelle",
-                                             'parcelle': parcels_dict['complete_name'],
-                                             })
                                     if result_count_old == 0:
                                         self.licence_description.append(
                                             {'objet': "Pas de résultat pour cette parcelle",

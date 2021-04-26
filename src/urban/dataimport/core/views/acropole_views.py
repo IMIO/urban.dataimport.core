@@ -67,6 +67,20 @@ def create_concat_views(import_acropole):
                                         GROUP BY DOSSIER.WRKDOSSIER_ID;
                                   """
                                   )
+    import_acropole.db.create_view("get_remarques",
+                                  """
+                                     SELECT DOSSIER.WRKDOSSIER_ID, GROUP_CONCAT(REMARQUE.REMARQ_LIB SEPARATOR '|') AS `CONCAT_REMARQUES`
+                                     FROM
+                                         wrkdossier AS DOSSIER
+                                     LEFT JOIN k2 AS MAIN_JOIN
+                                     ON MAIN_JOIN.K_ID1 = DOSSIER.WRKDOSSIER_ID
+                                     INNER JOIN custom_remarques AS REMARQUE
+                                     ON MAIN_JOIN.K_ID2 = REMARQUE.CREMARQ_ID
+                                     GROUP BY DOSSIER.WRKDOSSIER_ID;
+                                  """
+                                  )
+
+
     # import_acropole.db.create_view("dossier_evenement_vue",
     #                                """
     #                                 SELECT DOSSIER.WRKDOSSIER_ID,
@@ -133,13 +147,15 @@ def create_views(import_acropole):
                                       DETAILS,
                                       CONCAT_PARCELS,
                                       CONCAT_DEMANDEURS,
-                                      CONCAT_ADRESSES
+                                      CONCAT_ADRESSES,
+                                      CONCAT_REMARQUES
                                     FROM
                                       wrkdossier AS DOSSIER
                                       LEFT JOIN get_details AS DETAILS ON DETAILS.WRKDOSSIER_ID = DOSSIER.WRKDOSSIER_ID
                                       LEFT JOIN get_parcelles AS PARCELLES ON PARCELLES.WRKDOSSIER_ID = DOSSIER.WRKDOSSIER_ID
                                       LEFT JOIN get_demandeurs AS APPLICANT ON APPLICANT.WRKDOSSIER_ID = DOSSIER.WRKDOSSIER_ID
-                                      LEFT JOIN get_adresses AS WORKLOCATIONS ON WORKLOCATIONS.WRKDOSSIER_ID = DOSSIER.WRKDOSSIER_ID;
+                                      LEFT JOIN get_adresses AS WORKLOCATIONS ON WORKLOCATIONS.WRKDOSSIER_ID = DOSSIER.WRKDOSSIER_ID
+                                      LEFT JOIN get_remarques AS REMARQUES ON REMARQUES.WRKDOSSIER_ID = DOSSIER.WRKDOSSIER_ID;
                                   """
                                   )
     import_acropole.db.create_view("BuildLicence_vue",
