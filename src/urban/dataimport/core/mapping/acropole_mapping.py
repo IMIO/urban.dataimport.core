@@ -38,40 +38,57 @@ events_types = {
 main_state_id_mapping = [0, 1]
 
 portal_type_mapping = {
+    -106391: 'CODT_ParcelOutLicence',
+    -100942: 'CODT_UrbanCertificateTwo',
+    -100648: 'CODT_UrbanCertificateOne',
+    -96223: 'CODT_BuildLicence',
+    -92968: 'CODT_CommercialLicence',
+    -92498: 'CODT_CommercialLicence',
+    -88291: 'CODT_CommercialLicence',
+    -80932: 'CODT_CommercialLicence',
+    -77233: 'MiscDemand',
     -67348: 'EnvClassOne',
     -62737: 'ParcelOutLicence',
     -58199: '',  # to complete or ignore
-    -57728: 'EnvClassOne',
+    -57728: 'EnvClassTwo',
     -53925: 'UniqueLicence',
     -52990: '',  # to complete or ignore
     -49306: 'Article127',
     -46623: 'EnvClassThree',
     -42575: 'BuildLicence',
+    -40086: 'ParcelOutLicence',
     -37624: 'EnvClassOne',
-    -36624: 'MiscDemand',  # infractions
-    -34766: 'NotaryLetter',
+    # -36624: 'MiscDemand',  # infractions
+    -34766: 'UrbanCertificateOne',
     -32669: 'BuildLicence',  # ?
     -28278: '',  # to complete or ignore
     -26124: 'ParcelOutLicence',
     -25638: 'MiscDemand',
+    -21454: 'MiscDemand',
     -20646: 'Article127',
     -19184: 'EnvClassTwo',
     -17277: 'BuildLicence',
     -15200: 'Declaration',
     -14333: 'MiscDemand',  # reclamations
     -14179: 'Division',
-    -13467: 'MiscDemand',  # infractions
+    # -13467: '',  # infractions remove id in view
     -11889: '',  # to complete or ignore
     -10362: 'MiscDemand',  # demande de principe
     -10200: '',  # to complete or ignore
     -7812: '',  # to complete or ignore
     -6523: '',  # to complete or ignore
     -5976: 'EnvClassThree',
-    -5753: 'NotaryLetter',
+    -5753: 'UrbanCertificateOne',
     -4775: '',  # to complete or ignore
     -3575: '',  # to complete or ignore
+    -2982: 'UrbanCertificateOne',  # or UrbanCertificateTwo see TYPEIDENT
     -1972: '',  # to complete or ignore
     -1014: '',  # to complete or ignore
+    900510: 'ParcelOutLicence',
+    900538: 'BuildLicence',
+    1049197: 'EnvClassTwo',
+    1120089: 'EnvClassOne',
+    1120967: 'EnvClassThree',
 }
 
 # urbmessagestatus table
@@ -288,18 +305,9 @@ title_types = {
 
 # custom to the locality
 division_mapping = {
-    '01': '62096',
-    '02': '62352',
-    '03': '62353',
-    '04': '62354',
-    '05': '62355',
-    '06': '62356',
-    '07': '62357',
-    '08': '62358',
-    '09': '62058',
-    '10': '62342',
-    '11': '62343',
-    '12': '62019',
+    '01': '25091',
+    '02': '25033',
+    '03': '25092',
 }
 
 decision_label_mapping = {

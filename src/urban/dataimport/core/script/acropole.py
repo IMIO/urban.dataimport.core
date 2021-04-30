@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import re
+import string
 
 from progress.bar import FillingSquaresBar
 from sqlalchemy import create_engine
@@ -13,7 +14,6 @@ import argparse
 import configparser
 import json
 import time
-import unidecode
 
 from urban.dataimport.core.json import DateTimeEncoder, get_applicant_dict, get_event_dict, get_licence_dict, \
     get_parcel_dict, get_work_locations_dict, get_organization_dict
@@ -215,77 +215,134 @@ class ImportAcropole(BaseImport):
                 city = split_wl[3]
                 if street:
                     # remove parentheses and its content
-                    acropole_street = re.sub(r'\([^)]*\)', '', street).strip()
-                    acropole_street = re.sub(r'^allée ', 'Allée ', acropole_street).strip()
-                    acropole_street = re.sub(r'^Av[.]', 'Avenue', acropole_street).strip()
-                    acropole_street = re.sub(r'^avenue ', 'Avenue ', acropole_street).strip()
-                    acropole_street = re.sub(r'^boulevard ', 'Boulevard ', acropole_street).strip()
-                    acropole_street = re.sub(r'^chaussée ', 'Chaussée ', acropole_street).strip()
-                    acropole_street = re.sub(r'^cour ', 'Cour ', acropole_street).strip()
-                    acropole_street = re.sub(r'^esplanade ', 'Esplanade ', acropole_street).strip()
-                    acropole_street = re.sub(r'^square ', 'Square ', acropole_street).strip()
-                    acropole_street = re.sub(r'^quai ', 'Quai ', acropole_street).strip()
-                    acropole_street = re.sub(r'^Pl[.]', 'Place', acropole_street).strip()
-                    acropole_street = re.sub(r'^Pl ', 'Place ', acropole_street).strip()
-                    acropole_street = re.sub(r'^place ', 'Place ', acropole_street).strip()
-                    acropole_street = re.sub(r'^voie ', 'Voie ', acropole_street).strip()
-                    acropole_street = re.sub(r'^Voie du Pahis', 'voie du Pahis', acropole_street).strip()  # Exception
-                    acropole_street = re.sub(r'^rue ', 'Rue ', acropole_street).strip()
-                    acropole_street = re.sub(r'^route ', 'Route ', acropole_street).strip()
-                    acropole_street = re.sub(r' St ', ' Saint-', acropole_street).strip()
-                    acropole_street = re.sub(r' Ste ', ' Sainte-', acropole_street).strip()
+                    # if '(' in street:
+                    #     import ipdb; ipdb.set_trace() # TODO REMOVE BREAKPOINT
+                    #     print('debug')
+                    bw_par = ""
+                    if "(" in street:
+                        match_par =  re.search(r'\((.*?)\)', street)
+                        if match_par:
+                            bw_par = re.search(r'\((.*?)\)', street).group(1)
 
-                    acropole_street = re.sub(r'Avenue Delporte', 'Avenue H. Delporte', acropole_street).strip()
-                    acropole_street = re.sub(r'Rue de Lexhy', 'Rue Arnold de Lexhy', acropole_street).strip()
-                    acropole_street = re.sub(r'Rue Dossogne', 'Rue J. Dossogne', acropole_street).strip()
-                    acropole_street = re.sub(r'Rue Depas', 'Rue Jean Depas', acropole_street).strip()
-                    acropole_street = re.sub(r'Rue des Champs du Mont', 'Rue Champs du Mont', acropole_street).strip()
-                    acropole_street = re.sub(r'Rue Salengro', 'Rue Roger Salengro', acropole_street).strip()
-                    acropole_street = re.sub(r'Rue Smeets', 'Rue A. Smeets', acropole_street).strip()
-                    acropole_street = re.sub(r'Rue Sualems', 'Rue R. Sualems', acropole_street).strip()
-                    acropole_street = re.sub(r'Rue Roosevelt', 'Rue Franklin Roosevelt', acropole_street).strip()
-                    acropole_street = re.sub(r'Rue Royer', 'Rue Emile Royer', acropole_street).strip()
-                    acropole_street = re.sub(r'Rue Servet', 'Rue Michael Servet', acropole_street).strip()
-                    acropole_street = re.sub(r'Rue Sualem', 'Rue R. Sualem', acropole_street).strip()
-                    acropole_street = re.sub(r'Rue Wettinck', 'Rue J. Wettinck', acropole_street).strip()
-                    acropole_street = re.sub(r'Rue Louis', 'Rue J. Louis', acropole_street).strip()
-                    acropole_street = re.sub(r'Rue Marcotty', 'Rue T. Marcotty', acropole_street).strip()
-                    acropole_street = re.sub(r'Rue Messager', 'Rue du Messager', acropole_street).strip()
-                    acropole_street = re.sub(r'Rue Nicolay', 'Rue Ferdinand Nicolay', acropole_street).strip()
-                    acropole_street = re.sub(r'Rue Puit-Marie', 'Rue Puit Marie', acropole_street).strip()
-                    acropole_street = re.sub(r'Rue Raick', 'Rue Alexandre Raick', acropole_street).strip()
-                    acropole_street = re.sub(r'Rue Renard', 'Rue André Renard', acropole_street).strip()
-                    acropole_street = re.sub(r'Quai Destrée', 'Quai Jules Destrée', acropole_street).strip()
-                    acropole_street = re.sub(r'Rue Blum', 'Rue Léon Blum', acropole_street).strip()
-                    acropole_street = re.sub(r'Rue Bruno', 'Rue Gordano Bruno', acropole_street).strip()
-                    acropole_street = re.sub(r'Rue Bois Saint-Jean', 'Rue du Bois Saint-Jean', acropole_street).strip()
-                    acropole_street = re.sub(r'Rue Bougnet', 'Rue E. Bougnet', acropole_street).strip()
-                    acropole_street = re.sub(r'Rue Baivy', 'Rue Gustave Baivy', acropole_street).strip()
-                    acropole_street = re.sub(r'Rue de Stappe', 'Rue des Stappes', acropole_street).strip()
-                    acropole_street = re.sub(r'Rue del Rodje Cinse', 'Rue dèl Rodje Cinse', acropole_street).strip()
-                    acropole_street = re.sub(r'Rue Delbrouck', 'Rue R. Delbrouck', acropole_street).strip()
-                    acropole_street = re.sub(r'Rue Deloye', 'Rue S. Deloye', acropole_street).strip()
-                    acropole_street = re.sub(r'Rue Delville', 'Rue Antonin Delville', acropole_street).strip()
-                    acropole_street = re.sub(r'Rue des Petits Sarts', 'Rue des Petits-Sarts', acropole_street).strip()
-                    acropole_street = re.sub(r'Rue des Bas-Sarts', 'Rue des Bas Sarts', acropole_street).strip()
-                    acropole_street = re.sub(r'Rue de Brouckère', 'Rue L. De Brouckère', acropole_street).strip()
-                    acropole_street = re.sub(r'Rue Janson', 'Rue Paul Janson', acropole_street).strip()
+                    acropole_street = re.sub(r'\([^)]*\)', '', street).strip()
+                    match = re.match('.*?([0-9]+)$', acropole_street)
+                    acropole_street = acropole_street.rstrip(string.digits).strip()
+                    if bw_par:
+                        acropole_street = "{} {}".format(bw_par, acropole_street)
+                    # number is sometimes in the street string
+                    alt_number = ""
+                    if match:
+                        alt_number = match.group(1)
+
+
+                    acropole_street = re.sub(r'Avenue Salvador Allende', 'Ave. Salvador Allende', acropole_street).strip()
+                    acropole_street = re.sub(r'avenue Salvador Allende', 'Ave. Salvador Allende', acropole_street).strip()
+                    # acropole_street = re.sub(r'avenue Van Beethoven', 'Avenue Benoni Van Beethoven', acropole_street).strip()
+                    acropole_street = re.sub(r'Beau Site 1ère Avenue', "Beau Site Ière Avenue", acropole_street).strip()
+                    # acropole_street = re.sub(r'Bois du Bosquet', "Rue Bois du Bosquet", acropole_street).strip()
+                    # acropole_street = re.sub(r'Bruyère', "Rue de la Bruyère", acropole_street).strip()
+                    # acropole_street = re.sub(r'Clos de la Cense du Sart', "Clos Cense du Sart", acropole_street).strip()
+                    acropole_street = re.sub(r'Clos Sainte Anne', "Clos Sainte-Anne", acropole_street).strip()
+                    acropole_street = re.sub(r'avenue de Merode', "Avenue de Merode", acropole_street).strip()
+                    acropole_street = re.sub(r'drève du Val St-Pierre', "Drève du Val Saint-Pierre", acropole_street).strip()
+                    acropole_street = re.sub(r'avenue Général Naessens de Loncin', "Av. Général Naessens de Loncin", acropole_street).strip()
+                    acropole_street = re.sub(r'avenue Naessens de Loncin', "Av. Général Naessens de Loncin", acropole_street).strip()
+                    # acropole_street = re.sub(r'Biche', "Avenue de la Biche", acropole_street).strip()
+                    acropole_street = re.sub(r'avenue Albert 1er', "Avenue Albert Ier", acropole_street).strip()
+                    acropole_street = re.sub(r'rue Belle Vue', "Rue de Belle-Vue", acropole_street).strip()
+                    # acropole_street = re.sub(r'Albert 1er', "Avenue Albert Ier", acropole_street).strip()
+                    # acropole_street = re.sub(r'Alouettes', "Champ des Alouettes", acropole_street).strip()
+                    # acropole_street = re.sub(r'Amélie', "Avenue Amélie", acropole_street).strip()
+                    # acropole_street = re.sub(r'Aubépines', "Avenue des Aubépines", acropole_street).strip()
+                    # acropole_street = re.sub(r'avenue  Boulogne Billancourt', "Avenue Boulogne Billancourt", acropole_street).strip()
+                    acropole_street = re.sub(r'avenue Boulogne-Billancourt', "Avenue Boulogne Billancourt", acropole_street).strip()
+                    # acropole_street = re.sub(r'Boulogne-Billancourt', "Avenue Boulogne Billancourt", acropole_street).strip()
+                    acropole_street = re.sub(r'avenue  Jean de Luxembourg', "Avenue Jean de Luxembourg", acropole_street).strip()
+                    # acropole_street = re.sub(r'avenue  Jean de Luxembourg', "Avenue Jean de Luxembourg", acropole_street).strip()
+                    acropole_street = re.sub(r'avenue Baron Dubost', "Avenue du Baron Dubost", acropole_street).strip()
+                    # acropole_street = re.sub(r'avenue Cure Glibert', "Avenue Curé Glibert", acropole_street).strip()
+                    acropole_street = re.sub(r'avenue de Clermont Tonnerre', "Avenue Clermont Tonnerre", acropole_street).strip()
+                    acropole_street = re.sub(r'avenue des Merisiers', "Avenue des Mérisiers", acropole_street).strip()
+                    acropole_street = re.sub(r'Avenue des Merisiers', "Avenue des Mérisiers", acropole_street).strip()
+                    acropole_street = re.sub(r'avenue des Trois Sources', "Avenue des 3 Sources", acropole_street).strip()
+                    acropole_street = re.sub(r'avenue Docteur Schweitzer', "Avenue du Docteur Schweitzer", acropole_street).strip()
+                    acropole_street = re.sub(r'avenue du Bois La Haut', "Avenue du Bois Là-Haut", acropole_street).strip()
+                    acropole_street = re.sub(r'avenue du Pèlerin', "Avenue du Pélerin", acropole_street).strip()
+                    acropole_street = re.sub(r'avenue Herbert Hoover', "Avenue Hoover", acropole_street).strip()
+                    acropole_street = re.sub(r'avenue Joséphine Charlotte', "Avenue Joséphine-Charlotte", acropole_street).strip()
+                    acropole_street = re.sub(r'Avenue Leopold', "Avenue Léopold", acropole_street).strip()
+                    acropole_street = re.sub(r'avenue Lieutenant Frédéric Boon', "Ave. Lt. Frédéric Boon", acropole_street).strip()
+                    acropole_street = re.sub(r'avenue Marie Christine', "Avenue Marie-Christine", acropole_street).strip()
+                    acropole_street = re.sub(r'avenue Marie Henriette', "Avenue Marie-Henriette", acropole_street).strip()
+                    acropole_street = re.sub(r'avenue Roger de Grimberghe', "Avenue R. de Grimberghe", acropole_street).strip()
+                    # acropole_street = re.sub(r'Becquevort', "Place Raymond Becquevort", acropole_street).strip()
+                    # acropole_street = re.sub(r'Bel Horizon', "Avenue Bel Horizon", acropole_street).strip()
+                    acropole_street = re.sub(r'rue du Bois du Bosquet', "Rue Bois du Bosquet", acropole_street).strip()
+                    acropole_street = re.sub(r'rue du Bois Pirart', "Rue du Bois Pirart", acropole_street).strip()
+                    acropole_street = re.sub(r'rue J-B Stouffs', "Rue J. B. Stouffs", acropole_street).strip()
+                    acropole_street = re.sub(r'Petrales', "Champ des Pétrales", acropole_street).strip()
+                    # acropole_street = re.sub(r'Bon Air', "Avenue Bon Air", acropole_street).strip()
+                    # acropole_street = re.sub(r'Bonne Fontaine', "Avenue Bonne Fontaine", acropole_street).strip()
+                    # acropole_street = re.sub(r'Boon', "Ave. Lt. Frédéric Boon", acropole_street).strip()
+                    # acropole_street = re.sub(r'Cailloux', "Rue des Cailloux", acropole_street).strip()
+                    # acropole_street = re.sub(r'Cardinal Mercier', "Place Cardinal Mercier", acropole_street).strip()
+                    # acropole_street = re.sub(r'Cardinal Mercier', "Place Cardinal Mercier", acropole_street).strip()
+                    # acropole_street = re.sub(r'Cerf', "Rue du Cerf", acropole_street).strip()
+                    # acropole_street = re.sub(r'Cerisiers', "Avenue des Cerisiers", acropole_street).strip()
+                    # acropole_street = re.sub(r'Winterberg', "Avenue de Winterberg", acropole_street).strip()
+                    # acropole_street = re.sub(r'Wavre', "Chaussée de Wavre", acropole_street).strip()
+                    # acropole_street = re.sub(r'Volontaires', "Rue des Volontaires", acropole_street).strip()
+                    # acropole_street = re.sub(r'Volontaires', "Rue des Volontaires", acropole_street).strip()
+                    # acropole_street = re.sub(r'Villefranche', "Avenue de Villefranche", acropole_street).strip()
+                    # acropole_street = re.sub(r'Vallon', "Rue du Vallon", acropole_street).strip()
+                    # acropole_street = re.sub(r'Val Saint-Pierre', "Drève du Val Saint-Pierre", acropole_street).strip()
+                    acropole_street = re.sub(r'Fond Jean Rosy', "Avenue Fond Jean Rosy", acropole_street).strip()
+                    # acropole_street = re.sub(r'Tourterelles', "Avenue des Tourterelles", acropole_street).strip()
+                    # acropole_street = re.sub(r'Touquet', "Avenue du Touquet", acropole_street).strip()
+                    # acropole_street = re.sub(r'Tombeek', "Rue de Tombeek", acropole_street).strip()
+                    # acropole_street = re.sub(r'Tilleul', "Rue du Tilleul", acropole_street).strip()
+                    # acropole_street = re.sub(r'Thérèse', "Avenue Thérèse", acropole_street).strip()
+                    # acropole_street = re.sub(r'Terlinden', "Avenue Paul Terlinden", acropole_street).strip()
+                    # acropole_street = re.sub(r'Tasnière', "Rue de la Tasnière", acropole_street).strip()
+                    # acropole_street = re.sub(r'Taillette', "Rue de la Taillette", acropole_street).strip()
+
+                    # acropole_street = re.sub(r'^allée ', 'Allée ', acropole_street).strip()
+                    # acropole_street = re.sub(r'^Av[.]', 'Avenue', acropole_street).strip()
+                    # acropole_street = re.sub(r'^avenue ', 'Avenue ', acropole_street).strip()
+                    # acropole_street = re.sub(r'^boulevard ', 'Boulevard ', acropole_street).strip()
+                    # acropole_street = re.sub(r'^chaussée ', 'Chaussée ', acropole_street).strip()
+                    # acropole_street = re.sub(r'^cour ', 'Cour ', acropole_street).strip()
+                    # acropole_street = re.sub(r'^esplanade ', 'Esplanade ', acropole_street).strip()
+                    # acropole_street = re.sub(r'^square ', 'Square ', acropole_street).strip()
+                    # acropole_street = re.sub(r'^quai ', 'Quai ', acropole_street).strip()
+                    # acropole_street = re.sub(r'^Pl[.]', 'Place', acropole_street).strip()
+                    # acropole_street = re.sub(r'^Pl ', 'Place ', acropole_street).strip()
+                    # acropole_street = re.sub(r'^place ', 'Place ', acropole_street).strip()
+                    # acropole_street = re.sub(r'^voie ', 'Voie ', acropole_street).strip()
+                    # acropole_street = re.sub(r'^Voie du Pahis', 'voie du Pahis', acropole_street).strip()  # Exception
+                    # acropole_street = re.sub(r'^rue ', 'Rue ', acropole_street).strip()
+                    # acropole_street = re.sub(r'^route ', 'Route ', acropole_street).strip()
+                    # acropole_street = re.sub(r' St ', ' Saint-', acropole_street).strip()
+                    # acropole_street = re.sub(r' Ste ', ' Sainte-', acropole_street).strip()
+
+                    # acropole_street = re.sub(r'Avenue Delporte', 'Avenue H. Delporte', acropole_street).strip()
+
                     # remove unnecessary characters
                     acropole_street = acropole_street.replace(",", " ").strip().replace("?", " ").strip()
                     bestaddress_streets = self.bestaddress.bestaddress_vue[
-                        (self.bestaddress.bestaddress_vue.street == acropole_street)
+                        (self.bestaddress.bestaddress_vue.street.str.lower() == acropole_street.lower())
                     ]
                     if bestaddress_streets.shape[0] == 0:
                         # second chance without street number
                         acropole_street_without_digits = ''.join([letter for letter in acropole_street if not letter.isdigit()]).strip()
                         bestaddress_streets = self.bestaddress.bestaddress_vue[
-                            (self.bestaddress.bestaddress_vue.street == acropole_street_without_digits)
+                            (self.bestaddress.bestaddress_vue.street.str.lower() == acropole_street_without_digits.lower())
                         ]
                         if bestaddress_streets.shape[0] == 0:
                             # last chance : try to remove last char, for example : 1a or 36C
                             acropole_street_without_last_char = acropole_street_without_digits.strip()[:-1]
                             bestaddress_streets = self.bestaddress.bestaddress_vue[
-                                (self.bestaddress.bestaddress_vue.street == acropole_street_without_last_char.strip())
+                                (self.bestaddress.bestaddress_vue.street.str.lower() == acropole_street_without_last_char.strip().lower())
                             ]
                             if bestaddress_streets.shape[0] == 0:
                                 self.street_errors.append(ErrorToCsv("street_errors",
@@ -308,6 +365,8 @@ class ImportAcropole(BaseImport):
                     if result_count == 1:
                         work_locations_dict['street'] = bestaddress_streets.iloc[0]['street']
                         work_locations_dict['bestaddress_key'] = str(bestaddress_streets.iloc[0]['key'])  # if str(bestaddress_streets.iloc[0]['key']) not in ('7044037', '7008904') else ""
+                        if not number and alt_number:
+                            number = alt_number
                         work_locations_dict['number'] = safe_unicode(number)
                         work_locations_dict['zipcode'] = bestaddress_streets.iloc[0]['zip']
                         work_locations_dict['locality'] = bestaddress_streets.iloc[0]['entity']
@@ -369,7 +428,7 @@ class ImportAcropole(BaseImport):
                     section = parcels_args[1] if parcels_args[1] else ''
                     radical = parcels_args[2] if parcels_args[2] else 0
                     bis = parcels_args[3] if parcels_args[3] else 0
-                    exposant = parcels_args[4] if parcels_args[4] else ''
+                    exposant = parcels_args[4] if parcels_args[4] else ' '  # for capakey, empty exposant is a space
                     puissance = parcels_args[5] if parcels_args[5] else 0
                     if division_code and section and radical:
                         if represent_int(puissance) and int(puissance) < 10000:
@@ -377,73 +436,91 @@ class ImportAcropole(BaseImport):
                                 if len(division_code) == 1:
                                     division_code = '0{}'.format(division_code)
                                 division = division_mapping.get(division_code, None)
-                                capakey = '{0:05d}{1}{2:04d}/{3:02d}{4}{5:03d}'.format(
-                                    int(division),
-                                    section,
-                                    int(radical),
-                                    int(bis),
-                                    exposant,
-                                    int(puissance),
-                                )
-                                if capakey and len(capakey) != 17:
-                                    print("capakey ko: {}".format(capakey))
-                                parcelles_cadastrales = self.cadastral.cadastre_parcelles_vue
-                                cadastral_parcels = parcelles_cadastrales[
-                                    (parcelles_cadastrales.capakey == capakey)
-                                ]
-                                # cadastral_parcels = parcelles_cadastrales[
-                                #     (parcelles_cadastrales.division == int(division)) &
-                                #     (parcelles_cadastrales.section == section) &
-                                #     (parcelles_cadastrales.radical == int(radical)) &
-                                #     ((parcelles_cadastrales.bis.isnull()) if not int(bis)
-                                #      else parcelles_cadastrales.bis == int(bis)) &
-                                #     ((parcelles_cadastrales.exposant.isnull()) if not exposant
-                                #      else parcelles_cadastrales.exposant == exposant) &
-                                #     ((parcelles_cadastrales.puissance.isnull()) if not int(puissance)
-                                #      else parcelles_cadastrales.puissance == str(int(puissance)))
-                                #     ]
-                                result_count = cadastral_parcels.shape[0]
-                                if result_count >= 1:
-                                    parcels_dict['outdated'] = 'False'
-                                    parcels_dict['is_official'] = 'True'
-                                    parcels_dict['division'] = str(cadastral_parcels.iloc[0]['division'])
-                                    parcels_dict['section'] = cadastral_parcels.iloc[0]['section']
-                                    parcels_dict['radical'] = str(cadastral_parcels.iloc[0]['radical'])
-                                    parcels_dict['bis'] = str(cadastral_parcels.iloc[0]['bis']) if cadastral_parcels.iloc[0]['bis'] else ""
-                                    parcels_dict['exposant'] = cadastral_parcels.iloc[0]['exposant']
-                                    parcels_dict['puissance'] = str(cadastral_parcels.iloc[0]['puissance']) if cadastral_parcels.iloc[0]['puissance'] else ""
-                                    # self.licence_description.append({'objet': "Parcelle trouvée",
-                                    #                                  'parcelle': parcel,
-                                    #                                  })
-                                elif result_count == 0:
-                                    try:
-                                        parcelles_old_cadastrales = self.cadastral.cadastre_parcelles_old_vue
-                                        cadastral_parcels_old = parcelles_old_cadastrales[
-                                            (parcelles_old_cadastrales.capakey == capakey)
-                                        ]
-                                    except Exception as e:
-                                        print(e)
+                                if division:
 
-                                    result_count_old = cadastral_parcels_old.shape[0]
-                                    # Looking for old parcels
-                                    if result_count_old >= 1:
-                                        parcels_dict['outdated'] = 'True'
+                                    capakey = '{0:05d}{1}{2:04d}/{3:02d}{4}{5:03d}'.format(
+                                        int(division),
+                                        section,
+                                        int(radical),
+                                        int(bis),
+                                        exposant,
+                                        int(puissance),
+                                    )
+                                    if capakey and len(capakey) != 17:
+                                        # print("capakey ko: {}".format(capakey))
+                                        self.parcel_errors.append(ErrorToCsv("parcels_errors",
+                                                                             "Parcelle incomplète ou non valide",
+                                                                             licence_dict['reference'],
+                                                                             parcels_dict['complete_name']))
+                                        self.licence_description.append({'objet': "Parcelle incomplète ou non valide",
+                                                                         'parcelle': parcels_dict['complete_name'],
+                                                                         })
+                                        continue
+                                    parcelles_cadastrales = self.cadastral.cadastre_parcelles_vue
+                                    cadastral_parcels = parcelles_cadastrales[
+                                        (parcelles_cadastrales.capakey == capakey)
+                                    ]
+                                    # cadastral_parcels = parcelles_cadastrales[
+                                    #     (parcelles_cadastrales.division == int(division)) &
+                                    #     (parcelles_cadastrales.section == section) &
+                                    #     (parcelles_cadastrales.radical == int(radical)) &
+                                    #     ((parcelles_cadastrales.bis.isnull()) if not int(bis)
+                                    #      else parcelles_cadastrales.bis == int(bis)) &
+                                    #     ((parcelles_cadastrales.exposant.isnull()) if not exposant
+                                    #      else parcelles_cadastrales.exposant == exposant) &
+                                    #     ((parcelles_cadastrales.puissance.isnull()) if not int(puissance)
+                                    #      else parcelles_cadastrales.puissance == str(int(puissance)))
+                                    #     ]
+                                    result_count = cadastral_parcels.shape[0]
+                                    if result_count >= 1:
+                                        parcels_dict['outdated'] = 'False'
                                         parcels_dict['is_official'] = 'True'
-                                        parcels_dict['division'] = str(cadastral_parcels_old.iloc[0]['division'])
-                                        parcels_dict['section'] = cadastral_parcels_old.iloc[0]['section']
-                                        parcels_dict['radical'] = str(int(cadastral_parcels_old.iloc[0]['radical']))
-                                        parcels_dict['bis'] = str(cadastral_parcels_old.iloc[0]['bis']) if \
-                                        cadastral_parcels_old.iloc[0]['bis'] else ""
-                                        parcels_dict['exposant'] = cadastral_parcels_old.iloc[0]['exposant']
-                                        parcels_dict['puissance'] = str(cadastral_parcels_old.iloc[0]['puissance']) if \
-                                        cadastral_parcels_old.iloc[0]['puissance'] else ""
-                                    if result_count_old == 0:
-                                        self.licence_description.append(
-                                            {'objet': "Pas de résultat pour cette parcelle",
-                                             'parcelle': parcels_dict['complete_name'],
-                                             })
+                                        parcels_dict['division'] = str(cadastral_parcels.iloc[0]['division'])
+                                        parcels_dict['section'] = cadastral_parcels.iloc[0]['section']
+                                        parcels_dict['radical'] = str(cadastral_parcels.iloc[0]['radical'])
+                                        parcels_dict['bis'] = str(cadastral_parcels.iloc[0]['bis']) if cadastral_parcels.iloc[0]['bis'] else ""
+                                        parcels_dict['exposant'] = cadastral_parcels.iloc[0]['exposant']
+                                        parcels_dict['puissance'] = str(cadastral_parcels.iloc[0]['puissance']) if cadastral_parcels.iloc[0]['puissance'] else ""
+                                        # self.licence_description.append({'objet': "Parcelle trouvée",
+                                        #                                  'parcelle': parcel,
+                                        #                                  })
+                                    elif result_count == 0:
+                                        try:
+                                            parcelles_old_cadastrales = self.cadastral.cadastre_parcelles_old_vue
+                                            cadastral_parcels_old = parcelles_old_cadastrales[
+                                                (parcelles_old_cadastrales.capakey == capakey)
+                                            ]
+                                        except Exception as e:
+                                            print(e)
+
+                                        result_count_old = cadastral_parcels_old.shape[0]
+                                        # Looking for old parcels
+                                        if result_count_old >= 1:
+                                            parcels_dict['outdated'] = 'True'
+                                            parcels_dict['is_official'] = 'True'
+                                            parcels_dict['division'] = str(cadastral_parcels_old.iloc[0]['division'])
+                                            parcels_dict['section'] = cadastral_parcels_old.iloc[0]['section']
+                                            parcels_dict['radical'] = str(int(cadastral_parcels_old.iloc[0]['radical']))
+                                            parcels_dict['bis'] = str(cadastral_parcels_old.iloc[0]['bis']) if \
+                                            cadastral_parcels_old.iloc[0]['bis'] else ""
+                                            parcels_dict['exposant'] = cadastral_parcels_old.iloc[0]['exposant']
+                                            parcels_dict['puissance'] = str(cadastral_parcels_old.iloc[0]['puissance']) if \
+                                            cadastral_parcels_old.iloc[0]['puissance'] else ""
+                                        if result_count_old == 0:
+                                            self.licence_description.append(
+                                                {'objet': "Pas de résultat pour cette parcelle",
+                                                 'parcelle': parcels_dict['complete_name'],
+                                                 })
+                                    else:
+                                        self.licence_description.append({'objet': "Pas de résultat pour cette parcelle",
+                                                                         'parcelle': parcels_dict['complete_name'],
+                                                                         })
                                 else:
-                                    self.licence_description.append({'objet': "Pas de résultat pour cette parcelle",
+                                    self.parcel_errors.append(ErrorToCsv("parcels_errors",
+                                                                         "Parcelle non valide : division inconnue",
+                                                                         licence_dict['reference'],
+                                                                         parcels_dict['complete_name']))
+                                    self.licence_description.append({'objet': "Parcelle non valide : division inconnue",
                                                                      'parcelle': parcels_dict['complete_name'],
                                                                      })
                             else:
@@ -473,6 +550,7 @@ class ImportAcropole(BaseImport):
                     if parcels_dict['division'] and parcels_dict['section']:
                         licence_dict['__children__'].append(parcels_dict)
             except Exception as e:
+                import ipdb; ipdb.set_trace() # TODO REMOVE BREAKPOINT
                 print(e)
 
     @benchmark_decorator

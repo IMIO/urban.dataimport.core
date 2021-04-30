@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from jsonschema import validate
-from numpy import unicode, basestring
+from numpy import unicode
 from progress.bar import FillingSquaresBar
 from random import shuffle
 from urban.dataimport.core.json import DateTimeEncoder
@@ -59,7 +59,7 @@ def safe_unicode(value, encoding='utf-8'):
     """
     if isinstance(value, unicode):
         return value
-    elif isinstance(value, basestring):
+    elif isinstance(value, str):
         try:
             value = unicode(value, encoding)
         except (UnicodeDecodeError):
