@@ -173,8 +173,12 @@ class ImportAcropole(BaseImport):
     @benchmark_decorator
     def get_portal_type(self, licence):
         portal_type = portal_type_mapping.get(licence.DOSSIER_TDOSSIERID, None)
-        # if portal_type == 'UrbanCertificateOne' and licence.DOSSIER_TYPEIDENT == 'CU2':
-        #     portal_type = 'UrbanCertificateTwo'
+        if portal_type == 'UrbanCertificateOne' and licence.DOSSIER_TYPEIDENT == 'CU2':
+            portal_type = 'UrbanCertificateTwo'
+        if licence.DOSSIER_NUMERO == 'CU2007/0358':
+            portal_type = 'UrbanCertificateOne'
+        elif licence.DOSSIER_NUMERO == 'CU2010/0406':
+            portal_type = 'UrbanCertificateTwo'
         return portal_type
 
     @benchmark_decorator
