@@ -157,12 +157,10 @@ class ImportAcropole(BaseImport):
             if cleaned_remarques:
                 if cleaned_remarques[0] == '|':
                     cleaned_remarques = cleaned_remarques[1:]
-                date_regex = r"(\d{2}/\d{2}/\d{4})"
-                remarque = re.sub(date_regex, "{}{}".format("<br>", r"\1"), cleaned_remarques)
-                remarque = remarque.encode('ascii', errors='ignore').decode('unicode-escape')
-                self.licence_description.append({'<br>Remarques': remarque.replace("|", "<br>").replace("\r\n", "<br>")})
-        self.licence_description = self.licence_description[:7899]  # upper length is refused TextField/Mimetype text/html.
+                # remarque = remarque.encode('ascii', errors='ignore').decode('unicode-escape')
+                self.licence_description.append({'<br>Remarques': cleaned_remarques.replace("|", "<br>").replace("\r\n", "<br>").replace("\t", " ").replace("°", " ").replace("\x92", "'")})
         description = str(''.join(str(d) for d in self.licence_description))
+        description = description[:7899]  # upper length is refused TextField/Mimetype text/html.
         licence_dict['description'] = {
             'data': "{}{} - {}{}".format("<p>", str(licence.DETAILS).replace("\n", ""), description, "</p>"),
             'content-type': 'text/html'
