@@ -144,6 +144,12 @@ class ImportAcropole(BaseImport):
         licence_dict['licenceSubject'] = licenceSubject
         if licence.DOSSIER_REFCOM:
             self.licence_description.append({'REFERENCE COM': licence.DOSSIER_REFCOM})
+        licence_dict['usage'] = 'not_applicable'
+        licence_dict['workLocations'] = self.get_work_locations(licence, licence_dict)
+        self.get_organization(licence, licence_dict)
+        self.get_applicants(licence, licence_dict['__children__'])
+        self.get_parcels(licence, licence_dict)
+        self.get_events(licence, licence_dict)
         if licence.CONCAT_REMARQUES:
             cleaned_remarques = ""
             for rem in licence.CONCAT_REMARQUES.split("|"):
@@ -153,13 +159,9 @@ class ImportAcropole(BaseImport):
                     cleaned_remarques = cleaned_remarques[1:]
                 date_regex = r"(\d{2}/\d{2}/\d{4})"
                 remarque = re.sub(date_regex, "{}{}".format("<br>", r"\1"), cleaned_remarques)
+                remarque = remarque.encode('ascii', errors='ignore').decode('unicode-escape')
                 self.licence_description.append({'<br>Remarques': remarque.replace("|", "<br>").replace("\r\n", "<br>")})
-        licence_dict['usage'] = 'not_applicable'
-        licence_dict['workLocations'] = self.get_work_locations(licence, licence_dict)
-        self.get_organization(licence, licence_dict)
-        self.get_applicants(licence, licence_dict['__children__'])
-        self.get_parcels(licence, licence_dict)
-        self.get_events(licence, licence_dict)
+        self.licence_description = self.licence_description[:7899]  # upper length is refused TextField/Mimetype text/html.
         description = str(''.join(str(d) for d in self.licence_description))
         licence_dict['description'] = {
             'data': "{}{} - {}{}".format("<p>", str(licence.DETAILS).replace("\n", ""), description, "</p>"),
