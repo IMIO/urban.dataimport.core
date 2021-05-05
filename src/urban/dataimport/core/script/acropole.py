@@ -160,7 +160,7 @@ class ImportAcropole(BaseImport):
                 # remarque = remarque.encode('ascii', errors='ignore').decode('unicode-escape')
                 self.licence_description.append({'<br>Remarques': cleaned_remarques.replace("|", "<br>").replace("\r\n", "<br>").replace("\t", " ").replace("°", " ").replace("\x92", "'")})
         description = str(''.join(str(d) for d in self.licence_description))
-        description = description[:7899]  # upper length is refused TextField/Mimetype text/html.
+        description = description[:(7800 - len(str(licence.DETAILS)))]  # upper length is refused TextField/Mimetype text/html.
         licence_dict['description'] = {
             'data': "{}{} - {}{}".format("<p>", str(licence.DETAILS).replace("\n", ""), description, "</p>"),
             'content-type': 'text/html'
