@@ -153,7 +153,7 @@ class ImportAcropole(BaseImport):
                     cleaned_remarques = cleaned_remarques[1:]
                 date_regex = r"(\d{2}/\d{2}/\d{4})"
                 remarque = re.sub(date_regex, "{}{}".format("<br>", r"\1"), cleaned_remarques)
-                self.licence_description.append({'<br>Remarques': remarque.replace("|", "<br>")})
+                self.licence_description.append({'<br>Remarques': remarque.replace("|", "<br>").replace("\r\n", "<br>")})
         licence_dict['usage'] = 'not_applicable'
         licence_dict['workLocations'] = self.get_work_locations(licence, licence_dict)
         self.get_organization(licence, licence_dict)
@@ -371,7 +371,12 @@ class ImportAcropole(BaseImport):
                         work_locations_dict['bestaddress_key'] = str(bestaddress_streets.iloc[0]['key'])  # if str(bestaddress_streets.iloc[0]['key']) not in ('7044037', '7008904') else ""
                         if not number and alt_number:
                             number = alt_number
-                        work_locations_dict['number'] = safe_unicode(number)
+                        work_locations_dict['number'] = safe_unicode(number
+                                                                     .replace("à", "\xc3\xa0")
+                                                                     .replace("°", "\xc2\xb0")
+                                                                     .replace('(', " ")
+                                                                     .replace(')', " ")
+                                                                     )
                         work_locations_dict['zipcode'] = bestaddress_streets.iloc[0]['zip']
                         work_locations_dict['locality'] = bestaddress_streets.iloc[0]['entity']
                         # self.licence_description.append({'objet': "Rue trouvée",
@@ -664,8 +669,8 @@ class ImportAcropole(BaseImport):
         event_dict['event_id'] = main_licence_decision_event_id_mapping[licence_dict['portalType']]
 
         licence_dict['wf_state'] = state_mapping.get(licence.DOSSIER_OCTROI)
-        if licence_dict['wf_state']:
-            self.licence_description.append({'Précision décision': decision_label_mapping.get(licence_dict['wf_state'])})
+        # if licence_dict['wf_state']:
+        #     self.licence_description.append({'Précision décision': decision_label_mapping.get(licence_dict['wf_state'])})
 
         # CODT licences need a transition
         if licence_dict['portalType'].startswith("CODT_") and licence_dict['wf_state']:
