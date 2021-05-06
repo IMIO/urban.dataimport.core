@@ -31,7 +31,7 @@ from urban.dataimport.core.views.bestaddress_views import create_bestaddress_vie
 
 class ImportAcropole(BaseImport):
 
-    def __init__(self, config_file, limit=None, range=None, view=None, licence_id=None, ignore_cache=False, benchmarking=False, noop=False, iterate=False):
+    def __init__(self, config_file, limit=None, range=None, view=None, licence_id=None, licence_type_ids=None, ignore_cache=False, benchmarking=False, noop=False, iterate=False):
         print("INITIALIZING")
         self.start_time = time.time()
         self.benchmarking = benchmarking
@@ -47,6 +47,7 @@ class ImportAcropole(BaseImport):
         self.range = range
         self.view = view
         self.licence_id = licence_id
+        self.licence_type_ids = licence_type_ids
         self.search_old_parcels = config['main']['search_old_parcels']
         engine = create_engine('mysql://{user}:{password}@{host}:{port}'.format(**config._sections['database']), poolclass=StaticPool)
         connection = engine.connect()
@@ -106,10 +107,12 @@ class ImportAcropole(BaseImport):
         folders = getattr(self.db, self.view)
         if self.range:
             folders = folders[int(self.range.split(':')[0]):int(self.range.split(':')[1])]
-        if self.limit:
-            folders = folders.head(self.limit)
         if self.licence_id:
             folders = folders[folders.DOSSIER_NUMERO == self.licence_id]
+        if self.licence_type_ids:
+            folders = folders.query('DOSSIER_TDOSSIERID == @self.licence_type_ids')
+        if self.limit:
+            folders = folders.head(self.limit)
 
         bar = FillingSquaresBar('Processing licences', max=folders.shape[0])
         for id, licence in folders.iterrows():
@@ -147,7 +150,7 @@ class ImportAcropole(BaseImport):
         licence_dict['usage'] = 'not_applicable'
         licence_dict['workLocations'] = self.get_work_locations(licence, licence_dict)
         self.get_organization(licence, licence_dict)
-        self.get_applicants(licence, licence_dict['__children__'])
+        self.get_applicants(licence, licence_dict)
         self.get_parcels(licence, licence_dict)
         self.get_events(licence, licence_dict)
         if licence.CONCAT_REMARQUES:
@@ -408,10 +411,14 @@ class ImportAcropole(BaseImport):
         return work_locations_list
 
     @benchmark_decorator
-    def get_applicants(self, licence, licence_children):
+    def get_applicants(self, licence, licence_dict):
         if licence.CONCAT_DEMANDEURS:
             for applicant in licence.CONCAT_DEMANDEURS.split('#'):
-                applicant_dict = get_applicant_dict()
+                if licence_dict['portalType'] in ('UrbanCertificateOne'):
+                    applicant_dict = get_organization_dict()
+                    applicant_dict['@type'] = 'Notary'
+                else:
+                    applicant_dict = get_applicant_dict()
                 applicant_list = applicant.split('|')
                 applicant_dict['name1'] = applicant_list[0]
                 applicant_dict['name2'] = applicant_list[1]
@@ -424,7 +431,7 @@ class ImportAcropole(BaseImport):
                 applicant_dict['gsm'] = applicant_list[8]
                 applicant_dict['email'] = applicant_list[9]
 
-                licence_children.append(applicant_dict)
+                licence_dict['__children__'].append(applicant_dict)
 
     @benchmark_decorator
     def get_parcels(self, licence, licence_dict):
@@ -697,6 +704,7 @@ def main():
     parser.add_argument('--limit', type=int, help='number of records')
     parser.add_argument('--view', type=str, default='dossiers_vue', help='give licence view to call')
     parser.add_argument('--licence_id', type=str, help='reference of a licence')
+    parser.add_argument('--licence_type_ids', nargs='+', default=[], help='ids list of licence types')
     parser.add_argument('--range', type=str, help="input slice, example : '5:10'")
     parser.add_argument('--ignore_cache', type=bool, nargs='?',
                         const=True, default=False, help='ignore local cache')
@@ -714,6 +722,7 @@ def main():
         limit=args.limit,
         range=args.range,
         licence_id=args.licence_id,
+        licence_type_ids=args.licence_type_ids,
         ignore_cache=args.ignore_cache,
         benchmarking=args.benchmarking,
         noop=args.noop,
