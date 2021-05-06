@@ -416,7 +416,6 @@ class ImportAcropole(BaseImport):
             for applicant in licence.CONCAT_DEMANDEURS.split('#'):
                 if licence_dict['portalType'] in ('UrbanCertificateOne'):
                     applicant_dict = get_organization_dict()
-                    applicant_dict['@type'] = 'Notary'
                 else:
                     applicant_dict = get_applicant_dict()
                 applicant_list = applicant.split('|')
@@ -431,7 +430,12 @@ class ImportAcropole(BaseImport):
                 applicant_dict['gsm'] = applicant_list[8]
                 applicant_dict['email'] = applicant_list[9]
 
-                licence_dict['__children__'].append(applicant_dict)
+                if licence_dict['portalType'] in ('UrbanCertificateOne'):
+                    applicant_dict['@type'] = 'Notary'
+                    licence_dict['notaries'].append(applicant_dict)
+                else:
+                    licence_dict['__children__'].append(applicant_dict)
+
 
     @benchmark_decorator
     def get_parcels(self, licence, licence_dict):
