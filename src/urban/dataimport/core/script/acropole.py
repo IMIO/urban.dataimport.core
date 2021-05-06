@@ -414,7 +414,7 @@ class ImportAcropole(BaseImport):
     def get_applicants(self, licence, licence_dict):
         if licence.CONCAT_DEMANDEURS:
             for applicant in licence.CONCAT_DEMANDEURS.split('#'):
-                if licence_dict['portalType'] in ('UrbanCertificateOne'):
+                if licence_dict['portalType'] in ('UrbanCertificateOne', 'CODT_UrbanCertificateOne'):
                     applicant_dict = get_organization_dict()
                 else:
                     applicant_dict = get_applicant_dict()
@@ -430,7 +430,7 @@ class ImportAcropole(BaseImport):
                 applicant_dict['gsm'] = applicant_list[8]
                 applicant_dict['email'] = applicant_list[9]
 
-                if licence_dict['portalType'] in ('UrbanCertificateOne'):
+                if licence_dict['portalType'] in ('UrbanCertificateOne', 'CODT_UrbanCertificateOne'):
                     applicant_dict['@type'] = 'Notary'
                     licence_dict['notaries'].append(applicant_dict)
                 else:
