@@ -160,7 +160,7 @@ class ImportAcropole(BaseImport):
                 # remarque = remarque.encode('ascii', errors='ignore').decode('unicode-escape')
                 self.licence_description.append({'<br>Remarques': cleaned_remarques.replace("|", "<br>").replace("\r\n", "<br>").replace("\t", " ").replace("°", " ").replace("\x92", "'")})
         description = str(''.join(str(d) for d in self.licence_description))
-        description = description[:(7800 - len(str(licence.DETAILS)))]  # upper length is refused TextField/Mimetype text/html.
+        description = description[:(7500 - len(str(licence.DETAILS)))]  # upper length is refused TextField/Mimetype text/html.
         licence_dict['description'] = {
             'data': "{}{} - {}{}".format("<p>", str(licence.DETAILS).replace("\n", ""), description, "</p>"),
             'content-type': 'text/html'
@@ -372,8 +372,10 @@ class ImportAcropole(BaseImport):
                         if not number and alt_number:
                             number = alt_number
                         work_locations_dict['number'] = safe_unicode(number
-                                                                     .replace("à", "\xc3\xa0")
-                                                                     .replace("°", "\xc2\xb0")
+                                                                     .replace(" à ", " au ")
+                                                                     .replace("°", " ")
+                                                                     .replace("é", "e")
+                                                                     .replace("è", "e")
                                                                      .replace('(', " ")
                                                                      .replace(')', " ")
                                                                      )
