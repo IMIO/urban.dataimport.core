@@ -450,7 +450,7 @@ class ImportAcropole(BaseImport):
                     section = parcels_args[1] if parcels_args[1] else ''
                     radical = parcels_args[2] if parcels_args[2] else 0
                     bis = parcels_args[3] if parcels_args[3] else 0
-                    exposant = parcels_args[4] if parcels_args[4] else ' '  # for capakey, empty exposant is a space
+                    exposant = parcels_args[4] if parcels_args[4] else '_'  # for capakey, empty exposant is a underscore
                     puissance = parcels_args[5] if parcels_args[5] else 0
                     if division_code and section and radical:
                         if represent_int(puissance) and int(puissance) < 10000:
