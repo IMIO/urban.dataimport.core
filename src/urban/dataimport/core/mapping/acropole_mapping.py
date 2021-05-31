@@ -187,7 +187,7 @@ decision_vocabulary_mapping = {
 
 status_label_mapping = {
     'accept': 'Accepté',
-    'refuse': 'Réfusé',
+    'refuse': 'Refusé',
     'retire': 'Annulé / Abandonné',
     '': '',
 }
