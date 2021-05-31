@@ -8,7 +8,7 @@ from sqlalchemy.pool import StaticPool
 from urban.dataimport.core import utils
 from urban.dataimport.core.db import LazyDB
 from urban.dataimport.core.mapping.acropole_mapping import events_types, portal_type_mapping, \
-    state_mapping, title_types, division_mapping, decision_label_mapping
+    state_mapping, title_types, division_mapping, decision_label_mapping, status_label_mapping
 
 import argparse
 import configparser
@@ -165,7 +165,7 @@ class ImportAcropole(BaseImport):
         description = str(''.join(str(d) for d in self.licence_description))
         description = description[:(7500 - len(str(licence.DETAILS)))]  # upper length is refused TextField/Mimetype text/html.
         licence_dict['description'] = {
-            'data': "{}{} - {}{}".format("<p>", str(licence.DETAILS).replace("\n", ""), description, "</p>"),
+            'data': "{} Statut: {}, {} - {}{}".format("<p>", status_label_mapping.get(licence_dict['wf_state'], ""), str(licence.DETAILS).replace("\n", ""), description, "</p>"),
             'content-type': 'text/html'
         }  # description must be the last licence set
         self.validate_schema(licence_dict, 'GenericLicence')

@@ -185,6 +185,14 @@ decision_vocabulary_mapping = {
     'retire': '',
 }
 
+status_label_mapping = {
+    'accept': 'Accepté',
+    'refuse': 'Réfusé',
+    'retire': 'Annulé / Abandonné',
+    '': '',
+}
+
+
 custom_state_label_mapping = {
     '-2': 'Annulé / Abandonné',
     '-3': 'Dossier en cours (étape non clôturée)',
