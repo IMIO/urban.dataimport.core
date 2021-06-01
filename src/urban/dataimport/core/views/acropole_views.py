@@ -38,7 +38,6 @@ def create_concat_views(import_acropole):
                                       LEFT JOIN cpsn AS PERSONNE ON MAIN_JOIN.K_ID1 = PERSONNE.CPSN_ID
                                       INNER JOIN k2 AS MAIN_JOIN_BIS ON MAIN_JOIN_BIS.K_ID2 = PERSONNE.CPSN_ID
                                       LEFT JOIN cloc AS ADRESSE_PERSONNE ON MAIN_JOIN_BIS.K_ID1 = ADRESSE_PERSONNE.CLOC_ID
-                                    WHERE PERSONNE.CPSN_NOM NOT LIKE '%%architec%%' AND CPSN_ID <> 1073255
                                     GROUP BY
                                       DOSSIER.WRKDOSSIER_ID;
                                   """
