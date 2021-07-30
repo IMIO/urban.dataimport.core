@@ -1,12 +1,12 @@
 events_types = {
-        'recepisse': {
-        },
+        # 'recepisse': {
+        # },
         # 'completefolder': {
         # },
         # 'incompletefolder': {
         # },
-        'not_receivable': {
-        },
+        # 'not_receivable': {
+        # },
         # 'sendtofd': {
         # },
         'decision': {
@@ -61,14 +61,9 @@ view_endpoint_mapping = {
 #     '06': 25078
 # }
 division_mapping = {
-    '01': 55040,
-    '02': 55402,
-    '03': 55028,
-    '04': 55044,
-    '05': 55006,
-    '06': 53058,
-    '07': 53017,
-    '08': 55018
+    '01': 55008,
+    '02': 55009,
+    '03': 55024
 }
 
 # title ids, to update for specific locality, by default b.l'a
