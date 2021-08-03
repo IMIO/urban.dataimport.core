@@ -4,14 +4,14 @@ def create_views(import_urbaweb):
                                   """
                                     SELECT *
                                     FROM listingpermisdeclaration1907_2019
-                                    WHERE NOT(SUBSTRING(RefCom, 1, 2) = 'DU') AND RefCom != '-';
+                                    WHERE NOT(SUBSTRING(RefCom, 1, 2) = 'DU') AND RefCom != '-' AND Numero_dossier != "Du/2013/20";
                                   """
                                   )
     import_urbaweb.db.create_view("declaration_vue",
                                   """
                                     SELECT * 
                                     FROM listingpermisdeclaration1907_2019 
-                                    WHERE SUBSTRING(RefCom, 1, 2) = 'DU';
+                                    WHERE SUBSTRING(RefCom, 1, 2) = 'DU' OR Numero_dossier = "Du/2013/20";
                                   """
                                   )
 

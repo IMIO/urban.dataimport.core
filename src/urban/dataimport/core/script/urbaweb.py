@@ -200,7 +200,7 @@ class ImportUrbaweb(BaseImport):
             urbaweb_street = re.sub(r' Ste ', ' Sainte-', urbaweb_street).strip()
 
             # # TODO custom ECAU : to remove
-            urbaweb_street = re.sub(r'Rue Waugenée', 'Rue de Waugenée', urbaweb_street).strip()
+            urbaweb_street = re.sub(r'rue Waugenée', 'rue de Waugenée', urbaweb_street).strip()
             # End custom code
 
             df_ba_vue = self.bestaddress.bestaddress_vue
@@ -575,6 +575,7 @@ class ImportUrbaweb(BaseImport):
 
         if event_dict['decisionDate']:
             if self.verify_date_pattern.match(event_dict['decisionDate']):
+                event_dict['eventDate'] = event_dict['decisionDate']
                 licence_dict['__children__'].append(event_dict)
 
     def get_rubrics(self, licence, licence_dict):
