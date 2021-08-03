@@ -198,7 +198,6 @@ class ImportUrbaweb(BaseImport):
             urbaweb_street = re.sub(r'^Pl ', 'Place ', urbaweb_street).strip()
             urbaweb_street = re.sub(r' St ', ' Saint-', urbaweb_street).strip()
             urbaweb_street = re.sub(r' Ste ', ' Sainte-', urbaweb_street).strip()
-            import ipdb; ipdb.set_trace() # TODO REMOVE BREAKPOINT
             # # TODO custom ECAU : to remove
             urbaweb_street = re.sub(r'rue Waugenée', 'rue de Waugenée', urbaweb_street).strip()
             # End custom code
