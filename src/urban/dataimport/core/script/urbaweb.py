@@ -200,6 +200,20 @@ class ImportUrbaweb(BaseImport):
             urbaweb_street = re.sub(r' Ste ', ' Sainte-', urbaweb_street).strip()
             # # TODO custom ECAU : to remove
             urbaweb_street = re.sub(r'rue Waugenée', 'rue de Waugenée', urbaweb_street).strip()
+            urbaweb_street = re.sub(r'rue Bel Air', 'Rue Bel-Air', urbaweb_street).strip()
+            urbaweb_street = re.sub(r'Rue Bel Air', 'Rue Bel-Air', urbaweb_street).strip()
+            urbaweb_street = re.sub(r'rue A. Pouplier', 'Rue Arthur Pouplier', urbaweb_street).strip()
+            urbaweb_street = re.sub(r'Rue Belle Tête', 'Rue de Belle Tête', urbaweb_street).strip()
+            urbaweb_street = re.sub(r'rue Belle-Tête', 'Rue de Belle Tête', urbaweb_street).strip()
+            urbaweb_street = re.sub(r"rue de l'Escaille", "Rue de l'Escaille", urbaweb_street).strip()
+            urbaweb_street = re.sub(r"Rue de Restaumont", "Rue Restaumont", urbaweb_street).strip()
+            urbaweb_street = re.sub(r"rue de Restaumont", "Rue Restaumont", urbaweb_street).strip()
+            urbaweb_street = re.sub(r"rue des Croisettes", "Rue Croisettes", urbaweb_street).strip()
+            urbaweb_street = re.sub(r"rue des Perce Neige", "Rue des Perce-Neige", urbaweb_street).strip()
+            urbaweb_street = re.sub(r"rue Noires Terres", "Rue Noires-Terres", urbaweb_street).strip()
+            urbaweb_street = re.sub(r"Rue Noires Terres", "Rue Noires-Terres", urbaweb_street).strip()
+            urbaweb_street = re.sub(r"rue Pierre Joseph Poliart", "Rue Pierre-Joseph Poliart", urbaweb_street).strip()
+            urbaweb_street = re.sub(r"rue Triherée", "Chemin de Triherée", urbaweb_street).strip()
             # End custom code
 
             df_ba_vue = self.bestaddress.bestaddress_vue
