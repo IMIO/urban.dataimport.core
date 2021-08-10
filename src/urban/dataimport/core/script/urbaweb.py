@@ -350,7 +350,7 @@ class ImportUrbaweb(BaseImport):
                             except Exception as e:
                                 print(e)
 
-                            result_count = cadastral_parcels.shape[0]
+                            result_count = cadastral_parcels.drop_duplicates().shape[0]
                             if result_count == 1:
                                 parcels_dict['outdated'] = 'False'
                                 parcels_dict['is_official'] = 'True'
@@ -385,7 +385,7 @@ class ImportUrbaweb(BaseImport):
                                 except Exception as e:
                                     print(e)
 
-                                result_count_old = cadastral_parcels_old.shape[0]
+                                result_count_old = cadastral_parcels_old.drop_duplicates().shape[0]
                                 # Looking for old parcels
                                 if result_count_old == 1:
                                     parcels_dict['outdated'] = 'True'
