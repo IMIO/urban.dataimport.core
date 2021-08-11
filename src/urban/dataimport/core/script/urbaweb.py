@@ -328,7 +328,8 @@ class ImportUrbaweb(BaseImport):
                             puissance = rbep[2]
                         else:
                             puissance = "0"
-
+                    section = section.upper()
+                    exposant = exposant.upper()
                     # re.match('^[A-Z]?$' single uppercase standard character
                     if division_num and section and radical_bis_exp_puissance and re.match('^[A-Z]?$', section.upper().replace(' ', '')):
                         # capakey without division and section is 11 character long.
