@@ -273,9 +273,15 @@ class ImportUrbaweb(BaseImport):
         applicant_infos = licence.Coordonnees_demandeur
         applicant_infos = applicant_infos.replace("Ecaussinnes - d'Enghien", "Ecaussinnes-d'Enghien")
         applicant = applicant_infos.split(" - ")
-        if len(applicant) != 3:
-            self.licence_description.append({'Demandeur': applicant_infos})
-            return
+        tmp_applicant = ["", "", ""]
+        if len(applicant) == 1:
+            tmp_applicant = [applicant[0], "", ""]
+        elif len(applicant) == 2:
+            tmp_applicant = [applicant[0], "", applicant[1]]
+        elif len(applicant) > 3:
+            tmp_applicant = ['_'.join(applicant[:-2]), applicant[-2], applicant[-1]]
+        applicant = tmp_applicant
+
         applicant_dict = get_applicant_dict()
         applicant_dict['name1'] = applicant[0]
         if len(applicant[1].split(",")) == 2:
@@ -342,7 +348,7 @@ class ImportUrbaweb(BaseImport):
                                     (parcelles_cadastrales.section == section) &
                                     (parcelles_cadastrales.radical == int(radical)) &
                                     ((parcelles_cadastrales.bis.isnull()) if not int(bis)
-                                     else parcelles_cadastrales.bis == int(bis)) &
+                                     else parcelles_cadastrales.bis == str(int(bis))) &
                                     ((parcelles_cadastrales.exposant.isnull()) if not exposant
                                      else parcelles_cadastrales.exposant == exposant) &
                                     ((parcelles_cadastrales.puissance.isnull()) if not int(puissance)
@@ -377,7 +383,7 @@ class ImportUrbaweb(BaseImport):
                                         (parcelles_old_cadastrales.section == section) &
                                         (parcelles_old_cadastrales.radical == int(radical)) &
                                         ((parcelles_old_cadastrales.bis.isnull()) if not int(bis)
-                                         else parcelles_old_cadastrales.bis == int(bis)) &
+                                         else parcelles_old_cadastrales.bis == str(int(bis))) &
                                         ((parcelles_old_cadastrales.exposant.isnull()) if not exposant
                                          else parcelles_old_cadastrales.exposant == exposant) &
                                         ((parcelles_old_cadastrales.puissance.isnull()) if not int(puissance)
