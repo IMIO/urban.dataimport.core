@@ -274,10 +274,14 @@ class ImportUrbaweb(BaseImport):
         applicant_infos = applicant_infos.replace("Ecaussinnes - d'Enghien", "Ecaussinnes-d'Enghien")
         applicant = applicant_infos.split(" - ")
         tmp_applicant = ["", "", ""]
-        if len(applicant) == 1:
+        if len(applicant) == 0:
+            return
+        elif len(applicant) == 1:
             tmp_applicant = [applicant[0], "", ""]
         elif len(applicant) == 2:
             tmp_applicant = [applicant[0], "", applicant[1]]
+        elif len(applicant) == 3:
+            tmp_applicant = [applicant[0], applicant[1], applicant[2]]
         elif len(applicant) > 3:
             tmp_applicant = ['_'.join(applicant[:-2]), applicant[-2], applicant[-1]]
         applicant = tmp_applicant
