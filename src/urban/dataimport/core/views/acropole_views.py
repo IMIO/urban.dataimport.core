@@ -149,7 +149,8 @@ def create_views(import_acropole):
                                       CONCAT_PARCELS,
                                       CONCAT_DEMANDEURS,
                                       CONCAT_ADRESSES,
-                                      CONCAT_REMARQUES
+                                      CONCAT_REMARQUES,
+                                      DateTime_ins
                                     FROM
                                       wrkdossier AS DOSSIER
                                       LEFT JOIN get_details AS DETAILS ON DETAILS.WRKDOSSIER_ID = DOSSIER.WRKDOSSIER_ID
@@ -157,7 +158,7 @@ def create_views(import_acropole):
                                       LEFT JOIN get_demandeurs AS APPLICANT ON APPLICANT.WRKDOSSIER_ID = DOSSIER.WRKDOSSIER_ID
                                       LEFT JOIN get_adresses AS WORKLOCATIONS ON WORKLOCATIONS.WRKDOSSIER_ID = DOSSIER.WRKDOSSIER_ID
                                       LEFT JOIN get_remarques AS REMARQUES ON REMARQUES.WRKDOSSIER_ID = DOSSIER.WRKDOSSIER_ID
-                                      WHERE DOSSIER_TDOSSIERID NOT IN (-104442, -36624, -31266, -13467);
+                                      WHERE DOSSIER_TDOSSIERID NOT IN (-104442, -36624, -31266, -13467) AND DateTime_ins > '2020-10-29 00:00:00' AND DateTime_ins < '2021-01-01 00:00:00';;
                                   """
                                   )
     import_acropole.db.create_view("BuildLicence_vue",
