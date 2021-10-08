@@ -330,7 +330,8 @@ class ImportUrbaweb(BaseImport):
                     division_num = parcels_args[0]
                     section = parcels_args[1]
                     radical_bis_exp_puissance = parcels_args[2]
-
+                    section = section.upper()
+                    exposant = exposant.upper()
                     # re.match('^[A-Z]?$' single uppercase standard character
                     if division_num and section and radical_bis_exp_puissance and re.match('^[A-Z]?$', section.upper().replace(' ', '')):
                         # capakey without division and section is 11 character long.
@@ -351,7 +352,7 @@ class ImportUrbaweb(BaseImport):
                                             (parcelles_cadastrales.section == section) &
                                             (parcelles_cadastrales.radical == int(radical)) &
                                             ((parcelles_cadastrales.bis.isnull()) if not int(bis)
-                                             else parcelles_cadastrales.bis == int(bis)) &
+                                             else parcelles_cadastrales.bis == str(int(bis))) &
                                             ((parcelles_cadastrales.exposant.isnull()) if not exposant
                                              else parcelles_cadastrales.exposant == exposant) &
                                             ((parcelles_cadastrales.puissance.isnull()) if not int(puissance)
@@ -360,7 +361,7 @@ class ImportUrbaweb(BaseImport):
                                     except Exception as e:
                                         print(e)
 
-                                    result_count = cadastral_parcels.shape[0]
+                                    result_count = cadastral_parcels.drop_duplicates().shape[0]
                                     if result_count == 1:
                                         parcels_dict['outdated'] = 'False'
                                         parcels_dict['is_official'] = 'True'
@@ -386,7 +387,7 @@ class ImportUrbaweb(BaseImport):
                                                 (parcelles_old_cadastrales.section == section) &
                                                 (parcelles_old_cadastrales.radical == int(radical)) &
                                                 ((parcelles_old_cadastrales.bis.isnull()) if not int(bis)
-                                                 else parcelles_old_cadastrales.bis == int(bis)) &
+                                                 else parcelles_old_cadastrales.bis == str(int(bis))) &
                                                 ((parcelles_old_cadastrales.exposant.isnull()) if not exposant
                                                  else parcelles_old_cadastrales.exposant == exposant) &
                                                 ((parcelles_old_cadastrales.puissance.isnull()) if not int(puissance)
@@ -395,7 +396,7 @@ class ImportUrbaweb(BaseImport):
                                         except Exception as e:
                                             print(e)
 
-                                        result_count_old = cadastral_parcels_old.shape[0]
+                                        result_count_old = cadastral_parcels_old.drop_duplicates().shape[0]
                                         # Looking for old parcels
                                         if result_count_old == 1:
                                             parcels_dict['outdated'] = 'True'
