@@ -26,7 +26,7 @@ from urban.dataimport.core.utils import BaseImport, StateManager, StateHandler, 
     get_file_data_from_suffix_path, get_filename_from_suffix_path, html_escape
 from urban.dataimport.core.views.bestaddress_views import create_bestaddress_views
 from urban.dataimport.core.views.cadastral_views import create_cadastral_views
-from urban.dataimport.core.views.urbaweb_views import create_views, create_concat_views
+from urban.dataimport.core.views.urbaweb_views import create_views
 
 
 class ImportUrbaweb(BaseImport):
@@ -70,7 +70,7 @@ class ImportUrbaweb(BaseImport):
             config['bestaddress_database']['schema'],
             ignore_cache=pg_ignore_cache,
         )
-        create_concat_views(self)
+        # create_concat_views(self)
         create_views(self)
         create_cadastral_views(self)
         create_bestaddress_views(self, config['main']['locality'])
