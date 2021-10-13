@@ -3,8 +3,7 @@ def create_views(import_urbaweb):
     import_urbaweb.db.create_view("permis_vue",
                                   """
                                     SELECT *
-                                    FROM gh_pu_sqlfriendly
-                                    WHERE NOT(SUBSTRING(RefCom, 1, 2) = 'DU') AND RefCom != '-' AND Numero_dossier != "Du/2013/20";
+                                    FROM gh_pu_sqlfriendly;
                                   """
                                   )
 

@@ -1,12 +1,12 @@
 events_types = {
-        'recepisse': {
-        },
+        # 'recepisse': {
+        # },
         # 'completefolder': {
         # },
         # 'incompletefolder': {
         # },
-        'not_receivable': {
-        },
+        # 'not_receivable': {
+        # },
         # 'sendtofd': {
         # },
         'decision': {
@@ -14,28 +14,34 @@ events_types = {
 }
 
 portal_type_mapping = {
-    1: 'BuildLicence',
-    2: 'ParcelOutLicence',
-    3: 'UrbanCertificateOne',
-    4: 'UrbanCertificateTwo',
-    5: 'PreliminaryNotice',
-    6: 'EnvClassOne',
-    7: 'MiscDemand',  # DeclarationImpetrant
-    8: 'NotaryLetter',
-    9: 'Declaration',
-    10: 'UniqueLicence',
-    11: 'MiscDemand',
-    16: 'ParcelOutLicence',
-    17: 'EnvClassThree',
-    18: 'MiscDemand',  # Infraction
-    19: 'MiscDemand',  # Permis Location
-    21: 'MiscDemand',  # Insalubrités logement
-    22: 'CODT_CommercialLicence',
-    23: 'CODT_BuildLicence',
-    24: 'CODT_UrbanCertificateTwo',
-    25: 'CODT_ParcelOutLicence',
-    26: 'Infraction CODT',   # ?
-    27: 'ProjectMeeting',
+    'Déclaration': 'Declaration',
+    'DECLARATION URBANISTIQUE': 'Declaration',
+    'DECLARATION': 'Declaration',
+    'déclaration': 'Declaration',
+    'déclaratiion': 'Declaration',
+    'Déclarataion': 'Declaration',
+    'Unique': 'UniqueLicence',
+    'UNIQUE': 'UniqueLicence',
+    'Un ique': 'UniqueLicence',
+    'Saisine': 'Article127',
+    'SAISINE': 'Article127',
+    'Saisine FD': 'Article127',
+    'Recours': 'Article127',
+    'D.VI.22': 'Article127',
+    'D.IV.22': 'Article127',
+    'D.IV,22': 'Article127',
+    '127': 'Article127',
+    'Article 127': 'Article127',
+    'Art. 127': 'Article127',
+    'Art.127': 'Article127',
+    # 'PP': 'BuidLicence',  # Petit permis
+    # 'Petit perrmis': 'BuidLicence',  # Petit permis
+    # 'petit permis': 'BuidLicence',  # Petit permis
+    # 'Petit Permis': 'BuidLicence',  # Petit permis
+    # 'PETIT PERMIS': 'BuidLicence',  # Petit permis
+    # 'Petit permis': 'BuidLicence',  # Petit permis
+    # 'Octroi FD': 'BuidLicence',  # Petit permis
+    'Intégré': 'IntegratedLicence',
 }
 
 decision_code_mapping = {
@@ -61,15 +67,14 @@ view_endpoint_mapping = {
 #     '06': 25078
 # }
 division_mapping = {
-    '01': 55040,
-    '02': 55402,
-    '03': 55028,
-    '04': 55044,
-    '05': 55006,
-    '06': 53058,
-    '07': 53017,
-    '08': 55018
+    '01': 62046,
+    '02': 62054,
+    '03': 62453,
+    '04': 62454,
+    '05': 62105,
+    '06': 62016,
 }
+
 
 # title ids, to update for specific locality, by default b.l'a
 title_types = {
