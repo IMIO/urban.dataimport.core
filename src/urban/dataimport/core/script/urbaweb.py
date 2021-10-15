@@ -145,7 +145,7 @@ class ImportUrbaweb(BaseImport):
         licence_dict['licenceSubject'] = licence.TRAVAUX
         licence_dict['usage'] = 'not_applicable'
         licence_dict['workLocations'] = self.get_work_locations(licence)
-        # self.get_organization(licence, licence_dict)
+        self.get_organization(licence, licence_dict)
         self.get_applicants(licence, licence_dict['__children__'], licence_dict)
         self.get_parcels(licence, licence_dict['__children__'])
         self.get_events(licence, licence_dict)
@@ -195,7 +195,7 @@ class ImportUrbaweb(BaseImport):
             # remove parentheses and its content
             licence.SITUATION_BIEN = re.sub(r'\([^)]*\)', '', licence.SITUATION_BIEN).strip()
             urbaweb_street = re.sub(r'\d.*', '', licence.SITUATION_BIEN).strip()
-            urbaweb_number = re.sub(r'^\\D*\)', '', licence.SITUATION_BIEN).strip()
+            urbaweb_number = re.sub(r'^\D*', '', licence.SITUATION_BIEN).strip()
 
             urbaweb_street = re.sub(r'^Av[.]', 'Avenue', urbaweb_street).strip()
             urbaweb_street = re.sub(r'^Av ', 'Avenue ', urbaweb_street).strip()
@@ -409,36 +409,14 @@ class ImportUrbaweb(BaseImport):
     def get_organization(self, licence, licence_dict):
         organization_dict = get_organization_dict()
 
-        if hasattr(licence, 'ORG_NOM') and licence.ORG_NOM:
-            check_org_name = licence.ORG_NOM.replace("/", "").replace("-", "").replace(".", "").replace(" ", "")
-            if check_org_name:
-                organization_dict['personTitle'] = title_types.get(licence.ORG_TITLE_ID, "")
-                organization_dict['name1'] = licence.ORG_NOM
-                organization_dict['name1'] = organization_dict['name1'].replace("/", "").replace(".", " ")
-                organization_dict['name2'] = licence.ORG_PRENOM
-                organization_dict['name2'] = organization_dict['name2'].replace("/", "").replace(".", " ")
-                organization_dict['number'] = unidecode.unidecode(licence.ORG_NUMERO)
-                organization_dict['street'] = licence.ORG_RUE
-                organization_dict['zipcode'] = str(int(licence.ORG_CP))
-                organization_dict['city'] = licence.ORG_LOCALITE
-                organization_dict['phone'] = licence.ORG_TEL
-                organization_dict['gsm'] = licence.ORG_MOBILE
-                organization_dict['email'] = licence.ORG_MAIL
-
-                if licence.ORG_TYPE == 'ARCHITECTE' or \
-                   licence.ORG_TYPE == 'ARCHITECTE|DEMANDEUR_CU' or \
-                   licence.ORG_TYPE == 'DEMANDEUR_CU' or \
-                   licence.ORG_TYPE == 'AUTEUR_ETUDE' or \
-                   licence.ORG_TYPE == 'CONTACT_PEB' or \
-                   licence.ORG_TYPE == 'BUREAU':
-                    organization_dict['@type'] = 'Architect'
-                    licence_dict['architects'].append(organization_dict)
-                elif licence.ORG_TYPE == 'NOTAIRE':
-                    organization_dict['@type'] = 'Notary'
-                    licence_dict['notaries'].append(organization_dict)
-                elif licence.ORG_TYPE == 'GEOMETRE':
-                    organization_dict['@type'] = 'Geometrician'
-                    licence_dict['geometricians'].append(organization_dict)
+        if licence.ARCHITECTE:
+            organization_dict['@type'] = 'Architect'
+            organization_dict['name1'] = licence.ARCHITECTE
+            organization_dict['number'] = re.sub(r'^\D*', '', licence.ADR_ARCHI).strip()
+            organization_dict['street'] = re.sub(r'\d.*', '', licence.ADR_ARCHI).replace(",","").strip()
+            organization_dict['zipcode'] = licence.CODE_ARCHI
+            organization_dict['city'] = licence.COMMUNE_ARCHI
+            licence_dict['architects'].append(organization_dict)
 
         # Geometrician is mandatory for parceloutlicence type in Urban
         if licence_dict['portalType'] in ('ParcelOutLicence', 'CODT_ParcelOutLicence') and len(licence_dict['geometricians']) == 0:
