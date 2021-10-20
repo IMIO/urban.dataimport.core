@@ -143,7 +143,13 @@ class ImportAcropole(BaseImport):
         #     licence_dict['investigationReasons'] = [investigation_reasons]
         licence_dict['reference'] = "{}/{}".format(licence.WRKDOSSIER_ID, licence.DOSSIER_NUMERO)
         # licence_dict['referenceDGATLP'] = licence.DOSSIER_REFURB and licence.DOSSIER_REFURB or ''
-        licenceSubject = licence.DOSSIER_OBJETFR or licence.DETAILS
+        default_subject= ''
+        if licence_dict['portalType'] == 'Division':
+            default_subject = "Diviser un bien."
+        elif licence_dict['portalType'] == 'NotaryLetter' or licence_dict['portalType'] == 'CODT_NotaryLetter':
+            default_subject = "Renseignements urbanistiques."
+
+        licenceSubject = "{} {}".format(default_subject, licence.DOSSIER_OBJETFR or licence.DETAILS)
         licence_dict['licenceSubject'] = licenceSubject
         if licence.DOSSIER_REFCOM:
             self.licence_description.append({'REFERENCE COM': licence.DOSSIER_REFCOM})
