@@ -146,7 +146,7 @@ class ImportAcropole(BaseImport):
         default_subject= ''
         if licence_dict['portalType'] == 'Division':
             default_subject = "Diviser un bien."
-        elif licence_dict['portalType'] == 'NotaryLetter' or licence_dict['portalType'] == 'CODT_NotaryLetter':
+        elif licence_dict['portalType'] == 'NotaryLetter' or licence_dict['portalType'] == 'CODT_NotaryLetter' or licence_dict['portalType'] == 'CODT_UrbanCertificateOne':
             default_subject = "Renseignements urbanistiques."
 
         licenceSubject = "{} {}".format(default_subject, licence.DOSSIER_OBJETFR or licence.DETAILS)
