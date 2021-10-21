@@ -149,7 +149,7 @@ class ImportAcropole(BaseImport):
         elif licence_dict['portalType'] == 'NotaryLetter' or licence_dict['portalType'] == 'CODT_NotaryLetter' or licence_dict['portalType'] == 'CODT_UrbanCertificateOne':
             default_subject = "Renseignements urbanistiques."
 
-        licenceSubject = "{} {}".format(default_subject, licence.DOSSIER_OBJETFR or licence.DETAILS)
+        licenceSubject = "{} {}".format(default_subject, licence.DOSSIER_OBJETFR or licence.DETAILS or "")
         licence_dict['licenceSubject'] = licenceSubject
         if licence.DOSSIER_REFCOM:
             self.licence_description.append({'REFERENCE COM': licence.DOSSIER_REFCOM})
