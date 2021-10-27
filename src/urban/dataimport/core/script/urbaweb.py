@@ -77,6 +77,9 @@ class ImportUrbaweb(BaseImport):
         self.parcel_errors = []
         self.street_errors = []
         self.verify_date_pattern = re.compile("^\d{4}\-(0[1-9]|1[012])\-(0[1-9]|[12][0-9]|3[01])$")
+        # Avoid references duplicates
+        self.duplicates_list = ['1945-015', '1946-052', '1946-064', '1947-203', '1948-209', '1948-246', '1949-000', '1949-340', '1949-367', '1950-415', '1950-437', '1950-474', '1950-511', '1950-512', '1950-515', '1950-548', '1951-000', '1951-567', '1951-619', '1952-728', '1952-731', '1953-860', '1953-912', '1953-938', '1953-980', '1954-1008', '1954-1079', '1954-1082', '1954-1144', '1954-988', '1954-999', '1955-1220', '1955-1265', '1955-1311', '1955-1336', '1955-1356', '1956-1472', '1956-1507', '1957-1588', '1957-1716', '1958-1816', '1958-1856', '1959-1929', '1959-1940', '1959-1943', '1959-2029', '1959-2051', '1960-2176', '1960-2260', '1961-2287', '1961-2395', '1961-2432', '1961-2468', '1962-2593', '1963-052', '1963-064', '1963-2687', '1963-2725', '1963-2752', '1964-054HH', '1964-161', '1964-166', '1964-216', '1964-228', '1965-240', '1965-294', '1965-323', '1965-335', '1965-361', '1967-572', '1967-635', '1967-643', '1967-659', '1968-368HL', '1968-722', '1968-786', '1968-793b', '1968-796', '1969-396HL', '1969-861', '1969-866', '1970-932', '1970-999', '1971-001', '1971-002', '1971-003', '1971-005', '1971-006', '1971-007', '1971-008', '1971-009', '1971-010', '1971-011', '1971-012', '1971-016', '1971-018', '1971-019', '1971-020', '1971-021', '1971-022', '1971-023', '1971-024', '1971-025', '1971-026', '1971-027', '1971-028', '1971-029', '1971-030', '1971-031', '1971-032', '1971-033', '1971-034', '1971-035', '1971-036', '1971-037', '1971-038', '1971-039', '1971-040', '1971-041', '1971-042', '1971-043', '1971-044', '1971-045', '1971-046', '1971-047', '1971-048', '1971-049', '1971-050', '1971-051', '1971-052', '1971-053', '1971-054', '1971-057', '1971-058', '1971-061', '1971-063', '1971-064', '1971-065', '1971-066', '1971-067', '1971-069', '1971-071', '1971-075', '1971-076', '1971-077', '1971-080', '1971-083', '1971-084', '1971-085', '1971-086', '1971-087', '1971-089', '1971-090', '1971-091', '1971-092', '1971-094', '1972-095', '1972-097', '1972-098', '1972-099', '1972-100', '1972-101', '1972-102', '1972-104', '1972-105', '1972-106', '1972-107', '1972-108', '1972-109', '1972-111', '1972-112', '1972-113', '1972-114', '1972-115', '1972-116', '1972-119', '1972-120', '1972-121', '1972-123', '1972-124', '1972-125', '1972-126', '1972-127', '1972-128', '1972-129', '1972-130', '1972-131', '1972-132', '1972-133', '1972-134', '1972-135', '1972-136', '1972-137', '1972-138', '1972-139', '1972-140', '1972-141', '1972-142', '1972-144', '1972-145', '1972-146', '1972-147', '1972-148', '1972-149', '1972-150', '1972-151', '1972-152', '1972-153', '1972-154', '1972-155', '1972-157', '1972-158', '1972-159', '1972-160', '1972-161', '1972-162', '1972-163', '1972-165', '1972-166', '1972-167', '1972-168', '1972-170', '1972-171', '1972-172', '1972-173', '1972-174', '1972-175', '1972-176', '1972-177', '1972-178', '1972-179', '1972-180', '1972-181', '1972-182', '1972-183', '1972-184', '1972-185', '1972-186', '1972-187', '1972-189', '1972-190', '1972-191', '1972-192', '1972-196', '1972-197', '1972-198', '1972-199', '1972-200', '1972-201', '1972-202', '1972-203', '1972-204', '1972-205', '1972-206', '1972-207', '1972-208', '1972-209', '1972-210', '1972-211', '1972-212', '1972-214', '1972-215', '1972-217', '1972-219', '1972-221', '1972-222', '1972-223', '1972-224', '1973-226', '1973-227', '1973-228', '1973-229', '1973-230', '1973-231', '1973-232', '1973-233', '1973-234', '1973-235', '1973-236', '1973-237', '1973-238', '1973-239', '1973-240', '1973-241', '1973-242', '1973-243', '1973-244', '1973-245', '1973-246', '1973-247', '1973-248', '1973-249', '1973-250', '1973-252', '1973-253', '1973-254', '1973-255', '1973-256', '1973-257', '1973-258', '1973-259', '1973-260', '1973-261', '1973-263', '1973-264', '1973-265', '1973-267', '1973-268', '1973-269', '1973-270', '1973-271', '1973-272', '1973-273', '1973-275', '1973-276', '1973-277', '1973-278', '1973-279', '1973-281', '1973-282', '1973-283', '1973-284', '1973-285', '1973-286', '1973-287', '1973-288', '1973-288b', '1973-289', '1973-290', '1973-291', '1973-292', '1973-295', '1973-296', '1973-297', '1973-298', '1973-299', '1973-300', '1973-301', '1973-302', '1973-303', '1973-304', '1973-305', '1973-306', '1973-307', '1973-308', '1973-309', '1973-310', '1973-311', '1973-312', '1973-313', '1973-314', '1973-315', '1973-316', '1973-317', '1973-318', '1973-319', '1973-320', '1973-321', '1973-322', '1973-323', '1973-324', '1973-325', '1973-326', '1973-327', '1973-328', '1973-330', '1973-331', '1973-332', '1973-333', '1973-335', '1973-342', '1973-343', '1973-345', '1973-346', '1973-347', '1973-348', '1973-349', '1973-357', '1973-358', '1975-573', '1976-765', '1977-104', '1978-373', '1978-398', '1979-463', '1979-466', '1979-485', '1980-587', '1980-594', '1980-611', '1980-664', '1980-744', '1980-766', '1982-016', '1982-081', '1983-024', '1983-089', '1983-105', '1983-106', '1985-037', '1985-084', '1986-009', '1987-073', '1988-101', '1989-105', '1991-084', '1991-091', '1991-132', '1992-030', '1993-032', '1993-041', '1994-015', '1994-151', '1994-152', '1995-071a', '1995-071b', '1996-012', '1996-096', '1996-099a', '1996-158', '1996-167a', '1997-013', '1997-032', '1997-058', '1997-099', '1997-153', '1998-016', '1998-019', '1998-047', '1998-090', '1998-103', '1998-139a', '1998-166', '2000-030', '2000-050a', '2000-071', '2000-100', '2000-118', '2000-132', '2001-032', '2001-032a', '2001-047', '2001-064', '2003-060', '2003-102', '2004-042', '2004-113A', '2005-021', '2005-022', '2005-115i-D', '2007-033A', '2007-366 U', '2008-081', '2012-008', '2014-136', '2015-084A', '2015-095', '2016-074', '2016-083', '2016-086', '2016-086A', '2016-132', '2017-015A', '2017-025C', '2017-041', '2017-058', '2018-031', '2018-080', '2020-028U', '2021-050C']
+        self.duplicates_count = dict(zip(self.duplicates_list, [0] * len(self.duplicates_list)))
         print("INITIALIZATION COMPLETED")
 
     def execute(self):
@@ -140,7 +143,7 @@ class ImportUrbaweb(BaseImport):
         # else:
         #     ref = 'inconnue'
 
-        licence_dict['reference'] = licence.NUM_PERMIS
+        licence_dict['reference'] = licence.NUM_PERMIS or licence.N1
         # licence_dict['Title'] = "{} {}".format(licence_dict['reference'], licence.NATURE_TITRE)
         licence_dict['licenceSubject'] = licence.TRAVAUX
         licence_dict['usage'] = 'not_applicable'
@@ -149,6 +152,14 @@ class ImportUrbaweb(BaseImport):
         self.get_applicants(licence, licence_dict['__children__'], licence_dict)
         self.get_parcels(licence, licence_dict['__children__'])
         self.get_events(licence, licence_dict)
+
+        if licence_dict['reference'] in self.duplicates_list:
+            self.duplicates_count[licence_dict['reference']] = self.duplicates_count[licence_dict['reference']] + 1
+            print("Duplicate reference: {} / Duplicate iteration : {}".format(licence_dict['reference'],
+                                                                              self.duplicates_count[
+                                                                                  licence_dict['reference']]))
+            licence_dict['reference'] = "{}_{}".format(licence_dict['reference'], self.duplicates_count[licence_dict['reference']])
+
         # self.get_rubrics(licence, licence_dict)
         # self.get_parcellings(licence)
         # if hasattr(licence, "PHC") and licence.PHC:
@@ -205,20 +216,59 @@ class ImportUrbaweb(BaseImport):
             urbaweb_street = re.sub(r' St ', ' Saint-', urbaweb_street).strip()
             urbaweb_street = re.sub(r' Ste ', ' Sainte-', urbaweb_street).strip()
 
-            # # TODO custom SOIG : to remove
-            # urbaweb_street = re.sub(r'Chemin Biamont', 'Chemin de Biamont', urbaweb_street).strip()
-            # if licence.LOCALITE_LABEL in 'Neufvilles':
-            #     urbaweb_street = re.sub(r'Rue Reine De Hongrie', 'Rue Reine de Hongrie', urbaweb_street).strip()
-            # elif licence.LOCALITE_LABEL in 'Casteau(Soignies)':
-            #     urbaweb_street = re.sub(r'Rue Reine De Hongrie', 'Rue Reine  de Hongrie', urbaweb_street).strip()
-            # elif licence.LOCALITE_LABEL in 'Thieusies':
-            #     urbaweb_street = re.sub(r'Rue Reine De Hongrie', 'Rue  Reine de Hongrie', urbaweb_street).strip()
-            # urbaweb_street = re.sub(r"Place d' Horrues", "Place d'Horrues", urbaweb_street).strip()
-            # urbaweb_street = re.sub(r"Square de Savoye", "Square Eugène de Savoye", urbaweb_street).strip()
-            # urbaweb_street = re.sub(r"Rue de l' Agace", "Rue de l'Agace", urbaweb_street).strip()
-            # urbaweb_street = re.sub(r"Rue Mouligneau", "Rue du Mouligneau", urbaweb_street).strip()
-            # urbaweb_street = re.sub(r"boul. John Fitzgerald Kennedy", "Boulevard J.F.Kennedy", urbaweb_street).strip()
-            # urbaweb_street = re.sub(r"Chemin de Williaupont", "Chemin de Willaupont", urbaweb_street).strip()
+            # # TODO custom GH
+            urbaweb_street = re.sub(r"Acacias", "Avenue des Acacias", urbaweb_street).strip()
+            urbaweb_street = re.sub(r"Aérport", "Rue de l'Aéroport", urbaweb_street).strip()
+            urbaweb_street = re.sub(r"Aéropostale", "Rue de l'Aéropostale", urbaweb_street).strip()
+            urbaweb_street = re.sub(r"Agneau", "Rue de l'Agneau", urbaweb_street).strip()
+            urbaweb_street = re.sub(r"Aîte", "Rue de l'Aîte", urbaweb_street).strip()
+            urbaweb_street = re.sub(r"Alliés", "Rue des Alliés", urbaweb_street).strip()
+            urbaweb_street = re.sub(r"Aqueduc", "Rue de l'Aqueduc", urbaweb_street).strip()
+            urbaweb_street = re.sub(r"Arbre à la Croix", "Rue de l'Arbre à la Croix", urbaweb_street).strip()
+            urbaweb_street = re.sub(r"Avenir", "Rue de l'Avenir", urbaweb_street).strip()
+            urbaweb_street = re.sub(r"Barrière", "Rue de la Barrière", urbaweb_street).strip()
+            urbaweb_street = re.sub(r"Bihet", "Rue du Bihet", urbaweb_street).strip()
+            urbaweb_street = re.sub(r"Bois de Malette", "Rue Bois Malette", urbaweb_street).strip()
+            urbaweb_street = re.sub(r"Body", "Rue Michel Body", urbaweb_street).strip()
+            urbaweb_street = re.sub(r"Chapuis", "Rue Grégoire Chapuis", urbaweb_street).strip()
+            urbaweb_street = re.sub(r"Champs", "Rue des Champs", urbaweb_street).strip()
+            urbaweb_street = re.sub(r"Churchill", "Rue Winston Churchill", urbaweb_street).strip()
+            urbaweb_street = re.sub(r"Defuisseaux", "Rue Alfred Defuisseaux", urbaweb_street).strip()
+            urbaweb_street = re.sub(r"Dejardin", "Rue Joseph Dejardin", urbaweb_street).strip()
+            urbaweb_street = re.sub(r"Denis", "Rue Hector Denis", urbaweb_street).strip()
+            urbaweb_street = re.sub(r"Dunant", "Rue Henri Dunant", urbaweb_street).strip()
+            urbaweb_street = re.sub(r"Edison", "Rue Thomas Edison", urbaweb_street).strip()
+            urbaweb_street = re.sub(r"Ferrer", "Rue Francisco Ferrer", urbaweb_street).strip()
+            urbaweb_street = re.sub(r"Gare", "Avenue de la Gare", urbaweb_street).strip()
+            urbaweb_street = re.sub(r"Goffin", "Rue Hubert Goffin", urbaweb_street).strip()
+            urbaweb_street = re.sub(r"Gramme", "Rue Zénobe Gramme", urbaweb_street).strip()
+            urbaweb_street = re.sub(r"Gruslin", "Rue J. Gruslin", urbaweb_street).strip()
+            urbaweb_street = re.sub(r"Haute-Claire", "Rue Haute Claire", urbaweb_street).strip()
+            urbaweb_street = re.sub(r"Heusdens", "Rue Joseph Heusdens", urbaweb_street).strip()
+            urbaweb_street = re.sub(r"Hugo", "Rue Victor Hugo", urbaweb_street).strip()
+            urbaweb_street = re.sub(r"Janson", "Rue Paul Janson", urbaweb_street).strip()
+            urbaweb_street = re.sub(r"Jaurès", "Rue Jean Jaurès", urbaweb_street).strip()
+            urbaweb_street = re.sub(r"Jossens", "Rue Edouard Jossens", urbaweb_street).strip()
+            urbaweb_street = re.sub(r"King", "Rue Martin Luther King", urbaweb_street).strip()
+            urbaweb_street = re.sub(r"Lakaye", "Rue Pierre Lakaye", urbaweb_street).strip()
+            urbaweb_street = re.sub(r"Lexhy", "Rue Mathieu de Lexhy", urbaweb_street).strip()
+            urbaweb_street = re.sub(r"Lincoln", "Rue Abraham Lincoln", urbaweb_street).strip()
+            urbaweb_street = re.sub(r"Malvoz", "Rue Ernest Malvoz", urbaweb_street).strip()
+            urbaweb_street = re.sub(r"Materne", "Rue Adrien Materne", urbaweb_street).strip()
+            urbaweb_street = re.sub(r"Matteoti", "Rue Giacomo Mattéoti", urbaweb_street).strip()
+            urbaweb_street = re.sub(r"Paque", "Rue Simon Paque", urbaweb_street).strip()
+            urbaweb_street = re.sub(r"Pas St-Martin", "Rue Pas Saint-Martin", urbaweb_street).strip()
+            urbaweb_street = re.sub(r"Remouchamps", "Rue Edouard Remouchamps", urbaweb_street).strip()
+            urbaweb_street = re.sub(r"Renan", "Rue Ernest Renan", urbaweb_street).strip()
+            urbaweb_street = re.sub(r"Rouyer", "Rue Joseph Rouyer", urbaweb_street).strip()
+            urbaweb_street = re.sub(r"Schweitzer", "Rue Docteur Schweitzer", urbaweb_street).strip()
+            urbaweb_street = re.sub(r"Solvay", "Rue Ernest Solvay", urbaweb_street).strip()
+            urbaweb_street = re.sub(r"St-Léonard", "Thier Saint-Léonard", urbaweb_street).strip()
+            urbaweb_street = re.sub(r"Ste-Anne", "Rue Sainte-Anne", urbaweb_street).strip()
+            urbaweb_street = re.sub(r"Vandervelde", "Avenue Emile Vandervelde", urbaweb_street).strip()
+            urbaweb_street = re.sub(r"Volders", "Rue Jean Volders", urbaweb_street).strip()
+            urbaweb_street = re.sub(r"Wauters", "Avenue Joseph Wauters", urbaweb_street).strip()
+            urbaweb_street = re.sub(r"Zola", "Rue Emile Zola", urbaweb_street).strip()
             #
             # # End custom code
             df_ba_vue = self.bestaddress.bestaddress_vue
@@ -232,21 +282,54 @@ class ImportUrbaweb(BaseImport):
                     (df_ba_vue.street == urbaweb_street_without_digits)
                 ]
                 if bestaddress_streets.shape[0] == 0:
-                    # last chance : try to remove last char, for example : 1a or 36C
-                    urbaweb_street_without_last_char = urbaweb_street_without_digits.strip()[:-1]
+                    # third chance : add "Rue" before street name
+                    urbaweb_street_with_rue = "{} {}".format("Rue",urbaweb_street_without_digits.strip())
                     bestaddress_streets = df_ba_vue[
-                        (df_ba_vue.street == urbaweb_street_without_last_char.strip())
+                        (df_ba_vue.street == urbaweb_street_with_rue.strip())
                     ]
                     if bestaddress_streets.shape[0] == 0:
-                        self.street_errors.append(ErrorToCsv("street_errors",
-                                                             "Pas de résultat pour cette rue",
-                                                             licence.NUM_PERMIS,
-                                                             "rue : {}"
-                                                             .format(licence.SITUATION_BIEN)))
-                        self.licence_description.append({'objet': "Pas de résultat pour cette rue",
-                                                         'rue': licence.SITUATION_BIEN
-                                                         })
-                        pass
+                        # fourth chance : add "Rue de " before street name
+                        urbaweb_street_with_rue_de = "{} {}".format("Rue de", urbaweb_street_without_digits.strip())
+                        bestaddress_streets = df_ba_vue[
+                            (df_ba_vue.street == urbaweb_street_with_rue_de.strip())
+                        ]
+                        if bestaddress_streets.shape[0] == 0:
+                            # fifth chance : add "Rue du " before street name
+                            urbaweb_street_with_rue_du = "{} {}".format("Rue du", urbaweb_street_without_digits.strip())
+                            bestaddress_streets = df_ba_vue[
+                                (df_ba_vue.street == urbaweb_street_with_rue_du.strip())
+                            ]
+                            if bestaddress_streets.shape[0] == 0:
+                                # sixth chance : add "Rue de l'" before street name
+                                urbaweb_street_with_rue_del = "{}{}".format("Rue de l'",
+                                                                            urbaweb_street_without_digits.strip())
+                                bestaddress_streets = df_ba_vue[
+                                    (df_ba_vue.street == urbaweb_street_with_rue_del.strip())
+                                ]
+                                if bestaddress_streets.shape[0] == 0:
+                                    # seventh chance : add "Rue de la" before street name
+                                    urbaweb_street_with_rue_del = "{} {}".format("Rue de la",
+                                                                                urbaweb_street_without_digits.strip())
+                                    bestaddress_streets = df_ba_vue[
+                                        (df_ba_vue.street == urbaweb_street_with_rue_del.strip())
+                                    ]
+                                    if bestaddress_streets.shape[0] == 0:
+                                        # eighth chance : add "Rue des" before street name
+                                        urbaweb_street_with_rue_des = "{} {}".format("Rue des",
+                                                                                     urbaweb_street_without_digits.strip())
+                                        bestaddress_streets = df_ba_vue[
+                                            (df_ba_vue.street == urbaweb_street_with_rue_des.strip())
+                                        ]
+            if bestaddress_streets.shape[0] == 0:
+                self.street_errors.append(ErrorToCsv("street_errors",
+                                                     "Pas de résultat pour cette rue",
+                                                     licence.NUM_PERMIS,
+                                                     "rue : {}"
+                                                     .format(licence.SITUATION_BIEN)))
+                self.licence_description.append({'objet': "Pas de résultat pour cette rue",
+                                                 'rue': licence.SITUATION_BIEN
+                                                 })
+                pass
 
             result_count = bestaddress_streets.shape[0]
             if result_count == 1:
@@ -464,16 +547,16 @@ class ImportUrbaweb(BaseImport):
 
         if licence.AUTORISATION:
             if int(licence.AUTORISATION[6:8]) > 23:
-                year = "20"
+                year = "19"
             else:
-                year = "21"
-            date_autorisation = "{}{}-{}-{}".format(licence.AUTORISATION[6:8], year, licence.AUTORISATION[3:5], licence.AUTORISATION[0:2])
+                year = "20"
+            date_autorisation = "{}{}-{}-{}".format(year, licence.AUTORISATION[6:8], licence.AUTORISATION[3:5], licence.AUTORISATION[0:2])
         if licence.REFUS:
             if int(licence.REFUS[6:8]) > 23:
-                year = "20"
+                year = "19"
             else:
-                year = "21"
-            date_refus = "{}{}-{}-{}".format(licence.REFUS[6:8], year, licence.REFUS[3:5], licence.REFUS[0:2])
+                year = "20"
+            date_refus = "{}{}-{}-{}".format(year, licence.REFUS[6:8], licence.REFUS[3:5], licence.REFUS[0:2])
 
         if licence.AUTORISATION and not licence.REFUS:
             event_dict['eventDate'] = date_autorisation
@@ -487,7 +570,8 @@ class ImportUrbaweb(BaseImport):
             elif date_autorisation < date_refus:
                 licence_dict['wf_state'] = 'refuse'
             else:
-                print("que fait-on si dates égales ? {}".format(licence.NUM_PERMIS))
+                licence_dict['wf_state'] = ''
+                self.licence_description.append({'objet': "Autorisation et Refus à la même date : {}".format(licence.SITUATION_BIEN)})
         if event_dict['eventDate']:
             event_dict['decisionDate'] = event_dict['eventDate']
 
