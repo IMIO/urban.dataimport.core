@@ -337,17 +337,24 @@ class ImportUrbaweb(BaseImport):
                 work_locations_dict['bestaddress_key'] = str(bestaddress_streets.iloc[0]['key']) if str(bestaddress_streets.iloc[0]['key']) not in ('7044037', '7008904', '7017260', '7011944') else ""
                 work_locations_dict['number'] = str(unidecode.unidecode(urbaweb_number))
                 work_locations_dict['zipcode'] = bestaddress_streets.iloc[0]['zip']
-
                 work_locations_dict['locality'] = bestaddress_streets.iloc[0]['entity']
             elif result_count > 1:
-                self.street_errors.append(ErrorToCsv("street_errors",
-                                                     "Plus d'un seul résultat pour cette rue",
-                                                     licence.NUM_PERMIS,
-                                                     "rue : {}"
-                                                     .format(licence.SITUATION_BIEN)))
-                self.licence_description.append({'objet': "Plus d'un seul résultat pour cette rue",
-                                                 'rue': licence.SITUATION_BIEN
-                                                 })
+                # if all the streets keys are the same
+                if (bestaddress_streets == bestaddress_streets.iloc[0]['key']).all(axis=0)['key']:
+                    work_locations_dict['street'] = bestaddress_streets.iloc[0]['street']
+                    work_locations_dict['bestaddress_key'] = str(bestaddress_streets.iloc[0]['key'])
+                    work_locations_dict['number'] = str(unidecode.unidecode(urbaweb_number))
+                    work_locations_dict['zipcode'] = bestaddress_streets.iloc[0]['zip']
+                    work_locations_dict['locality'] = bestaddress_streets.iloc[0]['entity']
+                else:
+                    self.street_errors.append(ErrorToCsv("street_errors",
+                                                         "Plus d'un seul résultat pour cette rue",
+                                                         licence.NUM_PERMIS,
+                                                         "rue : {}"
+                                                         .format(licence.SITUATION_BIEN)))
+                    self.licence_description.append({'objet': "Plus d'un seul résultat pour cette rue",
+                                                     'rue': licence.SITUATION_BIEN
+                                                     })
         if work_locations_dict['street'] or work_locations_dict['number']:
             work_locations_list.append(work_locations_dict)
 
