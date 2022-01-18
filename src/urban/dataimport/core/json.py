@@ -80,7 +80,7 @@ def get_organization_dict():
 
 def get_parcel_dict():
     return {
-        '@type': 'PortionOut',
+        '@type': 'Parcel',
         'complete_name': '',
         'outdated': '',
         'division': '',
