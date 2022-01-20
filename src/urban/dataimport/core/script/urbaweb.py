@@ -231,7 +231,7 @@ class ImportUrbaweb(BaseImport):
             urbaweb_street = re.sub(r"Bois de Malette", "Rue Bois Malette", urbaweb_street).strip()
             urbaweb_street = re.sub(r"Body", "Rue Michel Body", urbaweb_street).strip()
             urbaweb_street = re.sub(r"Chapuis", "Rue Grégoire Chapuis", urbaweb_street).strip()
-            urbaweb_street = re.sub(r"Champs", "Rue des Champs", urbaweb_street).strip()
+            urbaweb_street = re.sub(r"^Champs", "Rue des Champs", urbaweb_street).strip()
             urbaweb_street = re.sub(r"Churchill", "Rue Winston Churchill", urbaweb_street).strip()
             urbaweb_street = re.sub(r"Defuisseaux", "Rue Alfred Defuisseaux", urbaweb_street).strip()
             urbaweb_street = re.sub(r"Dejardin", "Rue Joseph Dejardin", urbaweb_street).strip()
@@ -283,7 +283,7 @@ class ImportUrbaweb(BaseImport):
                 ]
                 if bestaddress_streets.shape[0] == 0:
                     # third chance : add "Rue" before street name
-                    urbaweb_street_with_rue = "{} {}".format("Rue",urbaweb_street_without_digits.strip())
+                    urbaweb_street_with_rue = "{} {}".format("Rue", urbaweb_street_without_digits.strip())
                     bestaddress_streets = df_ba_vue[
                         (df_ba_vue.street == urbaweb_street_with_rue.strip())
                     ]
