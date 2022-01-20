@@ -502,6 +502,9 @@ class ImportUrbaweb(BaseImport):
         if licence.ARCHITECTE:
             organization_dict['@type'] = 'Architect'
             organization_dict['name1'] = licence.ARCHITECTE
+            # fix link to an existing architect restapi side
+            if organization_dict['name1'] == u"ENTR'AXES ARCHITECTES":
+                organization_dict['name1'] = u"ENTRAXES ARCHITECTES"
             if organization_dict['name1'] == '---' or organization_dict['name1'] == '/':
                 organization_dict['name1'] = "inconnu"
             organization_dict['number'] = re.sub(r'^\D*', '', licence.ADR_ARCHI).strip()
