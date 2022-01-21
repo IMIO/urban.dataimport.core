@@ -389,7 +389,7 @@ class ImportUrbaweb(BaseImport):
                     work_locations_dict['number'] = str(unidecode.unidecode(urbaweb_number))
                     work_locations_dict['zipcode'] = bestaddress_streets.iloc[0]['zip']
                     work_locations_dict['locality'] = bestaddress_streets.iloc[0]['entity']
-                elif urbaweb_street == "Rue Diérain Patar":
+                elif urbaweb_street == "Diérain Patar":
                     work_locations_dict['street'] = "Rue Diérain Patar"
                     work_locations_dict['bestaddress_key'] = "7024045"
                     work_locations_dict['number'] = str(unidecode.unidecode(urbaweb_number))
