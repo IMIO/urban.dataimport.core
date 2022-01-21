@@ -250,6 +250,7 @@ class ImportUrbaweb(BaseImport):
             urbaweb_street = re.sub(r"Goffin", "Rue Hubert Goffin", urbaweb_street).strip()
             urbaweb_street = re.sub(r"Gramme", "Rue Zénobe Gramme", urbaweb_street).strip()
             urbaweb_street = re.sub(r"Gruslin", "Rue J. Gruslin", urbaweb_street).strip()
+            urbaweb_street = re.sub(r"^Hannut", "Chaussée de Hannut", urbaweb_street).strip()
             urbaweb_street = re.sub(r"Haute-Claire", "Rue Haute Claire", urbaweb_street).strip()
             urbaweb_street = re.sub(r"^Hayîre", "Thier de la Hayire", urbaweb_street).strip()
             urbaweb_street = re.sub(r"^Herman", "Impasse Herman", urbaweb_street).strip()
@@ -382,12 +383,18 @@ class ImportUrbaweb(BaseImport):
                 work_locations_dict['locality'] = bestaddress_streets.iloc[0]['entity']
             elif result_count > 1:
                 # if all the streets keys are the same
-                if (bestaddress_streets == bestaddress_streets.iloc[0]['key']).all(axis=0)['key']:
+                if (bestaddress_streets == bestaddress_streets.iloc[0]['key']).all(axis=0)['key'] or urbaweb_street == "Chaussée de Hannut":
                     work_locations_dict['street'] = bestaddress_streets.iloc[0]['street']
                     work_locations_dict['bestaddress_key'] = str(bestaddress_streets.iloc[0]['key'])
                     work_locations_dict['number'] = str(unidecode.unidecode(urbaweb_number))
                     work_locations_dict['zipcode'] = bestaddress_streets.iloc[0]['zip']
                     work_locations_dict['locality'] = bestaddress_streets.iloc[0]['entity']
+                elif urbaweb_street == "Rue Diérain Patar":
+                    work_locations_dict['street'] = "Rue Diérain Patar"
+                    work_locations_dict['bestaddress_key'] = "7024045"
+                    work_locations_dict['number'] = str(unidecode.unidecode(urbaweb_number))
+                    work_locations_dict['zipcode'] = "4460"
+                    work_locations_dict['locality'] = "Grâce-Hollogne"
                 else:
                     self.street_errors.append(ErrorToCsv("street_errors",
                                                          "Plus d'un seul résultat pour cette rue",
