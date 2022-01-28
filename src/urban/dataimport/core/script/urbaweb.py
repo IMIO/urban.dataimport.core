@@ -147,10 +147,10 @@ class ImportUrbaweb(BaseImport):
         # licence_dict['Title'] = "{} {}".format(licence_dict['reference'], licence.NATURE_TITRE)
         licence_dict['licenceSubject'] = licence.TRAVAUX
         licence_dict['usage'] = 'not_applicable'
-        licence_dict['workLocations'] = self.get_work_locations(licence)
+        self.get_parcels(licence, licence_dict['__children__'])
+        licence_dict['workLocations'] = self.get_work_locations(licence, licence_dict)
         self.get_organization(licence, licence_dict)
         self.get_applicants(licence, licence_dict['__children__'], licence_dict)
-        self.get_parcels(licence, licence_dict['__children__'])
         self.get_events(licence, licence_dict)
 
         if licence_dict['reference'] in self.duplicates_list:
@@ -199,7 +199,7 @@ class ImportUrbaweb(BaseImport):
         return portal_type
 
     @benchmark_decorator
-    def get_work_locations(self, licence):
+    def get_work_locations(self, licence, licence_dict):
         work_locations_list = []
         work_locations_dict = get_work_locations_dict()
         if licence.SITUATION_BIEN:
@@ -383,18 +383,66 @@ class ImportUrbaweb(BaseImport):
                 work_locations_dict['locality'] = bestaddress_streets.iloc[0]['entity']
             elif result_count > 1:
                 # if all the streets keys are the same
-                if (bestaddress_streets == bestaddress_streets.iloc[0]['key']).all(axis=0)['key'] or urbaweb_street == "Chaussée de Hannut":
+                if (bestaddress_streets == bestaddress_streets.iloc[0]['key']).all(axis=0)['key']:
                     work_locations_dict['street'] = bestaddress_streets.iloc[0]['street']
                     work_locations_dict['bestaddress_key'] = str(bestaddress_streets.iloc[0]['key'])
                     work_locations_dict['number'] = str(unidecode.unidecode(urbaweb_number))
                     work_locations_dict['zipcode'] = bestaddress_streets.iloc[0]['zip']
                     work_locations_dict['locality'] = bestaddress_streets.iloc[0]['entity']
                 elif urbaweb_street == "Diérain Patar":
-                    work_locations_dict['street'] = "Rue Diérain Patar"
-                    work_locations_dict['bestaddress_key'] = "7024045"
-                    work_locations_dict['number'] = str(unidecode.unidecode(urbaweb_number))
-                    work_locations_dict['zipcode'] = "4460"
-                    work_locations_dict['locality'] = "Grâce-Hollogne"
+                    # Mons lez Liege
+                    if "62453" in [parcel['division'] for parcel in licence_dict['__children__'] if parcel['@type'] == 'Parcel']:
+                        work_locations_dict['street'] = "Rue Diérain Patar"
+                        work_locations_dict['bestaddress_key'] = "7068803"
+                        work_locations_dict['number'] = str(unidecode.unidecode(urbaweb_number))
+                        work_locations_dict['zipcode'] = "4460"
+                        work_locations_dict['locality'] = "Mons-lez-Liège"
+                    else:
+                        work_locations_dict['street'] = "Rue Diérain Patar"
+                        work_locations_dict['bestaddress_key'] = "7024045"
+                        work_locations_dict['number'] = str(unidecode.unidecode(urbaweb_number))
+                        work_locations_dict['zipcode'] = "4460"
+                        work_locations_dict['locality'] = "Grâce-Hollogne"
+                elif urbaweb_street == "Chaussée de Liège":
+                    # Bierset
+                    if "62016" in [parcel['division'] for parcel in licence_dict['__children__'] if parcel['@type'] == 'Parcel']:
+                        work_locations_dict['street'] = "Chaussée de Liège"
+                        work_locations_dict['bestaddress_key'] = "7024005"
+                        work_locations_dict['number'] = str(unidecode.unidecode(urbaweb_number))
+                        work_locations_dict['zipcode'] = "4460"
+                        work_locations_dict['locality'] = "Bierset"
+                    elif "62054" in [parcel['division'] for parcel in licence_dict['__children__'] if parcel['@type'] == 'Parcel']:
+                        # Hollogne aux Pierres
+                        work_locations_dict['street'] = "Chaussée de Liège"
+                        work_locations_dict['bestaddress_key'] = "7051904"
+                        work_locations_dict['number'] = str(unidecode.unidecode(urbaweb_number))
+                        work_locations_dict['zipcode'] = "4460"
+                        work_locations_dict['locality'] = "Hollogne aux Pierres"
+                    else:
+                        self.street_errors.append(ErrorToCsv("street_errors",
+                                                             "Plus d'un seul résultat pour cette rue",
+                                                             licence.NUM_PERMIS,
+                                                             "rue : {}"
+                                                             .format(licence.SITUATION_BIEN)))
+                        self.licence_description.append({'objet': "Plus d'un seul résultat pour cette rue",
+                                                         'rue': licence.SITUATION_BIEN
+                                                         })
+                elif urbaweb_street == "Chaussée de Hannut" or urbaweb_street == "Chaussée  de Hannut":
+                    # Bierset
+                    if "62016" in [parcel['division'] for parcel in licence_dict['__children__'] if
+                                   parcel['@type'] == 'Parcel']:
+                        work_locations_dict['street'] = "Chaussée de Hannut"
+                        work_locations_dict['bestaddress_key'] = "7014756"
+                        work_locations_dict['number'] = str(unidecode.unidecode(urbaweb_number))
+                        work_locations_dict['zipcode'] = "4460"
+                        work_locations_dict['locality'] = "Bierset"
+                    else:
+                        # GH par défaut
+                        work_locations_dict['street'] = "Chaussée de Hannut"
+                        work_locations_dict['bestaddress_key'] = "7024004"
+                        work_locations_dict['number'] = str(unidecode.unidecode(urbaweb_number))
+                        work_locations_dict['zipcode'] = "4460"
+                        work_locations_dict['locality'] = "Grâce-Hollogne"
                 else:
                     self.street_errors.append(ErrorToCsv("street_errors",
                                                          "Plus d'un seul résultat pour cette rue",
