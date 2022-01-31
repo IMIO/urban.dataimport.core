@@ -226,11 +226,14 @@ class ImportUrbaweb(BaseImport):
             urbaweb_street = re.sub(r"Aqueduc", "Rue de l'Aqueduc", urbaweb_street).strip()
             urbaweb_street = re.sub(r"Arbre à la Croix", "Rue de l'Arbre à la Croix", urbaweb_street).strip()
             urbaweb_street = re.sub(r"Avenir", "Rue de l'Avenir", urbaweb_street).strip()
+            urbaweb_street = re.sub(r"^Awans", "Rue d'Awans", urbaweb_street).strip()
             urbaweb_street = re.sub(r"Barrière", "Rue de la Barrière", urbaweb_street).strip()
             urbaweb_street = re.sub(r"Bihet", "Rue du Bihet", urbaweb_street).strip()
             urbaweb_street = re.sub(r"Bois de Malette", "Rue Bois Malette", urbaweb_street).strip()
             urbaweb_street = re.sub(r"Body", "Rue Michel Body", urbaweb_street).strip()
+            urbaweb_street = re.sub(r"^Bruneau", "Rue Joseph Bruneau", urbaweb_street).strip()
             urbaweb_street = re.sub(r"Chapuis", "Rue Grégoire Chapuis", urbaweb_street).strip()
+            urbaweb_street = re.sub(r"Chemin de fer", "Rue du Chemin de Fer", urbaweb_street).strip()
             urbaweb_street = re.sub(r"^Champs", "Rue des Champs", urbaweb_street).strip()
             urbaweb_street = re.sub(r"Churchill", "Rue Winston Churchill", urbaweb_street).strip()
             urbaweb_street = re.sub(r"^Defrêcheux", "Rue Nicolas Defrêcheux", urbaweb_street).strip()
@@ -249,13 +252,19 @@ class ImportUrbaweb(BaseImport):
             urbaweb_street = re.sub(r"Gare", "Avenue de la Gare", urbaweb_street).strip()
             urbaweb_street = re.sub(r"Goffin", "Rue Hubert Goffin", urbaweb_street).strip()
             urbaweb_street = re.sub(r"Gramme", "Rue Zénobe Gramme", urbaweb_street).strip()
+            urbaweb_street = re.sub(r"^Grety", "Rue Grétry", urbaweb_street).strip()
             urbaweb_street = re.sub(r"Gruslin", "Rue J. Gruslin", urbaweb_street).strip()
             urbaweb_street = re.sub(r"^Hannut", "Chaussée de Hannut", urbaweb_street).strip()
             urbaweb_street = re.sub(r"Haute-Claire", "Rue Haute Claire", urbaweb_street).strip()
             urbaweb_street = re.sub(r"^Hayîre", "Thier de la Hayire", urbaweb_street).strip()
             urbaweb_street = re.sub(r"^Herman", "Impasse Herman", urbaweb_street).strip()
             urbaweb_street = re.sub(r"Heusdens", "Rue Joseph Heusdens", urbaweb_street).strip()
+            urbaweb_street = re.sub(r"^Huit mai", "Rue du Huit Mai", urbaweb_street).strip()
             urbaweb_street = re.sub(r"Hugo", "Rue Victor Hugo", urbaweb_street).strip()
+            urbaweb_street = re.sub(r"^Fonds d'Ivoz", "Rue Fonds-d'Ivoz", urbaweb_street).strip()
+            urbaweb_street = re.sub(r"^Fond d'Ivoz", "Rue Fonds-d'Ivoz", urbaweb_street).strip()
+            urbaweb_street = re.sub(r"^fontaine", "Rue de Fontaine", urbaweb_street).strip()
+            urbaweb_street = re.sub(r"Hugo", "Rue Fonds-d'Ivoz", urbaweb_street).strip()
             urbaweb_street = re.sub(r"^Jace", "Thier de Jace", urbaweb_street).strip()
             urbaweb_street = re.sub(r"Janson", "Rue Paul Janson", urbaweb_street).strip()
             urbaweb_street = re.sub(r"Jaurès", "Rue Jean Jaurès", urbaweb_street).strip()
@@ -265,7 +274,8 @@ class ImportUrbaweb(BaseImport):
             urbaweb_street = re.sub(r"Lexhy", "Rue Mathieu de Lexhy", urbaweb_street).strip()
             urbaweb_street = re.sub(r"Lincoln", "Rue Abraham Lincoln", urbaweb_street).strip()
             urbaweb_street = re.sub(r"Malvoz", "Rue Ernest Malvoz", urbaweb_street).strip()
-            urbaweb_street = re.sub(r"^Malette", "Rue Bois Malette", urbaweb_street).strip()
+            urbaweb_street = re.sub(r"^Malette", "Rue du Bois de Malette", urbaweb_street).strip()
+            urbaweb_street = re.sub(r"^du Bois de Malette", "Rue du Bois de Malette", urbaweb_street).strip()
             urbaweb_street = re.sub(r"^Massillon", "Impasse Massillon", urbaweb_street).strip()
             urbaweb_street = re.sub(r"Materne", "Rue Adrien Materne", urbaweb_street).strip()
             urbaweb_street = re.sub(r"Mattéoti", "Rue Giacomo Mattéoti", urbaweb_street).strip()
@@ -276,6 +286,7 @@ class ImportUrbaweb(BaseImport):
             urbaweb_street = re.sub(r"^Neuve voie", "Rue Neuve Voie", urbaweb_street).strip()
             urbaweb_street = re.sub(r"^Onze novembre", "Rue du Onze Novembre", urbaweb_street).strip()
             urbaweb_street = re.sub(r"^Pasteur", "Rue Louis Pasteur", urbaweb_street).strip()
+            urbaweb_street = re.sub(r"^Patar", "Diérain Patar", urbaweb_street).strip()
             urbaweb_street = re.sub(r"Paque", "Rue Simon Paque", urbaweb_street).strip()
             urbaweb_street = re.sub(r"Pas St-Martin", "Rue Pas Saint-Martin", urbaweb_street).strip()
             urbaweb_street = re.sub(r"Remouchamps", "Rue Edouard Remouchamps", urbaweb_street).strip()
@@ -288,6 +299,7 @@ class ImportUrbaweb(BaseImport):
             urbaweb_street = re.sub(r"^St-Anne", "Rue Sainte-Anne", urbaweb_street).strip()
             urbaweb_street = re.sub(r"Saint-Exupéry", "Rue Saint-Exupéry", urbaweb_street).strip()
             urbaweb_street = re.sub(r"^Saint-Léonard", "Thier Saint-Léonard", urbaweb_street).strip()
+            urbaweb_street = re.sub(r"^Allende", "Rue Salvador Allende", urbaweb_street).strip()
             urbaweb_street = re.sub(r"^Samson", "Rue Arthur Samson", urbaweb_street).strip()
             urbaweb_street = re.sub(r"^Sart Thiri", "Rue du Sart-Thiri", urbaweb_street).strip()
             urbaweb_street = re.sub(r"Schweitzer", "Rue Docteur Schweitzer", urbaweb_street).strip()
@@ -364,15 +376,58 @@ class ImportUrbaweb(BaseImport):
                                             (df_ba_vue.street == urbaweb_street_with_rue_des.strip())
                                         ]
             if bestaddress_streets.shape[0] == 0:
-                self.street_errors.append(ErrorToCsv("street_errors",
-                                                     "Pas de résultat pour cette rue",
-                                                     licence.NUM_PERMIS,
-                                                     "rue : {}"
-                                                     .format(licence.SITUATION_BIEN)))
-                self.licence_description.append({'objet': "Pas de résultat pour cette rue",
-                                                 'rue': licence.SITUATION_BIEN
-                                                 })
-                pass
+                if urbaweb_street in ("Houillère Coune", "Coune"):
+                    # manualy encoded : opendata bewal => 7733570
+                    work_locations_dict['street'] = "Rue de la Houillère Coune"
+                    work_locations_dict['bestaddress_key'] = "7733570"
+                    work_locations_dict['number'] = str(unidecode.unidecode(urbaweb_number))
+                    work_locations_dict['zipcode'] = "4460"
+                    work_locations_dict['locality'] = "Hollogne aux Pierres"
+                elif urbaweb_street in ("Jef Ulburghs", "Ulburghs"):
+                    # manualy encoded : opendata bewal => 7733740
+                    work_locations_dict['street'] = "Rue Jef Ulburghs"
+                    work_locations_dict['bestaddress_key'] = "7733740"
+                    work_locations_dict['number'] = str(unidecode.unidecode(urbaweb_number))
+                    work_locations_dict['zipcode'] = "4460"
+                    work_locations_dict['locality'] = "Velroux"
+                elif urbaweb_street in ("Grande Cliquotte", "Cliquotte", "Grande cliquotte", "cliquotte"):
+                    # manualy encoded : opendata bewal => 7733569
+                    work_locations_dict['street'] = "Rue de la Grande Cliquotte"
+                    work_locations_dict['bestaddress_key'] = "7733569"
+                    work_locations_dict['number'] = str(unidecode.unidecode(urbaweb_number))
+                    work_locations_dict['zipcode'] = "4460"
+                    work_locations_dict['locality'] = "Velroux"
+                elif urbaweb_street in ("Bures", "Impasse des Bures"):
+                    # manualy encoded : opendata bewal => 7733506
+                    work_locations_dict['street'] = "Impasse des Bures"
+                    work_locations_dict['bestaddress_key'] = "7733506"
+                    work_locations_dict['number'] = str(unidecode.unidecode(urbaweb_number))
+                    work_locations_dict['zipcode'] = "4460"
+                    work_locations_dict['locality'] = "Velroux"
+                elif urbaweb_street == "Caféa":
+                    # manualy encoded : not in opendata bewal
+                    work_locations_dict['street'] = "Rue Caféa"
+                    work_locations_dict['bestaddress_key'] = "3135"
+                    work_locations_dict['number'] = str(unidecode.unidecode(urbaweb_number))
+                    work_locations_dict['zipcode'] = "4460"
+                    work_locations_dict['locality'] = "Bierset"
+                elif urbaweb_street in ("DEL CANGE", "Del Cange", "Del cange", "Cange"):
+                    # manualy encoded : opendata bewal => 7733605
+                    work_locations_dict['street'] = "Rue Del Cange"
+                    work_locations_dict['bestaddress_key'] = "7733605"
+                    work_locations_dict['number'] = str(unidecode.unidecode(urbaweb_number))
+                    work_locations_dict['zipcode'] = "4460"
+                    work_locations_dict['locality'] = "Velroux"
+                else:
+                    self.street_errors.append(ErrorToCsv("street_errors",
+                                                         "Pas de résultat pour cette rue",
+                                                         licence.NUM_PERMIS,
+                                                         "rue : {}"
+                                                         .format(licence.SITUATION_BIEN)))
+                    self.licence_description.append({'objet': "Pas de résultat pour cette rue",
+                                                     'rue': licence.SITUATION_BIEN
+                                                     })
+                    pass
 
             result_count = bestaddress_streets.shape[0]
             if result_count == 1:
