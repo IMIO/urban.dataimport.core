@@ -49,10 +49,9 @@ class ImportToPlone(BaseImport):
                                  headers=DEFAULT_HEADER,
                                  data=LOGIN_STRING % (config._sections['plone']['user'],
                                                       config._sections['plone']['password']))
-        if response.status_code == RESPONSE_SUCCESS:
-            self.token = response.json()['token']
-            self.head = {'Accept': 'application/json', 'Content-Type': 'application/json',
-                         'Authorization': 'Bearer {}'.format(self.token)}
+        self.token = response.json()['token']
+        self.head = {'Accept': 'application/json', 'Content-Type': 'application/json',
+                     'Authorization': 'Bearer {}'.format(self.token)}
         self.nb_licence = 0
         self.licence_global_list = []
 

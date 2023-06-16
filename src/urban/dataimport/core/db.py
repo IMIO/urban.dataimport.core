@@ -9,7 +9,7 @@ class LazyDB:
     def __init__(self, connection, db_schema, ignore_cache=False):
         self.connection = connection
         self.db_schema = db_schema
-        self.ignore_cache = ignore_cache
+        self.ignore_cache = True
 
     def __getattr__(self, name):
         try:
